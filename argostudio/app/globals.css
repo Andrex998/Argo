@@ -1,0 +1,117 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/* ============================================
+   ARGO Studio — Global Primitives
+   All tokens live in tailwind.config.ts.
+   This file: resets, glass, grain, a11y.
+   ============================================ */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: #3B8EFF;
+    color: #000000;
+  }
+
+  :focus-visible {
+    outline: 2px solid #3B8EFF;
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  /* Glass system — 3 controlled levels, never improvise */
+  .glass-subtle {
+    @apply bg-white/[0.03] border border-white/[0.06] backdrop-blur-glass;
+  }
+  .glass-default {
+    @apply bg-white/[0.05] border border-white/[0.08] backdrop-blur-glass;
+  }
+  .glass-prominent {
+    @apply bg-white/[0.08] border border-white/[0.12] backdrop-blur-glass;
+  }
+}
+
+/* ============================================
+   Voltage halo — radial signal behind the monolith
+   The "third tension" of the system (Energy).
+   Sits between canvas (-z-10) and content (z-0).
+   Pure CSS, zero JS, zero asset weight.
+   ============================================ */
+.voltage-halo {
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 60% 50% at 50% 55%,
+      rgba(59, 142, 255, 0.18) 0%,
+      rgba(59, 142, 255, 0.06) 35%,
+      transparent 70%
+    );
+  mix-blend-mode: screen;
+}
+
+/* ============================================
+   Cinematic vignette — letterbox-grade framing
+   Top + bottom gradient masks that anchor the viewport
+   like a film aspect ratio. Subtle, no hard edges.
+   ============================================ */
+.cinematic-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, transparent 12%, transparent 88%, rgba(0, 0, 0, 0.7) 100%),
+    radial-gradient(ellipse 120% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* ============================================
+   Noise / Grain — cinematic texture overlay
+   Procedural SVG feTurbulence, no external assets.
+   opacity 0.035 = barely visible, adds film depth.
+   ============================================ */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================
+   Reduced motion — absolute respect
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .noise-overlay {
+    display: none;
+  }
+  .voltage-halo {
+    opacity: 0.4;
+  }
+}

@@ -1,0 +1,8 @@
+# Source bundles — shipped separately
+*.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
