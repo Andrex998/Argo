@@ -8,48 +8,74 @@ import { durations } from '@/motion/durations';
 /**
  * Hero Section — ARGO Studio Website V1
  *
- * MOTION LAYERS (Claude — Framer Motion, component-presence layer):
- *   1. Eyebrow            → fade + blur in, `base`, smoothOut
- *   2. Headline (line 1)  → word-by-word, stagger 0.12s, `slow`, cinematic
- *   3. Headline (line 2)  → word-by-word, continues stagger, voltage accent
- *   4. Sub                → fade + blur in, `medium`, smoothOut, delayed
- *   5. CTA group          → slide up + glass glow, `medium`, smoothOut, delayed
- *   6. Scroll indicator   → late fade in, continuous pulse (CSS)
+ * MOTION (Claude — Framer Motion, component-presence layer).
+ * GSAP scroll-storytelling refs are preserved for Gemini's ScrollTrigger
+ * handoff (camera dolly into the monolith, Lenis smooth scroll inertia).
  *
- * SCROLL LAYER (Claude — Framer Motion useScroll, hand-off ready):
- *   - Hero content fades to 0 and blurs out as user scrolls past hero.
- *   - Camera dolly into the monolith is reserved for Gemini (ScrollTrigger).
+ * Reveal timeline (3-second rule budget, everything settled by ~2.9s):
+ *   t=0.2s   eyebrow fades in
+ *   t=0.8s   headline line 1 begins word-by-word stagger (0.12s, cinematic 1.4s)
+ *   t=1.2s   headline line 2 (voltage accent) begins (overlaps the cascade)
+ *   t=1.4s   sub fades in under the still-rising headline
+ *   t=2.0s   CTA group rises (settles 2.9s)
+ *   t=2.4s   scroll indicator emerges and starts silk pulse loop
  *
- * GSAP ANCHORS (preserved for Gemini scroll-storytelling integration):
- *   sectionRef, eyebrowRef, headlineRef, headlineAccentRef,
- *   subRef, ctaGroupRef, ctaPrimaryRef, ctaSecondaryRef, scrollIndicatorRef
+ * Stagger nesting is explicit: framer-motion's `staggerChildren` only
+ * orchestrates direct motion children, so each level (section → headline →
+ * line → words) declares its own staggering variant.
  *
- * Reference: /motion/easings.ts, /motion/durations.ts, MOTION_RULES.md
+ * GSAP anchors preserved: sectionRef, eyebrowRef, headlineRef,
+ * headlineAccentRef, subRef, ctaGroupRef, ctaPrimaryRef, ctaSecondaryRef,
+ * scrollIndicatorRef.
  */
 
 const HEADLINE_LINE_1 = ['We', "don't", 'build', 'pages.'];
 const HEADLINE_LINE_2 = ['We', 'build', 'presence.'];
 
-const containerVariants: Variants = {
+/* ── Section-level orchestration (eyebrow → headline → sub → cta) ──
+ * staggerChildren=0.6 spreads the 4 top-level reveals so sub doesn't
+ * collide with the second headline line. CTA lands at ~t=2.0s. */
+const sectionStagger: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.12,
       delayChildren: 0.2,
+      staggerChildren: 0.6,
     },
   },
 };
 
-const wordVariants: Variants = {
+/* ── Headline-level orchestration (line 1 → line 2) ──
+ * 0.4s between lines: line 2 begins as line 1's last word is mid-rise,
+ * producing a continuous monumental cascade with no dead pause. */
+const headlineStagger: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.4,
+    },
+  },
+};
+
+/* ── Line-level orchestration (word by word, the doc-prescribed 0.12s) ── */
+const lineStagger: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.12,
+    },
+  },
+};
+
+/* ── Word reveal: mask-clipped rise on the cinematic curve, slow 1.4s ── */
+const wordRise: Variants = {
   hidden: {
+    y: '110%',
     opacity: 0,
-    y: 48,
-    filter: 'blur(12px)',
   },
   visible: {
+    y: '0%',
     opacity: 1,
-    y: 0,
-    filter: 'blur(0px)',
     transition: {
       duration: durations.slow,
       ease: [...easings.cinematic],
@@ -57,8 +83,13 @@ const wordVariants: Variants = {
   },
 };
 
-const fadeUpVariants: Variants = {
-  hidden: { opacity: 0, y: 24, filter: 'blur(8px)' },
+/* ── Generic fade-up + blur-in for accessory elements ── */
+const fadeUp: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 24,
+    filter: 'blur(8px)',
+  },
   visible: {
     opacity: 1,
     y: 0,
@@ -87,7 +118,6 @@ export default function Hero() {
     target: sectionRef,
     offset: ['start start', 'end start'],
   });
-  // Respect parallax rule: max 20% offset (translate stays small)
   const contentOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
   const contentY       = useTransform(scrollYProgress, [0, 1], ['0%', '-12%']);
   const contentBlur    = useTransform(
@@ -105,57 +135,37 @@ export default function Hero() {
       <motion.div
         style={{ opacity: contentOpacity, y: contentY, filter: contentBlur }}
         className="relative flex flex-col items-center"
-        variants={containerVariants}
+        variants={sectionStagger}
         initial="hidden"
         animate="visible"
       >
         {/* ── Eyebrow label ── */}
         <motion.span
           ref={eyebrowRef}
-          variants={fadeUpVariants}
+          variants={fadeUp}
           className="font-mono text-micro uppercase tracking-widest text-voltage mb-10"
         >
           ARGO Studio
         </motion.span>
 
-        {/* ── Monumental headline — word-by-word cinematic reveal ── */}
-        <h1
+        {/* ── Monumental headline — nested stagger: lines → words ── */}
+        <motion.h1
           ref={headlineRef}
+          variants={headlineStagger}
           className="font-display text-display-xl text-bone max-w-5xl"
         >
-          <span className="block overflow-hidden pb-[0.12em]">
-            {HEADLINE_LINE_1.map((word, i) => (
-              <motion.span
-                key={`l1-${i}`}
-                variants={wordVariants}
-                className="inline-block will-change-transform"
-              >
-                {word}
-                {i < HEADLINE_LINE_1.length - 1 && ' '}
-              </motion.span>
-            ))}
-          </span>
-          <span
-            ref={headlineAccentRef}
-            className="block overflow-hidden pb-[0.12em] text-voltage"
-          >
-            {HEADLINE_LINE_2.map((word, i) => (
-              <motion.span
-                key={`l2-${i}`}
-                variants={wordVariants}
-                className="inline-block will-change-transform"
-              >
-                {word}
-                {i < HEADLINE_LINE_2.length - 1 && ' '}
-              </motion.span>
-            ))}
-          </span>
-        </h1>
+          <HeadlineLine words={HEADLINE_LINE_1} />
+          <HeadlineLine
+            words={HEADLINE_LINE_2}
+            accentRef={headlineAccentRef}
+            className="text-voltage"
+          />
+        </motion.h1>
 
         {/* ── Sub ── */}
         <motion.p
           ref={subRef}
-          variants={fadeUpVariants}
+          variants={fadeUp}
           className="mt-10 font-body text-body-l text-pearl max-w-xl"
         >
           Cinematic web experiences for future-forward brands.
@@ -164,7 +174,7 @@ export default function Hero() {
         {/* ── CTA group ── */}
         <motion.div
           ref={ctaGroupRef}
-          variants={fadeUpVariants}
+          variants={fadeUp}
           className="mt-16 flex flex-col items-center gap-4 sm:flex-row"
         >
           <a
@@ -191,7 +201,7 @@ export default function Hero() {
         </motion.div>
       </motion.div>
 
-      {/* ── Scroll indicator — independent fade-in, continuous pulse ── */}
+      {/* ── Scroll indicator — independent fade-in, continuous silk pulse ── */}
       <motion.div
         ref={scrollIndicatorRef}
         initial={{ opacity: 0 }}
@@ -219,5 +229,40 @@ export default function Hero() {
         </span>
       </motion.div>
     </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * HeadlineLine — one line of the monumental headline.
+ * Each word is a direct motion child of a line-level staggering span,
+ * so framer-motion's per-word stagger fires correctly. Mask via
+ * overflow-hidden on the line wrapper; words rise from y:110% into place.
+ * ──────────────────────────────────────────────────────────────────── */
+function HeadlineLine({
+  words,
+  className,
+  accentRef,
+}: {
+  words: string[];
+  className?: string;
+  accentRef?: React.RefObject<HTMLSpanElement | null>;
+}) {
+  return (
+    <motion.span
+      ref={accentRef}
+      variants={lineStagger}
+      className={`block overflow-hidden pb-[0.12em] ${className ?? ''}`}
+    >
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          variants={wordRise}
+          className="inline-block will-change-transform"
+        >
+          {word}
+          {i < words.length - 1 && ' '}
+        </motion.span>
+      ))}
+    </motion.span>
   );
 }
