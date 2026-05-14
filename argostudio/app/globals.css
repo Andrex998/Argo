@@ -56,7 +56,7 @@
   pointer-events: none;
   background:
     radial-gradient(
-      ellipse 60% 50% at 50% 55%,
+      ellipse 60% 50% at 50% 60%,
       rgba(59, 142, 255, 0.10) 0%,
       rgba(59, 142, 255, 0.03) 40%,
       transparent 72%
@@ -112,6 +112,6 @@
     display: none;
   }
   .voltage-halo {
-    opacity: 0.4;
+    opacity: 0.25;
   }
 }
