@@ -57,9 +57,9 @@
   background:
     radial-gradient(
       ellipse 60% 50% at 50% 55%,
-      rgba(59, 142, 255, 0.18) 0%,
-      rgba(59, 142, 255, 0.06) 35%,
-      transparent 70%
+      rgba(59, 142, 255, 0.10) 0%,
+      rgba(59, 142, 255, 0.03) 40%,
+      transparent 72%
     );
   mix-blend-mode: screen;
 }

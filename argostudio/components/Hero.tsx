@@ -130,7 +130,7 @@ export default function Hero() {
     <section
       ref={sectionRef}
       id="hero"
-      className="relative flex min-h-screen flex-col items-center justify-center px-6 text-center"
+      className="relative flex min-h-screen flex-col items-center justify-center px-6 pb-[18vh] text-center"
     >
       <motion.div
         style={{ opacity: contentOpacity, y: contentY, filter: contentBlur }}

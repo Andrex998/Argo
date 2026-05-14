@@ -83,12 +83,24 @@ export default function ImmersiveScene() {
         {/* HDR environment for credible glass refraction */}
         <Environment preset="night" />
 
-        {/* Subtle voltage rim light */}
+        {/*
+         * Ambient fill — near-zero, just enough to prevent total black
+         * on the unlit face without lifting the void atmosphere.
+         */}
+        <ambientLight intensity={0.04} />
+
+        {/*
+         * Voltage rim light — grazes the edge of the glass from the
+         * upper-left, not washing the scene. Rule: signal, not flood.
+         *   position  [−2.5, 1.2, 0.8] = left rim, slightly behind
+         *   intensity 1.5               = visible but not dominant
+         *   distance  5                 = falls off before reaching DOM
+         */}
         <pointLight
-          position={[3, 2, 2]}
+          position={[-2.5, 1.2, 0.8]}
           color="#3B8EFF"
-          intensity={4}
-          distance={8}
+          intensity={1.5}
+          distance={5}
         />
 
         {/* The monolith — refracts everything behind */}
