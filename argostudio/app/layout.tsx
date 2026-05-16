@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import dynamic from 'next/dynamic';
+import SmoothScrollProvider from '@/components/SmoothScrollProvider';
 import './globals.css';
 
-/* ── Fonts ──────────────────────────────────── */
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
@@ -16,12 +16,10 @@ const geistMono = Geist_Mono({
   display: 'swap',
 });
 
-/* ── 3D Scene — dynamic import, SSR off (Three.js requires browser) ── */
 const ImmersiveScene = dynamic(() => import('@/components/ImmersiveScene'), {
   ssr: false,
 });
 
-/* ── Metadata ───────────────────────────────── */
 export const metadata: Metadata = {
   title: 'ARGO Studio — Cinematic web experiences for future-forward brands',
   description:
@@ -39,16 +37,12 @@ export const viewport: Viewport = {
   colorScheme: 'dark',
 };
 
-/* ── Root Layout ────────────────────────────── */
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="relative min-h-screen bg-void text-bone font-body antialiased overflow-x-hidden">
-
-        {/* ── Three.js Canvas layer ──
-            ImmersiveScene mounts here. -z-10 + pointer-events-none. */}
         <div
           id="argo-canvas-layer"
           aria-hidden="true"
@@ -57,20 +51,11 @@ export default function RootLayout({
           <ImmersiveScene />
         </div>
 
-        {/* ── Voltage halo — the "Energy" tension, behind content ── */}
-        <div className="voltage-halo" aria-hidden="true" />
-
-        {/* ── Content layer ── */}
-        <main className="relative z-0">
-          {children}
-        </main>
-
-        {/* ── Cinematic vignette — letterbox framing, atop content ── */}
-        <div className="cinematic-vignette" aria-hidden="true" />
-
-        {/* ── Noise / Grain overlay — atop everything for film depth ── */}
         <div className="noise-overlay" aria-hidden="true" />
 
+        <SmoothScrollProvider>
+          <main className="relative z-0">{children}</main>
+        </SmoothScrollProvider>
       </body>
     </html>
   );
