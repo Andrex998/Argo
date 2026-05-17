@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import dynamic from 'next/dynamic';
 import SmoothScrollProvider from '@/components/SmoothScrollProvider';
+import ImmersiveSceneLoader from '@/components/ImmersiveSceneLoader';
 import './globals.css';
 
 const geistSans = Geist({
@@ -14,10 +14,6 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
   display: 'swap',
-});
-
-const ImmersiveScene = dynamic(() => import('@/components/ImmersiveScene'), {
-  ssr: false,
 });
 
 export const metadata: Metadata = {
@@ -48,7 +44,7 @@ export default function RootLayout({
           aria-hidden="true"
           className="fixed top-0 left-0 w-full h-screen -z-10 pointer-events-none"
         >
-          <ImmersiveScene />
+          <ImmersiveSceneLoader />
         </div>
 
         <div className="noise-overlay" aria-hidden="true" />
