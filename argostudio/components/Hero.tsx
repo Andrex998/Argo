@@ -45,6 +45,7 @@ export default function Hero() {
         return;
       }
 
+      // ── Entrance timeline ──────────────────────────────────────────────
       const headlineWords = splitTextIntoWords(headlineRef.current);
 
       gsap.set(
@@ -57,7 +58,6 @@ export default function Hero() {
         ],
         { opacity: 0, y: 32, filter: 'blur(12px)' }
       );
-
       gsap.set(headlineWords, { opacity: 0, y: 32, filter: 'blur(12px)' });
 
       const tl = gsap.timeline();
@@ -87,25 +87,34 @@ export default function Hero() {
           repeat: -1, yoyo: true,
         }, '>');
 
+      // ── Spatial Penetration: pin hero + fly camera through the monolith ─
+      // Camera travels z: 4 → -2, passing through the glass geometry.
+      // Typography distorts naturally through MeshTransmissionMaterial
+      // as the lens crosses the glass surface. Text fades as it enters.
       const scrollTl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
           start: 'top top',
-          end: 'bottom top',
+          end: '+=200%',
           scrub: 1.5,
+          pin: true,
+          pinSpacing: true,
         },
       });
 
-      scrollTl.to(textBlockRef.current, { y: -80, ease: 'none' }, 0);
+      // Text fades as the glass passes over the lens
+      scrollTl.to(textBlockRef.current, { opacity: 0, ease: 'none' }, 0);
 
+      // Camera flies forward through the monolith
       if (cameraRef?.current) {
-        scrollTl.to(cameraRef.current.position, { z: 3.2, ease: 'none' }, 0);
+        scrollTl.to(cameraRef.current.position, { z: -2, ease: 'none' }, 0);
       }
 
+      // Monolith scales very subtly as camera approaches
       if (monolithRef?.current) {
         scrollTl.to(
           monolithRef.current.scale,
-          { x: 1.15, y: 1.15, z: 1.15, ease: 'none' },
+          { x: 1.08, y: 1.08, z: 1.08, ease: 'none' },
           0
         );
       }
@@ -123,13 +132,15 @@ export default function Hero() {
         ref={textBlockRef}
         className="relative z-10 flex h-screen flex-col items-center justify-center px-6 pb-[18vh]"
       >
+        {/* Eyebrow */}
         <span
           ref={eyebrowRef}
-          className="font-mono text-micro uppercase tracking-[0.16em] text-voltage mb-8 md:mb-10"
+          className="font-mono text-micro uppercase tracking-[0.16em] text-voltage mb-14 md:mb-16"
         >
           ARGO Studio
         </span>
 
+        {/* Monumental headline */}
         <h1
           ref={headlineRef}
           className="font-display text-display-xl text-bone text-center max-w-4xl"
@@ -142,38 +153,39 @@ export default function Hero() {
           </span>
         </h1>
 
+        {/* Sub — isolated in the void */}
         <p
           ref={subRef}
-          className="mt-8 md:mt-10 font-body text-body-l text-pearl text-center max-w-md"
+          className="mt-20 md:mt-24 font-body text-body-l text-pearl text-center max-w-md"
           style={{ lineHeight: '1.5' }}
         >
           Cinematic web experiences for future-forward brands.
         </p>
 
+        {/* CTA group — System Commands, not buttons */}
         <div
           ref={ctaGroupRef}
-          className="mt-12 md:mt-14 flex flex-col items-center gap-4 sm:flex-row sm:gap-6"
+          className="mt-20 md:mt-24 flex flex-col items-center gap-8 sm:flex-row sm:gap-12"
         >
           <a
             ref={ctaPrimaryRef}
             href="#contact"
-            className="inline-flex items-center gap-3 rounded-argo-2xl glass-default px-7 py-3.5 text-bone transition-all duration-fast ease-silk hover:shadow-glow-subtle hover:scale-[1.02]"
+            className="font-mono text-xs uppercase tracking-widest text-pearl border-b border-white/10 pb-1 transition-all duration-700 hover:text-voltage hover:border-voltage/50"
           >
-            <span className="font-body text-body-m">Start a project</span>
-            <span className="text-voltage" aria-hidden="true">→</span>
+            Start a project
           </a>
 
           <a
             ref={ctaSecondaryRef}
             href="#manifesto"
-            className="inline-flex items-center gap-2 px-4 py-3 font-mono text-micro uppercase tracking-[0.12em] text-pearl transition-colors duration-fast ease-silk hover:text-voltage"
+            className="font-mono text-xs uppercase tracking-widest text-smoke border-b border-white/[0.06] pb-1 transition-all duration-700 hover:text-pearl hover:border-white/20"
           >
-            <span>Our manifesto</span>
-            <span aria-hidden="true">↓</span>
+            Our manifesto
           </a>
         </div>
       </div>
 
+      {/* Scroll indicator */}
       <div
         ref={scrollIndicatorRef}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3 pointer-events-none"

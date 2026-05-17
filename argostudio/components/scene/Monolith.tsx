@@ -6,22 +6,21 @@ import { MeshTransmissionMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
 /**
- * Monolith — clean Group/Mesh separation:
- *   - Outer <group> = GSAP territory (scroll-driven scale)
- *   - Inner <mesh> = useFrame territory (breathing + rotation + base scale)
+ * Monolith — Group/Mesh separation:
+ *   - Outer <group> = GSAP territory (scroll-driven scale) + micro-drift
+ *   - Inner <mesh>  = useFrame territory (breathing + auto-rotation + parallax)
+ *
+ * pointer prop removed: rotation now reads state.pointer directly,
+ * giving heavier damping (0.05) and the "lazy look" effect.
  */
 
-interface MonolithProps {
-  pointer: { x: number; y: number };
-}
-
-const Monolith = forwardRef<THREE.Group, MonolithProps>(function Monolith(
-  { pointer },
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+const Monolith = forwardRef<THREE.Group, {}>(function Monolith(
+  _,
   ref
 ) {
   const groupRef = useRef<THREE.Group>(null);
-  const meshRef = useRef<THREE.Mesh>(null);
-  const targetRotation = useRef({ x: 0, y: 0 });
+  const meshRef  = useRef<THREE.Mesh>(null);
   const { size, viewport } = useThree();
 
   useImperativeHandle(ref, () => groupRef.current as THREE.Group, []);
@@ -29,19 +28,24 @@ const Monolith = forwardRef<THREE.Group, MonolithProps>(function Monolith(
   const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, 8), []);
 
   useFrame((state) => {
-    if (!meshRef.current) return;
-    const mesh = meshRef.current;
-    const time = state.clock.elapsedTime;
+    if (!meshRef.current || !groupRef.current) return;
+    const mesh  = meshRef.current;
+    const group = groupRef.current;
+    const time  = state.clock.elapsedTime;
 
+    // ── Micro-drift: slow, heavy float (planetary mass feel)
+    group.position.y = -0.3 + Math.sin(time * 0.4) * 0.05;
+
+    // ── Auto-rotation
     mesh.rotation.y += 0.0015;
 
-    targetRotation.current.x = pointer.y * 0.08;
-    targetRotation.current.y = pointer.x * 0.08;
-    mesh.rotation.x += (targetRotation.current.x - mesh.rotation.x) * 0.03;
+    // ── Slow parallax: lazily tracks cursor with heavy damping
+    mesh.rotation.x += (state.pointer.y * 0.15 - mesh.rotation.x) * 0.05;
 
-    const isMobile = size.width < 768;
-    const isTablet = size.width >= 768 && size.width < 1024;
-    const baseSize = isMobile
+    // ── Responsive base scale + subtle breathing
+    const isMobile  = size.width < 768;
+    const isTablet  = size.width >= 768 && size.width < 1024;
+    const baseSize  = isMobile
       ? Math.min(viewport.width, viewport.height) * 0.18
       : isTablet
       ? Math.min(viewport.width, viewport.height) * 0.22
@@ -54,20 +58,24 @@ const Monolith = forwardRef<THREE.Group, MonolithProps>(function Monolith(
   return (
     <group ref={groupRef} position={[0, -0.3, 0]}>
       <mesh ref={meshRef} geometry={geometry}>
+        {/*
+         * Increased thickness 0.5 → 0.8: light refracts inside the glass
+         * instead of glowing outside. The energy is trapped.
+         */}
         <MeshTransmissionMaterial
           backside
           samples={4}
           resolution={256}
           transmission={1}
           roughness={0.15}
-          thickness={0.5}
-          ior={1.3}
-          chromaticAberration={0.03}
+          thickness={0.8}
+          ior={1.35}
+          chromaticAberration={0.04}
           anisotropy={0.2}
           clearcoat={1}
           clearcoatRoughness={0.1}
-          attenuationDistance={0.8}
-          attenuationColor="#ffffff"
+          attenuationDistance={0.6}
+          attenuationColor="#a8c8ff"
           color="#ffffff"
         />
       </mesh>
