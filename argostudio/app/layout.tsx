@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import SmoothScrollProvider from '@/components/SmoothScrollProvider';
-import ImmersiveSceneLoader from '@/components/ImmersiveSceneLoader';
+import CinematicSequenceLoader from '@/components/CinematicSequenceLoader';
 import './globals.css';
 
 const geistSans = Geist({
@@ -39,15 +39,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="relative min-h-screen bg-void text-bone font-body antialiased overflow-x-hidden">
-        <div
-          id="argo-canvas-layer"
-          aria-hidden="true"
-          className="fixed top-0 left-0 w-full h-screen -z-10 pointer-events-none"
-        >
-          <ImmersiveSceneLoader />
-        </div>
+        {/* Cinematic frame sequence — fixed canvas, z-index: -10 */}
+        <CinematicSequenceLoader />
 
-        {/* Voltage halo — radial signal behind the monolith (z-index: -5) */}
+        {/* Voltage halo — radial signal behind the sequence (z-index: -5) */}
         <div className="voltage-halo" aria-hidden="true" />
 
         {/* Cinematic vignette — letterbox-grade framing (z-index: 1) */}

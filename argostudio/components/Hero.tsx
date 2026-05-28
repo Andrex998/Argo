@@ -6,7 +6,6 @@ import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { durations } from '@/motion/durations';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { useSceneStore } from '@/stores/sceneStore';
 import { splitTextIntoWords } from '@/lib/splitText';
 
 if (typeof window !== 'undefined') {
@@ -26,7 +25,6 @@ export default function Hero() {
   const textBlockRef       = useRef<HTMLDivElement>(null);
 
   const prefersReducedMotion = useReducedMotion();
-  const { cameraRef, monolithRef } = useSceneStore();
 
   useGSAP(
     () => {
@@ -87,10 +85,10 @@ export default function Hero() {
           repeat: -1, yoyo: true,
         }, '>');
 
-      // ── Spatial Penetration: pin hero + fly camera through the monolith ─
-      // Camera travels z: 4 → -2, passing through the glass geometry.
-      // Typography distorts naturally through MeshTransmissionMaterial
-      // as the lens crosses the glass surface. Text fades as it enters.
+      // ── Scroll-bound text fade: pin hero, text holds then dissolves ────
+      // Text holds at full opacity for the first 25% of the pin (read window),
+      // then fades out by 70%. The cinematic frame sequence beneath plays
+      // independently via CinematicSequence (full-page scroll scrub).
       const scrollTl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -102,30 +100,13 @@ export default function Hero() {
         },
       });
 
-      // Camera flies forward through the monolith — full pin duration
-      if (cameraRef?.current) {
-        scrollTl.to(cameraRef.current.position, { z: -2, duration: 1, ease: 'none' }, 0);
-      }
-
-      // Monolith scales subtly as camera approaches — full pin duration
-      if (monolithRef?.current) {
-        scrollTl.to(
-          monolithRef.current.scale,
-          { x: 1.08, y: 1.08, z: 1.08, duration: 1, ease: 'none' },
-          0
-        );
-      }
-
-      // Text holds at full opacity for the first 25% of the pin (read window),
-      // then fades 25% → 70%. The brand statement gets time to land before the
-      // glass crosses the lens.
       scrollTl.to(
         textBlockRef.current,
         { opacity: 0, duration: 0.45, ease: 'none' },
         0.25
       );
     },
-    { scope: sectionRef, dependencies: [prefersReducedMotion, cameraRef, monolithRef] }
+    { scope: sectionRef, dependencies: [prefersReducedMotion] }
   );
 
   return (
