@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
+/* ── Tailwind v4: explicit font-family utilities referencing next/font CSS vars ── */
+@theme {
+  --font-display: var(--font-geist-sans), system-ui, sans-serif;
+  --font-body:    var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono:    var(--font-geist-mono), ui-monospace, monospace;
+}
+
 /* ============================================
    ARGO Studio — Global Primitives
    All tokens live in tailwind.config.ts.

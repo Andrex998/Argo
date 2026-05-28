@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import Monolith from './scene/Monolith';
 import Effects from './scene/Effects';
@@ -88,16 +87,28 @@ export default function ImmersiveScene() {
       }}
     >
       <Suspense fallback={null}>
-        <Environment preset="night" />
+        {/* No HDRI — only custom lights touch the glass */}
+        <ambientLight intensity={0.03} color="#04040e" />
 
-        {/* Voltage rim light — pulsing, energy-trapped feel */}
+        {/* Voltage rim — left, pulsing */}
         <VoltageLight />
 
-        {/* Subtle warm fill from below — barely perceptible */}
+        {/* Counter-rim — right-back, deep blue: catches opposite glass edge */}
         <pointLight
-          position={[2, -1, 2]}
-          color="#ffffff"
-          intensity={0.25}
+          position={[3.5, 0.5, -2.5]}
+          color="#0a1840"
+          intensity={0.6}
+          distance={9}
+          decay={2}
+        />
+
+        {/* Cold floor bounce — barely visible, defines bottom geometry */}
+        <pointLight
+          position={[0, -3, 1.5]}
+          color="#060612"
+          intensity={0.2}
+          distance={6}
+          decay={2}
         />
 
         <Monolith ref={monolithRef} />

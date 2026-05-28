@@ -130,7 +130,7 @@ export default function Hero() {
     >
       <div
         ref={textBlockRef}
-        className="relative z-10 flex h-screen flex-col items-center justify-center px-6 pb-[18vh]"
+        className="relative z-10 flex h-screen flex-col items-center justify-start pt-[15vh] px-6"
       >
         {/* Eyebrow */}
         <span
