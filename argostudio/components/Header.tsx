@@ -15,14 +15,6 @@ export default function Header() {
         <ul className="hidden items-center gap-10 font-mono text-micro uppercase tracking-widest text-pearl md:flex">
           <li>
             <a
-              href="#work"
-              className="transition-colors duration-fast ease-silk hover:text-voltage"
-            >
-              Work
-            </a>
-          </li>
-          <li>
-            <a
               href="#manifesto"
               className="transition-colors duration-fast ease-silk hover:text-voltage"
             >

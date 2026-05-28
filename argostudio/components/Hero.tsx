@@ -102,22 +102,28 @@ export default function Hero() {
         },
       });
 
-      // Text fades as the glass passes over the lens
-      scrollTl.to(textBlockRef.current, { opacity: 0, ease: 'none' }, 0);
-
-      // Camera flies forward through the monolith
+      // Camera flies forward through the monolith — full pin duration
       if (cameraRef?.current) {
-        scrollTl.to(cameraRef.current.position, { z: -2, ease: 'none' }, 0);
+        scrollTl.to(cameraRef.current.position, { z: -2, duration: 1, ease: 'none' }, 0);
       }
 
-      // Monolith scales very subtly as camera approaches
+      // Monolith scales subtly as camera approaches — full pin duration
       if (monolithRef?.current) {
         scrollTl.to(
           monolithRef.current.scale,
-          { x: 1.08, y: 1.08, z: 1.08, ease: 'none' },
+          { x: 1.08, y: 1.08, z: 1.08, duration: 1, ease: 'none' },
           0
         );
       }
+
+      // Text holds at full opacity for the first 25% of the pin (read window),
+      // then fades 25% → 70%. The brand statement gets time to land before the
+      // glass crosses the lens.
+      scrollTl.to(
+        textBlockRef.current,
+        { opacity: 0, duration: 0.45, ease: 'none' },
+        0.25
+      );
     },
     { scope: sectionRef, dependencies: [prefersReducedMotion, cameraRef, monolithRef] }
   );

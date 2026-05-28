@@ -47,6 +47,13 @@ export default function RootLayout({
           <ImmersiveSceneLoader />
         </div>
 
+        {/* Voltage halo — radial signal behind the monolith (z-index: -5) */}
+        <div className="voltage-halo" aria-hidden="true" />
+
+        {/* Cinematic vignette — letterbox-grade framing (z-index: 1) */}
+        <div className="cinematic-vignette" aria-hidden="true" />
+
+        {/* Noise grain — top of stack (z-index: 9999) */}
         <div className="noise-overlay" aria-hidden="true" />
 
         <SmoothScrollProvider>
