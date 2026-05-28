@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-28T04:40:40Z",
+  "title": "Design System: ARGO Studio",
+  "extensions": {
+    "colorMeta": {
+      "void": {
+        "role": "neutral",
+        "displayName": "The Void",
+        "canonical": "oklch(0% 0 0)",
+        "tonalRamp": ["#000000", "#040406", "#070709", "#0A0A0D", "#0E0E11", "#16161A", "#1E1E23", "#26262C"]
+      },
+      "obsidian": {
+        "role": "neutral",
+        "displayName": "Obsidian Surface",
+        "canonical": "oklch(4% 0.005 270)",
+        "tonalRamp": ["#020203", "#040405", "#050507", "#08080B", "#0C0C10", "#13131A", "#1B1B24", "#23232F"]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite Elevated",
+        "canonical": "oklch(9% 0.005 270)",
+        "tonalRamp": ["#050507", "#08080B", "#0B0B0E", "#0E0E11", "#13131A", "#1C1C25", "#252531", "#2E2E3C"]
+      },
+      "bone": {
+        "role": "neutral",
+        "displayName": "Bone",
+        "canonical": "oklch(96% 0.003 270)",
+        "tonalRamp": ["#212124", "#404045", "#606066", "#808088", "#A0A0A8", "#C0C0C8", "#D8D8DB", "#F5F5F7"]
+      },
+      "pearl": {
+        "role": "neutral",
+        "displayName": "Pearl",
+        "canonical": "oklch(85% 0.005 270)",
+        "tonalRamp": ["#1F1F22", "#3E3E42", "#5D5D62", "#7C7C82", "#9B9BA1", "#BABABF", "#D4D4D8", "#EAEAEC"]
+      },
+      "smoke": {
+        "role": "neutral",
+        "displayName": "Smoke",
+        "canonical": "oklch(67% 0.015 250)",
+        "tonalRamp": ["#1A1B1D", "#34363A", "#4E5157", "#686C73", "#828790", "#9CA3AF", "#B7BCC4", "#D2D6DC"]
+      },
+      "ash": {
+        "role": "neutral",
+        "displayName": "Ash",
+        "canonical": "oklch(38% 0.01 270)",
+        "tonalRamp": ["#0F0F11", "#1F1F22", "#2E2E33", "#3E3E44", "#52525B", "#6B6B75", "#84848F", "#9D9DA9"]
+      },
+      "chrome": {
+        "role": "neutral",
+        "displayName": "Chrome",
+        "canonical": "oklch(82% 0.005 270)",
+        "tonalRamp": ["#1F1F20", "#3E3F41", "#5E5F62", "#7E8083", "#9DA0A4", "#BCC0C5", "#C7C9CC", "#E0E2E5"]
+      },
+      "mercury": {
+        "role": "neutral",
+        "displayName": "Mercury",
+        "canonical": "oklch(68% 0.005 270)",
+        "tonalRamp": ["#1A1A1C", "#343438", "#4E4F54", "#686A70", "#83858C", "#A1A4A8", "#B9BCC0", "#D1D4D8"]
+      },
+      "voltage": {
+        "role": "primary",
+        "displayName": "Voltage Blue",
+        "canonical": "oklch(67% 0.21 250)",
+        "tonalRamp": ["#0A1A33", "#102C5C", "#163E85", "#1C50AE", "#2369D6", "#3B8EFF", "#6DA9FF", "#A0C4FF"]
+      },
+      "plasma": {
+        "role": "primary",
+        "displayName": "Plasma Action",
+        "canonical": "oklch(54% 0.27 256)",
+        "tonalRamp": ["#000B33", "#001A66", "#002999", "#0033CC", "#004CE6", "#0066FF", "#3385FF", "#66A3FF"]
+      },
+      "deep-blue": {
+        "role": "primary",
+        "displayName": "Deep Pressed Blue",
+        "canonical": "oklch(38% 0.21 260)",
+        "tonalRamp": ["#000824", "#001148", "#001A6B", "#00228F", "#002BB3", "#0033CC", "#1A4ED6", "#3369E0"]
+      }
+    },
+    "typographyMeta": {
+      "display-xl": { "displayName": "Display XL", "purpose": "Hero declarations of identity. One per page maximum." },
+      "display-l":  { "displayName": "Display L",  "purpose": "Section titles. One per section." },
+      "display-m":  { "displayName": "Display M",  "purpose": "Footer closing statement; secondary section titles." },
+      "heading-l":  { "displayName": "Heading L",  "purpose": "Reserved for future Showcase / Case Study sections." },
+      "heading-m":  { "displayName": "Heading M",  "purpose": "Service card titles, manifesto body large." },
+      "body-l":     { "displayName": "Body L",     "purpose": "Hero subtitle, primary body copy." },
+      "body-m":     { "displayName": "Body M",     "purpose": "Service card descriptions, default paragraph." },
+      "micro":      { "displayName": "Micro Mono", "purpose": "All labels, eyebrows, nav, CTAs, footer links. The metadata voice." }
+    },
+    "shadows": [
+      { "name": "glow-subtle",  "value": "0 0 24px rgba(59, 142, 255, 0.15)", "purpose": "Service card on hover. The default voltage signal." },
+      { "name": "glow-medium",  "value": "0 0 48px rgba(59, 142, 255, 0.25)", "purpose": "Reserved for primary CTA hover state." },
+      { "name": "glow-strong",  "value": "0 0 96px rgba(59, 142, 255, 0.40)", "purpose": "Reserved for hero-action peak moments." },
+      { "name": "glow-inner",   "value": "inset 0 0 24px rgba(59, 142, 255, 0.10)", "purpose": "Reserved for focused inputs." }
+    ],
+    "motion": [
+      { "name": "ease-cinematic", "value": "cubic-bezier(0.6, 0.05, 0.01, 0.95)", "purpose": "Movie-grade entrance. Hero headline reveal, section titles." },
+      { "name": "ease-silk",      "value": "cubic-bezier(0.4, 0, 0.2, 1)",        "purpose": "Tactile premium hover. Links, CTAs, nav items." },
+      { "name": "ease-smooth-out","value": "cubic-bezier(0.16, 1, 0.3, 1)",       "purpose": "Natural deceleration. Cards, micro-reveals." },
+      { "name": "ease-inertial",  "value": "cubic-bezier(0.05, 0.7, 0.1, 1.0)",   "purpose": "Realistic physics. Heavy elements settling." },
+      { "name": "duration-micro", "value": "150ms",  "purpose": "Hover state, tap feedback." },
+      { "name": "duration-fast",  "value": "300ms",  "purpose": "Small transitions, color shifts." },
+      { "name": "duration-base",  "value": "600ms",  "purpose": "Standard reveal, fade." },
+      { "name": "duration-medium","value": "900ms",  "purpose": "Section entrance." },
+      { "name": "duration-slow",  "value": "1400ms", "purpose": "Hero reveal, cinematic moments." },
+      { "name": "duration-epic",  "value": "2400ms", "purpose": "Intro sequences only. Never exceed." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "System-Command CTA (Primary)",
+      "kind": "button",
+      "refersTo": "cta-system",
+      "description": "The signature CTA pattern. Not a button — a typography-only command line that hovers into voltage.",
+      "html": "<a class=\"ds-cta-system-primary\" href=\"#\">Start a project</a>",
+      "css": ".ds-cta-system-primary { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-weight: 400; line-height: 1.3; letter-spacing: 0.15em; text-transform: uppercase; color: #D4D4D8; border-bottom: 1px solid rgba(255,255,255,0.10); padding: 0 0 4px 0; text-decoration: none; transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1), border-color 700ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-cta-system-primary:hover { color: #3B8EFF; border-bottom-color: rgba(59, 142, 255, 0.50); } .ds-cta-system-primary:focus-visible { outline: 2px solid #3B8EFF; outline-offset: 4px; }"
+    },
+    {
+      "name": "System-Command CTA (Secondary)",
+      "kind": "button",
+      "refersTo": "cta-system",
+      "description": "The lower-emphasis variant. Smoke at rest, lifts to Pearl on hover.",
+      "html": "<a class=\"ds-cta-system-secondary\" href=\"#\">Our manifesto</a>",
+      "css": ".ds-cta-system-secondary { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-weight: 400; line-height: 1.3; letter-spacing: 0.15em; text-transform: uppercase; color: #9CA3AF; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 0 4px 0; text-decoration: none; transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1), border-color 700ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-cta-system-secondary:hover { color: #D4D4D8; border-bottom-color: rgba(255,255,255,0.20); }"
+    },
+    {
+      "name": "Header Pill",
+      "kind": "button",
+      "refersTo": "cta-system",
+      "description": "The one conventionally-shaped CTA. Glass-subtle, voltage glow on hover.",
+      "html": "<a class=\"ds-header-pill\" href=\"#contact\">Start a project</a>",
+      "css": ".ds-header-pill { display: inline-block; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; color: #F5F5F7; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 9999px; padding: 10px 20px; text-decoration: none; transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1), border-color 300ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-header-pill:hover { box-shadow: 0 0 24px rgba(59, 142, 255, 0.15); border-color: rgba(59, 142, 255, 0.20); }"
+    },
+    {
+      "name": "Service Card",
+      "kind": "card",
+      "refersTo": "card-glass",
+      "description": "The signature card. Glass over graphite, stroke icon naked against the surface, hover lifts and glows.",
+      "html": "<article class=\"ds-service-card\"><div class=\"ds-service-card__head\"><span class=\"ds-service-card__index\">01</span><span class=\"ds-service-card__icon\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3 3 8l9 5 9-5-9-5Z\"/><path d=\"m3 13 9 5 9-5\"/></svg></span></div><h3 class=\"ds-service-card__title\">Immersive Web Design</h3><p class=\"ds-service-card__desc\">Full-screen environments that pull the visitor inside the brand.</p></article>",
+      "css": ".ds-service-card { display: flex; flex-direction: column; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 16px; padding: 32px; transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1), border-color 600ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 600ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-service-card:hover { transform: translateY(-4px); border-color: rgba(59,142,255,0.20); box-shadow: 0 0 24px rgba(59,142,255,0.15); } .ds-service-card__head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 40px; } .ds-service-card__index { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.15em; color: #9CA3AF; } .ds-service-card__icon { color: #D4D4D8; transition: color 600ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-service-card:hover .ds-service-card__icon { color: #3B8EFF; } .ds-service-card__title { font-family: 'Geist', system-ui, sans-serif; font-size: clamp(22px, 2.5vw, 32px); font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; color: #F5F5F7; margin: 0; } .ds-service-card__desc { font-family: 'Geist', system-ui, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; color: #9CA3AF; margin-top: 16px; }"
+    },
+    {
+      "name": "Section Eyebrow",
+      "kind": "custom",
+      "description": "The voltage label above every section title. Signature pattern.",
+      "html": "<span class=\"ds-section-eyebrow\">Services</span>",
+      "css": ".ds-section-eyebrow { display: inline-block; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-weight: 400; line-height: 1.3; letter-spacing: 0.16em; text-transform: uppercase; color: #3B8EFF; }"
+    },
+    {
+      "name": "Section Title",
+      "kind": "custom",
+      "description": "Display-L headline beneath the eyebrow. Tight tracking, compressed line-height.",
+      "html": "<h2 class=\"ds-section-title\">What we engineer.</h2>",
+      "css": ".ds-section-title { font-family: 'Geist', system-ui, sans-serif; font-size: clamp(48px, 8vw, 112px); font-weight: 500; line-height: 0.98; letter-spacing: -0.04em; color: #F5F5F7; margin: 32px 0 0 0; }"
+    },
+    {
+      "name": "Navigation Link",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Header / footer navigation. Mono caps, Pearl at rest, Voltage on hover.",
+      "html": "<a class=\"ds-nav-link\" href=\"#services\">Services</a>",
+      "css": ".ds-nav-link { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-weight: 400; letter-spacing: 0.18em; text-transform: uppercase; color: #D4D4D8; text-decoration: none; transition: color 300ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-nav-link:hover { color: #3B8EFF; }"
+    },
+    {
+      "name": "Body Paragraph",
+      "kind": "custom",
+      "description": "Default body copy. Editorial line-length capped via max-width.",
+      "html": "<p class=\"ds-body\">Cinematic web experiences for future-forward brands.</p>",
+      "css": ".ds-body { font-family: 'Geist', system-ui, sans-serif; font-size: 18px; font-weight: 400; line-height: 1.5; color: #D4D4D8; max-width: 28rem; margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Apparition in the Void",
+    "overview": "The system is built around two opposing physical forces: mass (the deep void, the monumental headline, the refractive glass monolith) and voltage (a single electric blue, used as a verdict rather than a decoration). Nothing else is allowed on screen. Every component, every spacing decision, every easing curve serves one of those two forces or it gets cut. The result is meant to feel less like a website and more like architecture arriving in the room — gravitationally heavy, slightly impossible, calm. The palette is all black, with one signal blue. The typography is all Geist, ranging from 12px monospace labels to 160px display weight. There are no decorative gradients, no secondary accent hues, no warm fills.",
+    "keyCharacteristics": [
+      "One accent. One voice. One verdict per viewport.",
+      "Negative space is the primary material. Three-quarters of any frame is void.",
+      "Type carries the brand louder than color does.",
+      "Glass and refraction stand in for shadow and elevation.",
+      "Motion is gravitational, never bouncy."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Voltage covers ≤10% of any visible viewport area at rest. Its rarity is the entire mechanism by which it carries weight. Two voltage moments per viewport, never three.", "section": "colors" },
+      { "name": "The No-Pure-White Rule", "body": "#FFFFFF is forbidden as a text or surface color. Use Bone (#F5F5F7).", "section": "colors" },
+      { "name": "The No-Pure-Black-Except-The-Void Rule", "body": "#000000 is reserved for the Void surface itself. Every other black surface is Obsidian (#050507).", "section": "colors" },
+      { "name": "The No-Gradient Rule", "body": "Background gradients between brand colors are prohibited. Voltage-to-Plasma text gradients are banned by reflex.", "section": "colors" },
+      { "name": "The -0.04em Rule", "body": "Every Display tier uses letterSpacing -0.04em. The tracking is the brand.", "section": "typography" },
+      { "name": "The All-Caps-Mono Rule", "body": "Every label, eyebrow, nav link, and CTA is Geist Mono 12px uppercase tracking 0.16em. The metadata voice of the system.", "section": "typography" },
+      { "name": "The One-Display-Per-Section Rule", "body": "A section may have one Display-tier element. A second monumental headline in the same scroll-frame breaks gravitational pacing.", "section": "typography" },
+      { "name": "The Editorial Line-Length Rule", "body": "Body copy never exceeds max-w-md (28rem) or max-w-prose. Density separates manifesto voice from blog voice.", "section": "typography" },
+      { "name": "The No-Shadow-Without-Voltage Rule", "body": "Dark shadows are forbidden. Depth comes from tonal layering and glass. Every legal shadow contains the voltage RGB (59,142,255).", "section": "elevation" },
+      { "name": "The Two-Glows-Per-Viewport Rule", "body": "At most two voltage glows may be visible at once. Three or more collapse into particle field and break the spell.", "section": "elevation" },
+      { "name": "The No-Button-Frame Rule", "body": "Enclosed rounded-rectangle buttons with background fills are forbidden in body content. CTAs are typography-only command lines.", "section": "components" },
+      { "name": "The No-Icon-Tile Rule", "body": "Icons never sit inside a rounded colored tile. They are naked against the surface, monochrome at rest, voltage on interaction.", "section": "components" }
+    ],
+    "dos": [
+      "Do treat Voltage (#3B8EFF) as a verdict, not a decoration. One use per viewport, two maximum.",
+      "Do anchor every section in negative space. Three-quarters of any frame should be void.",
+      "Do use Micro (Geist Mono 12px, uppercase, tracking 0.16em) for every label, eyebrow, nav link, and CTA.",
+      "Do keep display-tier headlines at letterSpacing -0.04em and lineHeight 0.95.",
+      "Do use the cinematic easing curves (cinematic, smooth-out, silk, inertial) and the fixed duration scale.",
+      "Do respect prefers-reduced-motion: GSAP timelines short-circuit, Lenis disables, the 3D scene returns null.",
+      "Do keep all elevated surfaces in the three-tier glass system (glass-subtle / default / prominent).",
+      "Do use Bone (#F5F5F7) for primary text and Obsidian (#050507) for surfaces. Never pure black, never pure white."
+    ],
+    "donts": [
+      "Don't introduce purple-to-blue gradients, hero metrics, or rounded-icon-tiles-above-headings.",
+      "Don't build identical card grids repeated endlessly without internal variation.",
+      "Don't use border-left or border-right greater than 1px as a colored accent.",
+      "Don't apply background-clip: text to a gradient. Gradient text is forbidden.",
+      "Don't use glassmorphism decoratively. Glass appears only on the three approved tiers.",
+      "Don't use the <Environment preset=...> helper in any 3D scene. Only custom point lights are allowed.",
+      "Don't wrap copy in containers wider than max-w-md for body text or max-w-3xl for section headers.",
+      "Don't use #FFFFFF or #000000 for anything except the absolute Void surface.",
+      "Don't add bouncy or elastic easings. Motion in this system is gravitational.",
+      "Don't use em dashes in copy. Use commas, colons, semicolons, periods, or parentheses.",
+      "Don't write 'we craft experiences', 'we are passionate', 'the future is now', or any voiceover-tier marketing copy.",
+      "Don't ship a section that could still work with a different studio's logo on it."
+    ]
+  }
+}
