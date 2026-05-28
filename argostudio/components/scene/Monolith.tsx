@@ -34,7 +34,7 @@ const Monolith = forwardRef<THREE.Group, {}>(function Monolith(
     const time  = state.clock.elapsedTime;
 
     // ── Micro-drift: slow, heavy float (planetary mass feel)
-    group.position.y = -0.3 + Math.sin(time * 0.4) * 0.05;
+    group.position.y = -0.6 + Math.sin(time * 0.4) * 0.05;
 
     // ── Auto-rotation
     mesh.rotation.y += 0.0015;
@@ -42,21 +42,21 @@ const Monolith = forwardRef<THREE.Group, {}>(function Monolith(
     // ── Slow parallax: lazily tracks cursor with heavy damping
     mesh.rotation.x += (state.pointer.y * 0.15 - mesh.rotation.x) * 0.05;
 
-    // ── Responsive base scale + subtle breathing
+    // ── Responsive base scale + subtle breathing (smaller for negative space)
     const isMobile  = size.width < 768;
     const isTablet  = size.width >= 768 && size.width < 1024;
     const baseSize  = isMobile
-      ? Math.min(viewport.width, viewport.height) * 0.18
+      ? Math.min(viewport.width, viewport.height) * 0.14
       : isTablet
-      ? Math.min(viewport.width, viewport.height) * 0.22
-      : Math.min(viewport.width, viewport.height) * 0.28;
+      ? Math.min(viewport.width, viewport.height) * 0.18
+      : Math.min(viewport.width, viewport.height) * 0.22;
 
     const breathe = 1 + Math.sin(time * 0.3) * 0.01;
     mesh.scale.setScalar(baseSize * breathe);
   });
 
   return (
-    <group ref={groupRef} position={[0, -0.3, 0]}>
+    <group ref={groupRef} position={[0, -0.6, 0]}>
       <mesh ref={meshRef} geometry={geometry}>
         {/*
          * Increased thickness 0.5 → 0.8: light refracts inside the glass

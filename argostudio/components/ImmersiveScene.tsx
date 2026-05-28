@@ -8,18 +8,12 @@ import Effects from './scene/Effects';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useSceneStore } from '@/stores/sceneStore';
 
-/**
- * VoltageLight — voltage point light with organic intensity pulse.
- * Lives inside Canvas so useFrame is available.
- * Base intensity lowered (0.8 vs 1.5): energy refracts inside the glass,
- * not flooding the scene from outside.
- */
 function VoltageLight() {
   const lightRef = useRef<THREE.PointLight>(null);
 
   useFrame((state) => {
     if (!lightRef.current) return;
-    lightRef.current.intensity = 0.8 + Math.sin(state.clock.elapsedTime * 1.5) * 0.15;
+    lightRef.current.intensity = 2.2 + Math.sin(state.clock.elapsedTime * 1.5) * 0.3;
   });
 
   return (
@@ -27,8 +21,8 @@ function VoltageLight() {
       ref={lightRef}
       position={[-2.5, 1.2, 0.8]}
       color="#3B8EFF"
-      intensity={0.8}
-      distance={5}
+      intensity={2.2}
+      distance={6}
       decay={2}
     />
   );
