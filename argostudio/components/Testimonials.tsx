@@ -6,6 +6,7 @@ import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { durations } from '@/motion/durations';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { parallaxLayer } from '@/lib/parallax';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -66,6 +67,17 @@ export default function Testimonials() {
           opacity: 1, y: 0, filter: 'blur(0px)',
           duration: durations.slow, ease: 'cinematic', stagger: 0.2,
         }, 0.2);
+
+      // ── Parallax depth layers ──────────────────────────────────────────
+      parallaxLayer(sectionRef.current, labelRef.current, -52);
+      // Stagger quote depths for subtle wave effect
+      const quoteEls = listRef.current
+        ? Array.from(listRef.current.querySelectorAll<HTMLElement>('[data-quote]'))
+        : [];
+      const quoteDepths = [-24, -36, -18];
+      quoteEls.forEach((el, i) => {
+        parallaxLayer(sectionRef.current, el, quoteDepths[i] ?? -24);
+      });
     },
     { scope: sectionRef, dependencies: [prefersReducedMotion] }
   );

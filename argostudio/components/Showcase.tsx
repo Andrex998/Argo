@@ -6,6 +6,7 @@ import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { durations } from '@/motion/durations';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { parallaxLayer } from '@/lib/parallax';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -89,6 +90,19 @@ export default function Showcase() {
           opacity: 1, y: 0, filter: 'blur(0px)',
           duration: durations.medium, ease: 'cinematic', stagger: 0.15,
         }, 0.45);
+
+      // ── Parallax depth layers — header only (cards keep layout stable) ─
+      parallaxLayer(sectionRef.current, labelRef.current, -52);
+      parallaxLayer(sectionRef.current, titleRef.current, -28);
+
+      // Cards: staggered depth — closer to center = further back
+      const cardEls = gridRef.current
+        ? Array.from(gridRef.current.querySelectorAll<HTMLElement>('[data-project-card]'))
+        : [];
+      const cardDepths = [-48, -24, -56]; // asymmetric for visual interest
+      cardEls.forEach((card, i) => {
+        parallaxLayer(sectionRef.current, card, cardDepths[i] ?? -30);
+      });
     },
     { scope: sectionRef, dependencies: [prefersReducedMotion] }
   );

@@ -6,6 +6,7 @@ import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { durations } from '@/motion/durations';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { parallaxLayer } from '@/lib/parallax';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -146,6 +147,11 @@ export default function Services() {
           opacity: 1, y: 0, filter: 'blur(0px)',
           duration: durations.medium, ease: 'cinematic', stagger: 0.1,
         }, 0.4);
+
+      // ── Parallax depth layers ──────────────────────────────────────────
+      parallaxLayer(sectionRef.current, labelRef.current, -52);
+      parallaxLayer(sectionRef.current, titleRef.current, -28);
+      parallaxLayer(sectionRef.current, gridRef.current,  -8);
     },
     { scope: sectionRef, dependencies: [prefersReducedMotion] }
   );

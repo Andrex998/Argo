@@ -6,6 +6,7 @@ import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { durations } from '@/motion/durations';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { parallaxLayer } from '@/lib/parallax';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -50,6 +51,11 @@ export default function FinalCTA() {
           opacity: 1, y: 0, filter: 'blur(0px)',
           duration: durations.base, ease: 'silk',
         }, 0.8);
+
+      // ── Parallax depth layers — CTA pops forward, headline recedes ─────
+      parallaxLayer(sectionRef.current, headlineRef.current, -20);
+      parallaxLayer(sectionRef.current, subRef.current,      -10);
+      parallaxLayer(sectionRef.current, ctaRef.current,      -56);
     },
     { scope: sectionRef, dependencies: [prefersReducedMotion] }
   );
