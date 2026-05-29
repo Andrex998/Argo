@@ -23,6 +23,14 @@ export default function Header() {
           </li>
           <li>
             <a
+              href="#work"
+              className="transition-colors duration-fast ease-silk hover:text-voltage"
+            >
+              Work
+            </a>
+          </li>
+          <li>
+            <a
               href="#services"
               className="transition-colors duration-fast ease-silk hover:text-voltage"
             >
