@@ -7,6 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { durations } from '@/motion/durations';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { splitTextIntoWords } from '@/lib/splitText';
+import WireframeGem from '@/components/WireframeGem';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -23,6 +24,7 @@ export default function Hero() {
   const ctaSecondaryRef    = useRef<HTMLAnchorElement>(null);
   const scrollIndicatorRef = useRef<HTMLDivElement>(null);
   const textBlockRef       = useRef<HTMLDivElement>(null);
+  const gemsRef            = useRef<HTMLDivElement>(null);
 
   const prefersReducedMotion = useReducedMotion();
 
@@ -30,14 +32,8 @@ export default function Hero() {
     () => {
       if (prefersReducedMotion) {
         gsap.set(
-          [
-            eyebrowRef.current,
-            headlineRef.current,
-            subRef.current,
-            ctaPrimaryRef.current,
-            ctaSecondaryRef.current,
-            scrollIndicatorRef.current,
-          ],
+          [eyebrowRef.current, headlineRef.current, subRef.current,
+           ctaPrimaryRef.current, ctaSecondaryRef.current, scrollIndicatorRef.current],
           { opacity: 1, y: 0, filter: 'blur(0px)' }
         );
         return;
@@ -47,16 +43,12 @@ export default function Hero() {
       const headlineWords = splitTextIntoWords(headlineRef.current);
 
       gsap.set(
-        [
-          eyebrowRef.current,
-          subRef.current,
-          ctaPrimaryRef.current,
-          ctaSecondaryRef.current,
-          scrollIndicatorRef.current,
-        ],
+        [eyebrowRef.current, subRef.current, ctaPrimaryRef.current,
+         ctaSecondaryRef.current, scrollIndicatorRef.current],
         { opacity: 0, y: 32, filter: 'blur(12px)' }
       );
       gsap.set(headlineWords, { opacity: 0, y: 32, filter: 'blur(12px)' });
+      gsap.set(gemsRef.current, { opacity: 0 });
 
       const tl = gsap.timeline();
 
@@ -76,6 +68,9 @@ export default function Hero() {
           opacity: 1, y: 0, filter: 'blur(0px)',
           duration: durations.base, ease: 'silk', stagger: 0.08,
         }, 1.8)
+        .to(gemsRef.current, {
+          opacity: 1, duration: durations.slow, ease: 'cinematic',
+        }, 1.0)
         .to(scrollIndicatorRef.current, {
           opacity: 0.4, y: 0, filter: 'blur(0px)',
           duration: durations.base, ease: 'smoothOut',
@@ -85,10 +80,7 @@ export default function Hero() {
           repeat: -1, yoyo: true,
         }, '>');
 
-      // ── Scroll-bound text fade: pin hero, text holds then dissolves ────
-      // Text holds at full opacity for the first 25% of the pin (read window),
-      // then fades out by 70%. The cinematic frame sequence beneath plays
-      // independently via CinematicSequence (full-page scroll scrub).
+      // ── Scroll-bound text fade ─────────────────────────────────────────
       const scrollTl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -100,11 +92,7 @@ export default function Hero() {
         },
       });
 
-      scrollTl.to(
-        textBlockRef.current,
-        { opacity: 0, duration: 0.45, ease: 'none' },
-        0.25
-      );
+      scrollTl.to(textBlockRef.current, { opacity: 0, duration: 0.45, ease: 'none' }, 0.25);
     },
     { scope: sectionRef, dependencies: [prefersReducedMotion] }
   );
@@ -115,9 +103,40 @@ export default function Hero() {
       id="hero"
       className="relative min-h-screen w-full overflow-hidden"
     >
+      {/* Wireframe crystal cluster — right side decoration */}
+      <div
+        ref={gemsRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0"
+      >
+        {/* Large gem — right center */}
+        <WireframeGem
+          size={320}
+          speed={0.006}
+          initialAngle={0.4}
+          style={{ position: 'absolute', top: '18%', right: '8%', opacity: 0.75 }}
+        />
+        {/* Medium gem — upper right */}
+        <WireframeGem
+          size={180}
+          speed={0.009}
+          initialAngle={1.8}
+          color="#9fffcf"
+          style={{ position: 'absolute', top: '6%', right: '28%', opacity: 0.5 }}
+        />
+        {/* Small gem — lower right */}
+        <WireframeGem
+          size={120}
+          speed={0.012}
+          initialAngle={3.2}
+          color="#61FFA7"
+          style={{ position: 'absolute', top: '60%', right: '16%', opacity: 0.4 }}
+        />
+      </div>
+
       <div
         ref={textBlockRef}
-        className="relative z-10 flex h-screen flex-col items-center justify-start pt-[15vh] px-6"
+        className="relative z-10 flex h-screen flex-col items-start justify-start pt-[18vh] px-6 md:px-12 lg:px-24 max-w-3xl"
       >
         {/* Eyebrow */}
         <span
@@ -127,47 +146,47 @@ export default function Hero() {
           ARGO Studio
         </span>
 
-        {/* Monumental headline */}
+        {/* Monumental headline — left-aligned */}
         <h1
           ref={headlineRef}
-          className="font-display text-display-xl text-bone text-center max-w-4xl"
+          className="font-display text-display-xl text-bone"
           style={{ letterSpacing: '-0.04em', lineHeight: '0.95', fontWeight: 500 }}
         >
-          We don&apos;t build pages.
+          We design digital experiences
           <br />
           <span ref={headlineAccentRef} className="text-voltage">
-            We build presence.
+            that set new standards.
           </span>
         </h1>
 
-        {/* Sub — isolated in the void */}
+        {/* Sub */}
         <p
           ref={subRef}
-          className="mt-20 md:mt-24 font-body text-body-l text-pearl text-center max-w-md"
+          className="mt-16 md:mt-20 font-body text-body-l text-pearl max-w-sm"
           style={{ lineHeight: '1.5' }}
         >
           Cinematic web experiences for future-forward brands.
         </p>
 
-        {/* CTA group — System Commands, not buttons */}
+        {/* CTA group */}
         <div
           ref={ctaGroupRef}
-          className="mt-20 md:mt-24 flex flex-col items-center gap-8 sm:flex-row sm:gap-12"
+          className="mt-16 md:mt-20 flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-12"
         >
           <a
             ref={ctaPrimaryRef}
             href="#contact"
             className="font-mono text-xs uppercase tracking-widest text-pearl border-b border-white/10 pb-1 transition-all duration-700 hover:text-voltage hover:border-voltage/50"
           >
-            Start a project
+            Start a project →
           </a>
 
           <a
             ref={ctaSecondaryRef}
-            href="#manifesto"
+            href="#work"
             className="font-mono text-xs uppercase tracking-widest text-smoke border-b border-white/[0.06] pb-1 transition-all duration-700 hover:text-pearl hover:border-white/20"
           >
-            Our manifesto
+            View our work
           </a>
         </div>
       </div>
@@ -175,7 +194,7 @@ export default function Hero() {
       {/* Scroll indicator */}
       <div
         ref={scrollIndicatorRef}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3 pointer-events-none"
+        className="absolute bottom-10 left-6 md:left-12 lg:left-24 z-10 flex flex-col items-start gap-3 pointer-events-none"
       >
         <div className="w-px h-8 bg-gradient-to-b from-transparent to-smoke" />
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-smoke">

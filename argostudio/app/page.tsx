@@ -1,5 +1,6 @@
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
+import TrustedBy from '@/components/TrustedBy';
 import About from '@/components/About';
 import Manifesto from '@/components/Manifesto';
 import Process from '@/components/Process';
@@ -14,6 +15,7 @@ export default function Home() {
     <>
       <Header />
       <Hero />
+      <TrustedBy />
       <About />
       <Manifesto />
       <Process />

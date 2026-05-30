@@ -7,97 +7,55 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { durations } from '@/motion/durations';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { parallaxLayer } from '@/lib/parallax';
+import WireframeGem from '@/components/WireframeGem';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
 
-interface Service {
+interface ServiceItem {
+  index: string;
   title: string;
   description: string;
-  icon: React.ReactNode;
+  gemSize: number;
+  gemSpeed: number;
+  gemAngle: number;
+  gemColor?: string;
 }
 
-/* ── Stroke icons — 1.5 width, consistent visual language (no emoji) ── */
-const iconProps = {
-  width: 24,
-  height: 24,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.5,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-};
-
-const SERVICES: Service[] = [
+const SERVICES: ServiceItem[] = [
   {
-    title: 'Immersive Web Design',
-    description:
-      'Full-screen environments that pull the visitor inside the brand. Every scroll is a frame in the story.',
-    icon: (
-      <svg {...iconProps} aria-hidden="true">
-        <path d="M12 3 3 8l9 5 9-5-9-5Z" />
-        <path d="m3 13 9 5 9-5" />
-        <path d="m3 18 9 5 9-5" opacity="0.5" />
-      </svg>
-    ),
+    index: '01',
+    title: 'Web Design',
+    description: 'Full-screen environments that pull the visitor inside the brand. Every scroll is a frame in the story.',
+    gemSize: 100,
+    gemSpeed: 0.008,
+    gemAngle: 0.2,
   },
   {
-    title: 'Luxury Landing Pages',
-    description:
-      'High-conversion single pages engineered for premium brands. Precision typography, zero filler.',
-    icon: (
-      <svg {...iconProps} aria-hidden="true">
-        <path d="M12 2 9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5L12 2Z" />
-      </svg>
-    ),
+    index: '02',
+    title: 'Development',
+    description: 'Production-grade Next.js, zero-compromise performance. Ships fast, scales further.',
+    gemSize: 90,
+    gemSpeed: 0.011,
+    gemAngle: 1.6,
   },
   {
-    title: '3D Experiences',
-    description:
-      'Real-time WebGL scenes — refractive glass, procedural shaders, cinematic depth that runs at 60fps.',
-    icon: (
-      <svg {...iconProps} aria-hidden="true">
-        <path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z" />
-        <path d="M12 2v20" opacity="0.5" />
-        <path d="M3 7l9 5 9-5" opacity="0.5" />
-      </svg>
-    ),
+    index: '03',
+    title: 'Interactive 3D',
+    description: 'Real-time scenes — refractive glass, procedural shaders, cinematic depth at 60fps.',
+    gemSize: 110,
+    gemSpeed: 0.007,
+    gemAngle: 3.1,
+    gemColor: '#9fffcf',
   },
   {
+    index: '04',
     title: 'Motion Storytelling',
-    description:
-      'Choreographed scroll narratives. Camera moves, staggered reveals, and easing tuned to the millisecond.',
-    icon: (
-      <svg {...iconProps} aria-hidden="true">
-        <circle cx="12" cy="12" r="9" />
-        <path d="m10 8 6 4-6 4V8Z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'AI-Assisted Development',
-    description:
-      'A multi-AI pipeline accelerates production without compromising craft — speed meets precision.',
-    icon: (
-      <svg {...iconProps} aria-hidden="true">
-        <rect x="7" y="7" width="10" height="10" rx="1.5" />
-        <path d="M9 3v4M15 3v4M9 17v4M15 17v4M3 9h4M3 15h4M17 9h4M17 15h4" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Brand Experience Design',
-    description:
-      'The full sensory system — motion language, sound, palette, voice — engineered into one coherent presence.',
-    icon: (
-      <svg {...iconProps} aria-hidden="true">
-        <circle cx="12" cy="12" r="9" />
-        <circle cx="12" cy="12" r="5" opacity="0.6" />
-        <circle cx="12" cy="12" r="1.5" />
-      </svg>
-    ),
+    description: 'Choreographed scroll narratives. Camera moves, staggered reveals, easing tuned to the millisecond.',
+    gemSize: 95,
+    gemSpeed: 0.010,
+    gemAngle: 2.4,
   },
 ];
 
@@ -122,15 +80,13 @@ export default function Services() {
         return;
       }
 
-      gsap.set([labelRef.current, titleRef.current], {
-        opacity: 0, y: 24, filter: 'blur(12px)',
-      });
-      gsap.set(cards, { opacity: 0, y: 40, filter: 'blur(12px)' });
+      gsap.set([labelRef.current, titleRef.current], { opacity: 0, y: 24, filter: 'blur(12px)' });
+      gsap.set(cards, { opacity: 0, y: 48, filter: 'blur(12px)' });
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: 'top 75%',
+          start: 'top 70%',
           toggleActions: 'play none none reverse',
         },
       });
@@ -145,7 +101,7 @@ export default function Services() {
         }, 0.15)
         .to(cards, {
           opacity: 1, y: 0, filter: 'blur(0px)',
-          duration: durations.medium, ease: 'cinematic', stagger: 0.1,
+          duration: durations.medium, ease: 'cinematic', stagger: 0.12,
         }, 0.4);
 
       // ── Parallax depth layers ──────────────────────────────────────────
@@ -160,7 +116,7 @@ export default function Services() {
     <section
       ref={sectionRef}
       id="services"
-      className="relative px-6 py-32 md:px-12 lg:px-24"
+      className="relative px-6 py-40 md:px-12 lg:px-24"
     >
       {/* Section header */}
       <div className="mb-20 max-w-3xl">
@@ -168,44 +124,74 @@ export default function Services() {
           ref={labelRef}
           className="font-mono text-micro uppercase tracking-[0.16em] text-voltage"
         >
-          Services
+          What We Do
         </span>
         <h2
           ref={titleRef}
           className="mt-8 font-display text-display-l text-bone"
           style={{ letterSpacing: '-0.04em', lineHeight: '0.98', fontWeight: 500 }}
         >
-          What we engineer.
+          Websites that look exceptional.
+          <br />
+          <span className="text-pearl" style={{ fontWeight: 400 }}>
+            And perform even better.
+          </span>
         </h2>
       </div>
 
-      {/* Glass card grid */}
+      {/* 4-card grid with wireframe gems as visual assets */}
       <div
         ref={gridRef}
-        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
       >
-        {SERVICES.map((service, i) => (
+        {SERVICES.map((service) => (
           <article
             key={service.title}
             data-service-card
-            className="group relative flex flex-col rounded-argo-lg glass-default p-8 transition-all duration-base ease-smooth-out hover:-translate-y-1 hover:border-voltage/20 hover:shadow-glow-subtle"
+            className="group flex flex-col rounded-argo-lg glass-subtle overflow-hidden"
           >
-            {/* Index + icon row */}
-            <div className="mb-10 flex items-start justify-between">
-              <span className="font-mono text-micro text-smoke">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <span className="text-pearl transition-colors duration-base ease-smooth-out group-hover:text-voltage">
-                {service.icon}
-              </span>
+            {/* Gem slot — dark chamber with rotating wireframe */}
+            <div className="relative flex items-center justify-center bg-obsidian aspect-square overflow-hidden">
+              <WireframeGem
+                size={service.gemSize}
+                speed={service.gemSpeed}
+                initialAngle={service.gemAngle}
+                color={service.gemColor ?? '#61FFA7'}
+              />
+              {/* Subtle voltage radial on hover */}
+              <div
+                className="absolute inset-0 opacity-0 transition-opacity duration-slow ease-cinematic group-hover:opacity-100 pointer-events-none"
+                style={{
+                  background:
+                    'radial-gradient(ellipse 70% 60% at 50% 100%, rgba(97,255,167,0.07) 0%, transparent 70%)',
+                }}
+                aria-hidden="true"
+              />
             </div>
 
-            <h3 className="font-display text-heading-m text-bone">
-              {service.title}
-            </h3>
-            <p className="mt-4 font-body text-body-m text-smoke">
-              {service.description}
-            </p>
+            {/* Text */}
+            <div className="flex flex-col gap-3 p-6 flex-1">
+              <div className="flex items-start justify-between">
+                <span className="font-mono text-micro uppercase tracking-[0.16em] text-smoke">
+                  {service.index}
+                </span>
+              </div>
+              <h3
+                className="font-display text-heading-m text-bone group-hover:text-voltage transition-colors duration-base ease-smooth-out"
+                style={{ letterSpacing: '-0.02em', fontWeight: 500 }}
+              >
+                {service.title}
+              </h3>
+              <p className="font-body text-body-m text-smoke flex-1" style={{ lineHeight: '1.6' }}>
+                {service.description}
+              </p>
+              <a
+                href="#contact"
+                className="mt-2 font-mono text-micro uppercase tracking-widest text-pearl border-b border-white/10 pb-0.5 w-fit transition-all duration-fast ease-silk hover:text-voltage hover:border-voltage/40"
+              >
+                Explore →
+              </a>
+            </div>
           </article>
         ))}
       </div>
