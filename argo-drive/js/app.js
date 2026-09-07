@@ -239,6 +239,8 @@ function tick() {
     limit: state.limit,
   });
 
+  if (map.shouldAutoRecenter(state.speedMs)) map.recenter();
+
   const speedKmh = msToKmh(state.speedMs);
   const over = !!(state.limit.kmh && speedKmh > state.limit.kmh + state.settings.tolerance);
   ui.renderSpeed(speedKmh, state.settings.unit, over);

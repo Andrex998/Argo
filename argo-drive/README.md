@@ -94,8 +94,12 @@ Come leggere lo schermo in mezzo secondo:
 - **Chip in alto** — precisione GPS e stato dei dati (`OSM` / `in cache` / `non disponibili`).
 
 Comandi, tutti a destra sotto il pollice: **bussola** (compare quando la mappa è
-ruotata, riporta il nord in alto), **3D**, **voce**, **centra** (torna a inseguirti;
-si spegne da solo se trascini la mappa).
+ruotata, riporta il nord in alto), **3D**, **voce**, **centra**.
+
+L'inseguimento si comporta come su un navigatore: qualunque gesto sulla mappa
+(trascinamento, rotazione a due dita, zoom) lo sospende, e **in marcia riprende da
+solo dopo 12 secondi** che non tocchi più nulla. Da fermo resta dove l'hai lasciato:
+se stai guardando la mappa parcheggiato, nessuno te la sposta.
 
 Il pannello in basso si trascina come in qualunque app di mappe: **scheda di guida**
 → **metà** (elenco "vicino a te", segnalazioni, livelli, info) → **tutto**. Sopra i
@@ -176,6 +180,10 @@ Tre cadute morbide, tutte silenziose per chi guida: tile vettoriali → raster,
 etichette → mappa muta, Overpass → cache locale. Nessuna di queste lascia lo
 schermo vuoto.
 
+Le segnalazioni importate da un file arrivano da fuori, quindi vengono ripulite
+prima di entrare: tipo verificato, coordinate nei limiti terrestri, nota tagliata,
+data plausibile.
+
 Il colore resta quello di ARGO — un solo accento blu su superfici neutre — con
 una deroga dichiarata: rosso e ambra esistono solo come verdetti di sicurezza
 (divieto, pericolo, eccesso di velocità), mai come decorazione.
@@ -191,7 +199,8 @@ CHROMIUM_PATH=/percorso/a/chromium npm test    # CHROMIUM_PATH è opzionale
 
 Tre suite Playwright con GPS simulato, Overpass finto e **tile vettoriali
 sintetiche generate in locale** (`tests/fixtures/tileserver.mjs`), così lo stile
-viene verificato davvero e non solo compilato:
+viene verificato davvero e non solo compilato. Sono **asserzioni**, non stampe:
+`npm test` esce con errore se qualcosa si rompe (77 controlli).
 
 - `tests/drive.test.mjs` — tragitto a Tirana a 75 km/h su strada con limite 40:
   verifica tachimetro, disco del limite, rotta ricavata dagli spostamenti,
@@ -201,9 +210,12 @@ viene verificato davvero e non solo compilato:
   prolungata, export, fallback sulla cache con Overpass irraggiungibile,
   apertura dell'app completamente offline.
 - `tests/design.test.mjs` — stile vettoriale valido e caricato, camera che ruota
-  con la rotta e si inclina, cambio tema giorno/notte con gli overlay che
-  sopravvivono al ricaricamento dello stile, 3D on/off, bussola, pannello
-  trascinabile. Salva gli screenshot in `/tmp/design-*.png`.
+  con la rotta e si inclina, cambio tema giorno/notte con gli overlay e i livelli
+  spenti che sopravvivono al ricaricamento dello stile, 3D on/off, bussola,
+  pannello trascinabile, pressione prolungata **mentre la camera insegue**,
+  satellite che resiste al guardiano del vettoriale e al riavvio, gesti che
+  sospendono l'inseguimento e ripresa automatica in marcia.
+  Salva gli screenshot in `/tmp/design-*.png`.
 
 ---
 

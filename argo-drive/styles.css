@@ -50,6 +50,11 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* display:flex/grid batterebbero la regola dello user agent: chip e
+   pulsanti nascosti resterebbero visibili (l'etichetta "Offline"
+   perenne, la bussola che non sparisce mai). */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0; height: 100%; overflow: hidden;
   background: var(--surface-2); color: var(--text);

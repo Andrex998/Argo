@@ -12,6 +12,18 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon.svg">
+<script>
+  // Prima del primo disegno: senza, avviando di notte si prende in
+  // faccia un lampo bianco a schermo intero.
+  try {
+    var cfg = JSON.parse(localStorage.getItem('argo-drive:settings:v2') || '{}');
+    var t = cfg.theme || 'auto';
+    var h = new Date().getHours();
+    var scuro = t === 'notte' || t === 'satellite' || (t === 'auto' && (h < 7 || h >= 19));
+    document.documentElement.dataset.theme = scuro ? 'dark' : 'light';
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', scuro ? '#14171D' : '#FFFFFF');
+  } catch (e) { /* prima visita o navigazione privata */ }
+</script>
 <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -31,33 +43,12 @@
 <!-- ── allerte ──────────────────────────────────────────── -->
 <div class="alerts" id="alert-stack" role="alert" aria-live="assertive"></div>
 
-<!-- ── comandi flottanti ────────────────────────────────── -->
-<div class="fabs">
-  <button class="fab fab-mini" id="btn-compass" aria-label="Bussola: torna a nord" hidden>
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-      <path d="M12 3 L15.2 12 L12 21 L8.8 12 Z" fill="#FF3B30"/>
-      <path d="M12 3 L15.2 12 L12 12 Z" fill="#9AA0AA"/>
-    </svg>
-  </button>
-  <button class="fab fab-mini" id="btn-3d" aria-label="Vista 3D"><span>3D</span></button>
-  <button class="fab fab-mini" id="btn-voice" aria-label="Avvisi vocali">
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
-  </button>
-  <button class="fab fab-primary" id="btn-center" aria-label="Centra sulla mia posizione">
-    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-      <circle cx="12" cy="12" r="4" fill="currentColor"/>
-      <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8" fill="none"/>
-      <path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-    </svg>
-  </button>
-</div>
-
 <!-- ── pannello inferiore ───────────────────────────────── -->
 <section class="sheet" id="sheet" data-state="peek" aria-label="Pannello di guida">
   <div class="grabber" id="grabber"><span></span></div>
 
   <div class="navcard" id="navcard">
-    <div class="speedo" id="speedo" data-state="idle">
+    <div class="speedo" id="speedo" data-state="idle" role="img" aria-label="Velocità attuale">
       <span class="speedo-value" id="speed-value">—</span>
       <span class="speedo-unit" id="speed-unit">km/h</span>
     </div>
@@ -65,17 +56,17 @@
       <div class="navroad-name" id="road-name">In attesa del GPS…</div>
       <div class="navroad-meta" id="road-meta">Tocca Avvia per iniziare</div>
     </div>
-    <div class="limit" id="limit-disc" data-state="unknown" title="Limite di velocità">
+    <div class="limit" id="limit-disc" data-state="unknown" role="img" aria-label="Limite di velocità" title="Limite di velocità">
       <span class="limit-value" id="limit-value">—</span>
     </div>
   </div>
 
   <div class="sheet-body" id="sheet-body">
-    <nav class="tabs" id="tabs">
-      <button class="tab is-on" data-panel="vicino">Vicino a te</button>
-      <button class="tab" data-panel="segnala">Segnala</button>
-      <button class="tab" data-panel="livelli">Livelli</button>
-      <button class="tab" data-panel="info">Info</button>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Sezioni del pannello">
+      <button class="tab is-on" data-panel="vicino" role="tab" aria-selected="true">Vicino a te</button>
+      <button class="tab" data-panel="segnala" role="tab" aria-selected="false">Segnala</button>
+      <button class="tab" data-panel="livelli" role="tab" aria-selected="false">Livelli</button>
+      <button class="tab" data-panel="info" role="tab" aria-selected="false">Info</button>
     </nav>
 
     <!-- vicino a te -->
@@ -153,6 +144,27 @@
     <div class="panel" data-panel="info"><div id="info-body"></div></div>
   </div>
 </section>
+
+<!-- ── comandi flottanti ────────────────────────────────── -->
+<div class="fabs">
+  <button class="fab fab-mini" id="btn-compass" aria-label="Bussola: torna a nord" hidden>
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path d="M12 3 L15.2 12 L12 21 L8.8 12 Z" fill="#FF3B30"/>
+      <path d="M12 3 L15.2 12 L12 12 Z" fill="#9AA0AA"/>
+    </svg>
+  </button>
+  <button class="fab fab-mini" id="btn-3d" aria-label="Vista 3D"><span>3D</span></button>
+  <button class="fab fab-mini" id="btn-voice" aria-label="Avvisi vocali">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+  </button>
+  <button class="fab fab-primary" id="btn-center" aria-label="Centra sulla mia posizione">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" fill="currentColor"/>
+      <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8" fill="none"/>
+      <path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
 
 <!-- ── avvio ────────────────────────────────────────────── -->
 <div class="gate" id="gate">

@@ -84,6 +84,18 @@ export function initSheet(onChange) {
   const handle = $('#grabber');
   const card = $('#navcard');
 
+  // CSS e JS devono avere la stessa idea di "quanto sporge la scheda":
+  // il valore vero lo conosce solo il DOM, quindi lo misura lui e lo
+  // scrive nella variabile che il CSS usa per la trasformazione.
+  const measurePeek = () => {
+    const peek = handle.offsetHeight + card.offsetHeight + 6;
+    if (peek > 40) document.documentElement.style.setProperty('--peek', `${peek}px`);
+    return peek;
+  };
+  measurePeek();
+  window.addEventListener('resize', measurePeek);
+  window.addEventListener('orientationchange', () => setTimeout(measurePeek, 250));
+
   let startY = 0;
   let base = 0;
   let dragging = false;
@@ -91,8 +103,7 @@ export function initSheet(onChange) {
 
   const snapPoints = () => {
     const h = sheet.getBoundingClientRect().height;
-    const peek = $('#grabber').offsetHeight + card.offsetHeight + 6;
-    return { peek: h - peek, half: h - window.innerHeight * 0.52, full: 0 };
+    return { peek: h - measurePeek(), half: h - window.innerHeight * 0.52, full: 0 };
   };
 
   const down = (e) => {
@@ -147,7 +158,11 @@ export const getSheet = () => sheetState;
 
 export function showPanel(name) {
   document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('is-on', p.dataset.panel === name));
-  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('is-on', t.dataset.panel === name));
+  document.querySelectorAll('.tab').forEach((t) => {
+    const on = t.dataset.panel === name;
+    t.classList.toggle('is-on', on);
+    t.setAttribute('aria-selected', String(on));
+  });
   $('#sheet-body').scrollTop = 0;
 }
 
@@ -213,7 +228,9 @@ function tipoStrada(hw) {
 export function renderAlerts(alerts) {
   const stack = $('#alert-stack');
   const top = alerts.slice(0, 2);
-  const sig = top.map((a) => `${a.id}:${Math.round(a.distance / 25)}`).join('|');
+  // Il titolo entra nella firma: l'allerta di velocità ha id e distanza
+  // fissi, e senza il titolo resterebbe congelata sul primo "+N km/h".
+  const sig = top.map((a) => `${a.id}:${a.title}:${Math.round(a.distance / 25)}`).join('|');
   if (stack.dataset.sig !== sig) {
     stack.dataset.sig = sig;
     stack.innerHTML = top.map((a) => `

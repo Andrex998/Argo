@@ -107,12 +107,6 @@ export function distanceToLine(point, coords) {
   return { ...best, point: snapped, heading: bearing(a, b) };
 }
 
-/** Distanza da un punto al bordo di un anello chiuso. */
-export function distanceToRing(point, ring) {
-  const r = distanceToLine(point, ring);
-  return r ? r.dist : Infinity;
-}
-
 /** Ray casting: il punto è dentro l'anello? */
 export function pointInRing(point, ring) {
   const [y, x] = point;
@@ -187,7 +181,6 @@ export class SpeedEstimator {
 }
 
 export const msToKmh = (ms) => ms * 3.6;
-export const kmhToMs = (k) => k / 3.6;
 
 /** "1,2 km" / "300 m" */
 export function formatDistance(m) {

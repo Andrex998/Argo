@@ -6,7 +6,7 @@
    localStorage lato app, con TTL).
    ============================================================ */
 
-const VERSION = 'argo-drive-v2';
+const VERSION = 'argo-drive-v3';
 const SHELL = `${VERSION}-shell`;
 const TILES = `${VERSION}-tiles`;
 const TILE_CAP = 1200;   // i tile vettoriali coprono più superficie dei raster
@@ -17,6 +17,7 @@ const SHELL_FILES = [
   './styles.css',
   './manifest.webmanifest',
   './icons/icon.svg',
+  './icons/icon-maskable.svg',
   './vendor/maplibre/maplibre-gl.js',
   './vendor/maplibre/maplibre-gl.css',
   './js/app.js',
@@ -67,16 +68,30 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(shellStrategy(req));
 });
 
-/** Guscio: cache first, ma aggiorna in background. */
+/**
+ * Guscio: cache first, aggiornamento in sottofondo.
+ * Il ramo di errore deve restituire una Response vera: se torna
+ * undefined, respondWith solleva e la richiesta muore con un errore
+ * di rete opaco invece di un 504 leggibile.
+ */
 async function shellStrategy(req) {
   const cached = await caches.match(req);
-  const network = fetch(req)
-    .then((res) => {
-      if (res && res.ok) caches.open(SHELL).then((c) => c.put(req, res.clone()));
-      return res;
-    })
-    .catch(() => cached);
-  return cached || network;
+  if (cached) {
+    fetch(req)
+      .then((res) => { if (res && res.ok) caches.open(SHELL).then((c) => c.put(req, res.clone())); })
+      .catch(() => { /* offline: resta la copia in cache */ });
+    return cached;
+  }
+  try {
+    const res = await fetch(req);
+    if (res && res.ok) {
+      const cache = await caches.open(SHELL);
+      cache.put(req, res.clone());
+    }
+    return res;
+  } catch {
+    return new Response('', { status: 504, statusText: 'Non disponibile offline' });
+  }
 }
 
 /** Tile: cache first (una strada già vista resta visibile senza rete). */
@@ -92,7 +107,7 @@ async function tileStrategy(req) {
     }
     return res;
   } catch {
-    return hit || Response.error();
+    return hit || new Response('', { status: 504, statusText: 'Tile non disponibile offline' });
   }
 }
 

@@ -70,6 +70,29 @@ export class Reports {
     return JSON.stringify({ app: 'argo-drive', v: 1, exported: new Date().toISOString(), items: this.items }, null, 2);
   }
 
+  /**
+   * Ripulisce una segnalazione che arriva da fuori: il file JSON lo
+   * scrive un'altra persona (o un'altra app), quindi niente fiducia
+   * su tipo, coordinate e lunghezza della nota.
+   */
+  sanitize(r) {
+    if (!r || typeof r !== 'object') return null;
+    const kind = REPORT_KINDS.some((k) => k.id === r.kind) ? r.kind : 'pericolo';
+    const lat = Number(r.lat);
+    const lon = Number(r.lon);
+    if (!Number.isFinite(lat) || Math.abs(lat) > 90) return null;
+    if (!Number.isFinite(lon) || Math.abs(lon) > 180) return null;
+    const ts = Number(r.ts);
+    return {
+      id: typeof r.id === 'string' && r.id.length <= 64 ? r.id : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      kind,
+      lat,
+      lon,
+      note: typeof r.note === 'string' ? r.note.slice(0, 120) : '',
+      ts: Number.isFinite(ts) && ts > 0 && ts <= Date.now() + 3600e3 ? ts : Date.now(),
+    };
+  }
+
   /** Import additivo: gli id già presenti non vengono duplicati. */
   merge(json) {
     let incoming;
@@ -82,7 +105,8 @@ export class Reports {
     if (!Array.isArray(incoming)) throw new Error('Nessuna segnalazione nel file');
     const known = new Set(this.items.map((r) => r.id));
     let added = 0;
-    for (const r of incoming) {
+    for (const raw of incoming) {
+      const r = this.sanitize(raw);
       if (!r || known.has(r.id) || !this.alive(r)) continue;
       this.items.push(r);
       known.add(r.id);

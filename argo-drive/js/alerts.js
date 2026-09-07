@@ -58,7 +58,7 @@ export function nearbyList(point, data, reports, curated, radius = 1200) {
   }
   for (const z of (data ? data.zones : [])) {
     if (outsideBbox(point, z.box, radius)) continue;
-    const inside = pointInRing(point, z.ring);
+    const inside = z.closed !== false && pointInRing(point, z.ring);
     const hit = distanceToLine(point, z.ring);
     const d = inside ? 0 : (hit ? hit.dist : Infinity);
     if (d > radius) continue;
@@ -222,7 +222,7 @@ export class AlertEngine {
     /* --- zone: dentro o in avvicinamento --- */
     for (const zone of (data ? data.zones : [])) {
       if (outsideBbox(point, zone.box, lookahead)) { this.insideZones.delete(zone.id); continue; }
-      const inside = pointInRing(point, zone.ring);
+      const inside = zone.closed !== false && pointInRing(point, zone.ring);
       const hit = distanceToLine(point, zone.ring);
       const dist = inside ? 0 : (hit ? hit.dist : Infinity);
       const label = zone.kind === 'lez' ? 'Zona a emissioni limitate' : 'Area pedonale';

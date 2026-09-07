@@ -43,9 +43,15 @@ export class DriveMap {
     this.onLongPress = opts.onLongPress || null;
 
     this.usingRaster = false;
+    this.lastInteraction = 0;
+    this.autoRecenterMs = 12000;   // in marcia la mappa torna da sola su di te
     // Si riparte dall'esito dell'ultima volta: chi ha già visto le
     // etichette funzionare non subisce il ridisegno all'avvio.
     this.labels = readFlag('argo-drive:labels') === '1';
+    // Ogni cambio stile ricrea i layer da zero: le scelte dell'utente
+    // vanno ricordate qui, o dopo un cambio tema tornano tutte accese.
+    this.visibility = { zones: true, roads: true, reports: true, curated: true };
+    this.pointFilter = { cameras: true, hazards: true };
     this.dataStamp = null;
     this.overlays = {
       zone: EMPTY, vietate: EMPTY, dissestate: EMPTY, agganciata: EMPTY,
@@ -55,7 +61,9 @@ export class DriveMap {
 
     this.map = new maplibregl.Map({
       container: el,
-      style: buildVectorStyle(this.theme, { buildings3d: this.buildings3d, labels: this.labels }),
+      style: this.theme === 'satellite'
+        ? buildSatelliteStyle()
+        : buildVectorStyle(this.theme, { buildings3d: this.buildings3d, labels: this.labels }),
       center: opts.center || [19.8187, 41.3275],
       zoom: opts.zoom || 15.5,
       pitch: this.tilt,
@@ -73,8 +81,19 @@ export class DriveMap {
     this.map.touchZoomRotate.enableRotation();
     this.map.keyboard.disable();
 
-    this.map.on('style.load', () => this.installOverlays());
-    this.map.on('dragstart', () => this.setFollow(false));
+    this.map.on('style.load', () => {
+      this.installOverlays();
+      this.restoreCamera();
+    });
+    // Qualunque gesto sulla mappa sospende l'inseguimento: trascinamento,
+    // rotazione a due dita, zoom. Prima la rotazione veniva ignorata e la
+    // camera la annullava un secondo dopo.
+    for (const ev of ['dragstart', 'rotatestart', 'pitchstart']) {
+      this.map.on(ev, () => { this.lastInteraction = Date.now(); this.setFollow(false); });
+    }
+    this.map.on('zoomstart', (e) => {
+      if (e && e.originalEvent) { this.lastInteraction = Date.now(); this.setFollow(false); }
+    });
     this.map.on('rotate', () => this.onBearingChange(this.map.getBearing()));
     this.watchVectorHealth();
     this.installPuck();
@@ -91,7 +110,13 @@ export class DriveMap {
       ? buildSatelliteStyle()
       : buildVectorStyle(name, { buildings3d: this.buildings3d, labels: this.labels });
     this.applyStyle(style);
-    if (name !== 'satellite') this.watchVectorHealth();
+    if (name === 'satellite') {
+      clearTimeout(this._healthTimer);   // altrimenti scatta e sostituisce il satellite
+      this.detachHealth();
+    } else {
+      this.watchVectorHealth();
+      this.checkGlyphs();
+    }
   }
 
   set3D(on) {
@@ -118,8 +143,9 @@ export class DriveMap {
    * declassamento a raster con la mappa che stava funzionando.
    */
   watchVectorHealth() {
-    if (this.theme === 'satellite') return;
+    clearTimeout(this._healthTimer);
     this.detachHealth();
+    if (this.theme === 'satellite') return;
     this.vectorAlive = false;
     let netErrors = 0;
 
@@ -221,7 +247,7 @@ export class DriveMap {
       id: 'l-zone-bordo', type: 'line', source: 'zone',
       paint: { 'line-color': COLORS.danger, 'line-width': 2, 'line-opacity': 0.85 },
     });
-    const scuro = PALETTES[this.theme] ? PALETTES[this.theme].ui === 'dark' : false;
+    const scuro = this.theme === 'satellite' || (PALETTES[this.theme] ? PALETTES[this.theme].ui === 'dark' : false);
     layer({
       id: 'l-curati', type: 'fill', source: 'curati',
       paint: { 'fill-color': COLORS.warn, 'fill-opacity': scuro ? 0.05 : 0.1 },
@@ -269,6 +295,35 @@ export class DriveMap {
     });
 
     this.ensureIcons();
+    this.applyVisibility();
+  }
+
+  /**
+   * Un ricaricamento di stile interrompe le animazioni in corso:
+   * senza questo, spegnere e riaccendere il 3D lasciava la camera
+   * piatta con gli edifici in piedi.
+   */
+  restoreCamera() {
+    if (this.follow && this.lastFix) this.camera(this.lastFix, this.lastHeading, this.lastSpeed, 300);
+    else if (Math.round(this.map.getPitch()) !== Math.round(this.tilt)) {
+      this.map.easeTo({ pitch: this.tilt, duration: 300 });
+    }
+  }
+
+  /** Riporta i layer allo stato scelto dall'utente dopo un cambio stile. */
+  applyVisibility() {
+    for (const name of Object.keys(this.visibility)) this.setLayerVisible(name, this.visibility[name]);
+    this.applyPointFilter();
+  }
+
+  applyPointFilter() {
+    if (!this.map.getLayer('l-punti')) return;
+    const allowed = [];
+    if (this.pointFilter.cameras) allowed.push('pin-camera');
+    if (this.pointFilter.hazards) allowed.push('pin-calming', 'pin-crossing', 'pin-barrier', 'pin-hazard');
+    this.map.setFilter('l-punti', allowed.length
+      ? ['in', ['get', 'icon'], ['literal', allowed]]
+      : ['==', ['get', 'icon'], '__nessuno__']);
   }
 
   /**
@@ -276,7 +331,7 @@ export class DriveMap {
    * niente font con emoji dentro i glyph vettoriali.
    */
   ensureIcons() {
-    const dark = PALETTES[this.theme] ? PALETTES[this.theme].ui === 'dark' : false;
+    const dark = this.theme === 'satellite' || (PALETTES[this.theme] ? PALETTES[this.theme].ui === 'dark' : false);
     for (const [key, glyph] of Object.entries(GLYPHS)) {
       const id = `pin-${key}`;
       if (this.map.hasImage(id)) this.map.removeImage(id);
@@ -349,16 +404,45 @@ export class DriveMap {
         .addTo(this.map);
     });
 
-    if (this.onLongPress) {
-      let timer = null;
-      const start = (e) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => this.onLongPress(e.lngLat), 600);
-      };
-      const cancel = () => clearTimeout(timer);
-      this.map.on('mousedown', start);
-      this.map.on('touchstart', start);
-      ['mouseup', 'touchend', 'dragstart', 'move', 'zoomstart'].forEach((ev) => this.map.on(ev, cancel));
+    this.installLongPress();
+  }
+
+  /**
+   * Pressione prolungata per segnalare un punto.
+   * Va agganciata agli eventi del canvas, non a quelli della mappa:
+   * in marcia la camera insegue il veicolo ed emette 'move' di
+   * continuo, che annullerebbe ogni pressione prima che maturi.
+   * Qui conta solo il dito: se si sposta di più di 14 px, si annulla.
+   */
+  installLongPress() {
+    if (!this.onLongPress) return;
+    const el = this.map.getCanvasContainer();
+    let timer = null;
+    let start = null;
+    let pointers = 0;
+
+    const pos = (e) => {
+      const r = el.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    const cancel = () => { clearTimeout(timer); timer = null; start = null; };
+
+    el.addEventListener('pointerdown', (e) => {
+      pointers += 1;
+      if (pointers > 1) { cancel(); return; }   // pizzicata a due dita: non è una pressione
+      start = pos(e);
+      timer = setTimeout(() => {
+        if (start) this.onLongPress(this.map.unproject([start.x, start.y]));
+        cancel();
+      }, 600);
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!start) return;
+      const p = pos(e);
+      if (Math.hypot(p.x - start.x, p.y - start.y) > 14) cancel();
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
+      el.addEventListener(ev, () => { pointers = Math.max(0, pointers - 1); cancel(); });
     }
   }
 
@@ -420,6 +504,11 @@ export class DriveMap {
     if (this.follow) this.camera(fix, heading, speedMs);
   }
 
+  /** In marcia, dopo un po' che non tocchi niente, si torna a inseguire. */
+  shouldAutoRecenter(speedMs) {
+    return !this.follow && speedMs > 2.8 && Date.now() - this.lastInteraction > this.autoRecenterMs;
+  }
+
   recenter() {
     this.setFollow(true);
     if (this.lastFix) this.camera(this.lastFix, this.lastHeading, this.lastSpeed, 700);
@@ -444,7 +533,9 @@ export class DriveMap {
           dettaglio: z.name || 'Accesso ai veicoli non consentito',
           fonte: 'Fonte: OpenStreetMap',
         },
-        geometry: { type: 'Polygon', coordinates: [closeRing(z.ring.map(([la, lo]) => [lo, la]))] },
+        geometry: z.closed === false
+          ? { type: 'LineString', coordinates: z.ring.map(([la, lo]) => [lo, la]) }
+          : { type: 'Polygon', coordinates: [closeRing(z.ring.map(([la, lo]) => [lo, la]))] },
       })),
     });
 
@@ -515,24 +606,17 @@ export class DriveMap {
     const groups = {
       zones: ['l-zone-fill', 'l-zone-bordo'],
       roads: ['l-vietate', 'l-dissestate'],
-      cameras: [], hazards: [],
       reports: ['l-segnalazioni'],
       curated: ['l-curati', 'l-curati-bordo'],
     };
     // Autovelox e pericoli vivono nello stesso layer: si filtrano per icona.
     if (name === 'cameras' || name === 'hazards') {
-      this.pointFilter = this.pointFilter || { cameras: true, hazards: true };
       this.pointFilter[name] = visible;
-      if (this.map.getLayer('l-punti')) {
-        const allowed = [];
-        if (this.pointFilter.cameras) allowed.push('pin-camera');
-        if (this.pointFilter.hazards) allowed.push('pin-calming', 'pin-crossing', 'pin-barrier', 'pin-hazard');
-        this.map.setFilter('l-punti', allowed.length
-          ? ['in', ['get', 'icon'], ['literal', allowed]]
-          : ['==', ['get', 'icon'], '__nessuno__']);
-      }
+      this.applyPointFilter();
       return;
     }
+    if (!(name in this.visibility)) return;
+    this.visibility[name] = visible;
     for (const id of groups[name] || []) {
       if (this.map.getLayer(id)) this.map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
     }

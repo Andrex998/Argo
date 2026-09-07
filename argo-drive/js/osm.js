@@ -69,19 +69,20 @@ export function compact(raw, center, radius, anchor) {
     }
 
     if (el.type === 'relation') {
-      // Le LEZ sono relazioni: si tengono gli anelli dei membri.
-      for (const mem of el.members || []) {
-        if (mem.type !== 'way' || !mem.geometry) continue;
-        const ring = mem.geometry.map((g) => [g.lat, g.lon]);
-        if (ring.length > 2) {
-          zones.push({
-            id: `r${el.id}-${mem.ref}`,
-            kind: 'lez',
-            name: tags.name || 'Zona a emissioni limitate',
-            ring,
-            box: bbox(ring),
-          });
-        }
+      // Una LEZ è una relazione: i membri sono spezzoni di confine.
+      // Presi uno per uno darebbero anelli aperti, e il test
+      // "sono dentro?" direbbe sì a caso. Prima si ricuciono.
+      let i = 0;
+      for (const ring of assembleRings(el.members)) {
+        if (ring.coords.length < 3) continue;
+        zones.push({
+          id: `r${el.id}-${i++}`,
+          kind: 'lez',
+          name: tags.name || 'Zona a emissioni limitate',
+          ring: ring.coords,
+          closed: ring.closed,
+          box: bbox(ring.coords),
+        });
       }
       continue;
     }
@@ -92,7 +93,7 @@ export function compact(raw, center, radius, anchor) {
     const box = bbox(coords);
 
     if (tags.boundary === 'low_emission_zone') {
-      zones.push({ id: `w${el.id}`, kind: 'lez', name: tags.name || 'Zona a emissioni limitate', ring: coords, box });
+      zones.push({ id: `w${el.id}`, kind: 'lez', name: tags.name || 'Zona a emissioni limitate', ring: coords, closed: isClosedRing(coords), box });
       continue;
     }
     if (tags.hazard) {
@@ -102,7 +103,9 @@ export function compact(raw, center, radius, anchor) {
         lon: coords[Math.floor(coords.length / 2)][1],
         label: `Pericolo segnalato: ${tags.hazard.replace(/_/g, ' ')}`,
       });
-      continue;
+      // Se il pericolo sta *su* una strada, la strada resta una strada:
+      // altrimenti si perderebbero limite, matching e allerta di velocità.
+      if (!tags.highway) continue;
     }
     if (!tags.highway) continue;
 
@@ -111,7 +114,7 @@ export function compact(raw, center, radius, anchor) {
       coords[0][1] === coords[coords.length - 1][1];
 
     if (tags.highway === 'pedestrian' && (closed || tags.area === 'yes')) {
-      zones.push({ id: `w${el.id}`, kind: 'pedestrian', name: tags.name || 'Area pedonale', ring: coords, box });
+      zones.push({ id: `w${el.id}`, kind: 'pedestrian', name: tags.name || 'Area pedonale', ring: coords, closed: true, box });
       continue;
     }
 
@@ -147,6 +150,46 @@ export function compact(raw, center, radius, anchor) {
     zones,
     points,
   };
+}
+
+const SAME_POINT = 1e-7;
+const samePoint = (a, b) => Math.abs(a[0] - b[0]) < SAME_POINT && Math.abs(a[1] - b[1]) < SAME_POINT;
+const isClosedRing = (ring) => ring.length > 3 && samePoint(ring[0], ring[ring.length - 1]);
+
+/**
+ * Ricuce i membri di una relazione in anelli.
+ * Ogni spezzone si attacca al precedente da qualunque capo, anche
+ * invertito: è così che OSM descrive i confini. Chi non chiude resta
+ * una linea, e chi resta una linea non entra nel test "sono dentro".
+ */
+function assembleRings(members) {
+  const segments = (members || [])
+    .filter((m) => m.type === 'way' && Array.isArray(m.geometry) && m.geometry.length > 1)
+    .map((m) => m.geometry.map((g) => [g.lat, g.lon]));
+
+  const rings = [];
+  while (segments.length) {
+    let ring = segments.shift();
+    let grown = true;
+    while (grown && !isClosedRing(ring)) {
+      grown = false;
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        const head = ring[0];
+        const tail = ring[ring.length - 1];
+        if (samePoint(tail, seg[0])) ring = ring.concat(seg.slice(1));
+        else if (samePoint(tail, seg[seg.length - 1])) ring = ring.concat(seg.slice(0, -1).reverse());
+        else if (samePoint(head, seg[seg.length - 1])) ring = seg.slice(0, -1).concat(ring);
+        else if (samePoint(head, seg[0])) ring = seg.slice(1).reverse().concat(ring);
+        else continue;
+        segments.splice(i, 1);
+        grown = true;
+        break;
+      }
+    }
+    rings.push({ coords: ring, closed: isClosedRing(ring) });
+  }
+  return rings;
 }
 
 function nodeKind(tags) {
@@ -271,6 +314,7 @@ export class OsmSource {
   }
 
   async fetchNow(lat, lon, heading, speedMs) {
+    if (this.pending) return this.data;   // una richiesta alla volta, in ordine
     this.pending = true;
     this.lastAttempt = Date.now();
     this.state = 'loading';
