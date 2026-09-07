@@ -33,12 +33,12 @@ const ctx=await browser.newContext({viewport:{width:414,height:896},deviceScaleF
 const page=await ctx.newPage();
 const errors=[]; page.on('pageerror',e=>errors.push(e.message));
 const queries=[];
-await page.route('**/api/interpreter',r=>{
+await ctx.route('**/api/interpreter',r=>{
   const body=decodeURIComponent(r.request().postData()||'');
   const m=body.match(/around:(\d+),([\d.]+),([\d.]+)/);
   if(m) queries.push({r:+m[1], lat:+m[2], lon:+m[3]});
   return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(overpass)});});
-await page.route(/basemaps\.cartocdn\.com|tile\.openstreetmap\.org|arcgisonline\.com/, r=>r.abort());
+await ctx.route(/basemaps\.cartocdn\.com|tile\.openstreetmap\.org|arcgisonline\.com|tiles\.openfreemap\.org/, r=>r.abort());
 await page.goto('http://localhost:4175/',{waitUntil:'networkidle'});
 // intercetta la voce per verificare cosa verrebbe detto
 await page.evaluate(()=>{window.SAID=[]; const orig=window.speechSynthesis.speak.bind(window.speechSynthesis);
@@ -63,15 +63,15 @@ console.log('velocità finale:', track.at(-1).speed, 'km/h');
 console.log('\ntipi di allerta incontrati:'); [...seen].forEach(a=>console.log(' •',a));
 console.log('\nallerte a metà percorso (lon', track[18].lon, '):'); track[18].alerts.forEach(a=>console.log('  ',a));
 console.log('\nfrasi pronunciate:'); console.log((await page.evaluate(()=>window.SAID)).map(s=>' 🔊 '+s).join('\n'));
-const toasts=await page.evaluate(()=>[...document.querySelectorAll('.alert-info')].map(e=>e.textContent.trim()));
+const toasts=await page.evaluate(()=>[...document.querySelectorAll('.toast')].map(e=>e.textContent.trim()));
 console.log('\ntoast di errore residui:', toasts.length ? toasts : 'nessuno');
 
-await page.screenshot({path:'drive-hud2.png'});
-// GPS perso: smetto di aggiornare la posizione per 25s
-await page.waitForTimeout(2000);
-console.log('\ndopo 2s senza fix (atteso: normale) →', await page.evaluate(()=>({
+await page.screenshot({path:'/tmp/drive-hud.png'});
+// GPS perso: smetto di aggiornare la posizione oltre la soglia di 20 s
+await page.waitForTimeout(23000);
+console.log('\ndopo 23 s senza fix →', await page.evaluate(()=>({
   pill:document.querySelector('#pill-gps').textContent.trim(),
-  alert:document.querySelector('.alert-stack').textContent.replace(/\s+/g,' ').trim(),
+  alert:document.querySelector('#alert-stack').textContent.replace(/\s+/g,' ').trim(),
   speed:document.querySelector('#speed-value').textContent})));
 console.log('\nrichieste Overpass:', queries.length);
 queries.forEach((q,i)=>console.log(`  #${i+1} centro ${q.lat},${q.lon} raggio ${q.r}m — posizione reale al momento: ${track[Math.max(0,i*13)]?.lon ?? '—'}`));

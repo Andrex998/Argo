@@ -24,39 +24,43 @@ const ctx=await browser.newContext({viewport:{width:414,height:896},isMobile:tru
 const page=await ctx.newPage();
 const errs=[]; page.on('pageerror',e=>errs.push(e.message));
 let calls=0;
-await page.route('**/api/interpreter', r=>{calls++; return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(overpass)});});
-await page.route(/basemaps\.cartocdn\.com|tile\.openstreetmap\.org|arcgisonline\.com/, r=>r.abort());
+await ctx.route('**/api/interpreter', r=>{calls++; return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(overpass)});});
+await ctx.route(/basemaps\.cartocdn\.com|tile\.openstreetmap\.org|arcgisonline\.com|tiles\.openfreemap\.org/, r=>r.abort());
 await page.goto('http://localhost:4176/',{waitUntil:'networkidle'});
 await page.click('#btn-start'); await page.waitForTimeout(3000);
 console.log('1) prima sessione — chiamate Overpass:', calls, '| pill:', await page.textContent('#pill-data'));
 
 // impostazioni: tema, tolleranza, livelli
-await page.click('#btn-layers'); await page.waitForTimeout(200);
-await page.click('#theme-seg button[data-theme="chiaro"]');
+await page.evaluate(()=>window.ARGO_DRIVE.ui.setSheet('full')); await page.waitForTimeout(400);
+await page.click('.tab[data-panel="livelli"]'); await page.waitForTimeout(300);
+await page.click('#theme-seg button[data-theme="notte"]');
 await page.click('#tol-seg button[data-tol="0"]');
 await page.click('#radius-seg button[data-radius="1500"]');
 await page.click('#unit-seg button[data-unit="mph"]');
 await page.click('input[data-layer="curated"]');
 await page.waitForTimeout(300);
-console.log('2) impostazioni salvate:', await page.evaluate(()=>localStorage.getItem('argo-drive:settings:v1')));
+await page.click('#mode-seg button[data-mode="nord"]');
+console.log('2) impostazioni salvate:', await page.evaluate(()=>localStorage.getItem('argo-drive:settings:v2')));
 console.log('   unità mostrata:', await page.textContent('#speed-unit'), '| limite:', await page.textContent('#limit-value'));
-await page.click('#sheet-layers [data-close]');
+await page.evaluate(()=>window.ARGO_DRIVE.ui.setSheet('peek')); await page.waitForTimeout(300);
 
 // segnalazione con long press sulla mappa
-await page.mouse.move(200, 500); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up();
+await page.mouse.move(200, 420); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up();
 await page.waitForTimeout(400);
-const sheetOpen = await page.evaluate(()=>!document.querySelector('#sheet-report').hidden);
+const sheetOpen = await page.evaluate(()=>document.querySelector('.panel[data-panel="segnala"]').classList.contains('is-on'));
 await page.fill('#report-note','buca profonda');
-await page.click('.chip[data-kind="buca"]'); await page.waitForTimeout(400);
+await page.click('.chip-btn[data-kind="buca"]'); await page.waitForTimeout(400);
 const rep = await page.evaluate(()=>window.ARGO_DRIVE.reports.items[0]);
-console.log('3) long-press apre il pannello:', sheetOpen, '| segnalazione:', rep && `${rep.kind} "${rep.note}" @${rep.lat.toFixed(4)},${rep.lon.toFixed(4)}`);
+console.log('3) long-press apre il pannello segnala:', sheetOpen, '| segnalazione:', rep && `${rep.kind} "${rep.note}" @${rep.lat.toFixed(4)},${rep.lon.toFixed(4)}`);
 
 // export
-const dl = await Promise.all([page.waitForEvent('download'), page.click('#btn-report').then(()=>page.click('#btn-export'))]).then(r=>r[0]);
+await page.evaluate(()=>{ window.ARGO_DRIVE.ui.setSheet('full'); window.ARGO_DRIVE.ui.showPanel('segnala'); });
+await page.waitForTimeout(400);
+const dl = await Promise.all([page.waitForEvent('download'), page.click('#btn-export')]).then(r=>r[0]);
 console.log('4) export:', dl.suggestedFilename());
 
 // seconda sessione: Overpass irraggiungibile → deve usare la cache
-await page.route('**/api/interpreter', r=>r.abort());
+await ctx.route('**/api/interpreter', r=>r.abort());
 await page.reload({waitUntil:'networkidle'});
 await page.click('#btn-start'); await page.waitForTimeout(3500);
 console.log('5) Overpass KO — pill:', (await page.textContent('#pill-data')).trim(),

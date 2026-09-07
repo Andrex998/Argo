@@ -6,8 +6,9 @@ Mappa di guida in tempo reale per un viaggio in auto in Albania: **dove sei**,
 passaggi a livello, fondo dissestato, divieti di accesso).
 
 App statica: HTML + CSS + JavaScript a moduli. Nessun build step, nessun account,
-nessun server. Leaflet è vendorizzato in `vendor/`, così l'app si apre anche
-quando la rete non c'è.
+nessun server. La mappa gira su **MapLibre GL** con tile vettoriali e uno stile
+scritto su misura: ruota con la marcia, si inclina, alza gli edifici in volume.
+La libreria è vendorizzata in `vendor/`, così l'app si apre anche senza rete.
 
 ---
 
@@ -22,6 +23,11 @@ quando la rete non c'è.
 | Autovelox, dossi, passaggi a livello, sbarre | nodi OSM entro il raggio dati |
 | Strade sterrate o dissestate | tag OSM `surface`, `smoothness`, `tracktype` |
 | Le tue segnalazioni e quelle importate dal gruppo | file JSON locale |
+
+La mappa sotto è vettoriale (OpenFreeMap, schema OpenMapTiles) con uno stile
+disegnato per la guida: gerarchia stradale leggibile in corsa, palette giorno e
+notte che si alternano da sole, edifici in 3D quando la camera si inclina,
+cielo e orizzonte nella vista in marcia.
 
 **Quello che questa app non può fare, e nessuna app onesta senza backend può fare:**
 non esiste un feed pubblico e gratuito di traffico, incidenti e pattuglie in tempo
@@ -72,22 +78,29 @@ settimana.
 
 Come leggere lo schermo in mezzo secondo:
 
-- **Numero grande a sinistra** — la tua velocità. Diventa rosso e pulsa se superi il limite.
-- **Disco bianco a destra** — il limite. Bordo **pieno** = valore letto da OSM.
-  Bordo **tratteggiato** = valore *presunto* dal tipo di strada e dalle regole
-  albanesi (40 in città, 80 fuori, 90 sulle interurbane principali, 110 in autostrada).
+- **Cerchio a sinistra nella scheda in basso** — la tua velocità. Diventa rossa e
+  pulsa se superi il limite.
+- **Disco a destra** — il limite. Bordo **pieno** = valore letto da OSM. Bordo
+  **tratteggiato** = valore *presunto* dal tipo di strada e dalle regole albanesi
+  (40 in città, 80 fuori, 90 sulle interurbane principali, 110 in autostrada).
   Trattino = strada non agganciata.
-- **Riga sotto** — nome della strada agganciata e provenienza del limite. La strada
-  agganciata è anche evidenziata in blu sulla mappa: se il blu è sulla parallela,
-  il limite mostrato non è il tuo.
+- **Al centro** — nome della strada agganciata e provenienza del limite. La strada
+  agganciata è evidenziata in blu sulla mappa: se il blu è sulla parallela, il
+  limite mostrato non è il tuo.
+- **Schede in alto** — allerte, con distanza. Al massimo due: la terza, in marcia,
+  non la legge nessuno.
 - **Rosso sulla mappa** — vietato alle auto. **Ambra tratteggiata** — fondo
   dissestato o strada di montagna. **Cerchi tratteggiati** — punti curati, indicativi.
-- **Pill in alto** — precisione GPS e stato dei dati (`OSM` / `in cache` / `non disponibili`).
+- **Chip in alto** — precisione GPS e stato dei dati (`OSM` / `in cache` / `non disponibili`).
 
-Pulsanti: **Segnala** (o tieni premuto un punto sulla mappa per segnalare lì),
-**Livelli** (cosa vedere, tema mappa, tolleranza, raggio dati, unità),
-**Centra** (torna a inseguire la tua posizione: si disattiva da solo se trascini la mappa),
-**Voce** (silenzia tutto).
+Comandi, tutti a destra sotto il pollice: **bussola** (compare quando la mappa è
+ruotata, riporta il nord in alto), **3D**, **voce**, **centra** (torna a inseguirti;
+si spegne da solo se trascini la mappa).
+
+Il pannello in basso si trascina come in qualunque app di mappe: **scheda di guida**
+→ **metà** (elenco "vicino a te", segnalazioni, livelli, info) → **tutto**. Sopra i
+12 km/h torna da solo alla scheda di guida: in marcia lo schermo serve alla mappa.
+Per segnalare un punto diverso da dove sei, **tieni premuto** sulla mappa.
 
 ---
 
@@ -98,17 +111,32 @@ Pulsanti: **Segnala** (o tieni premuto un punto sulla mappa per segnalare lì),
   richiesta è più leggera; in extraurbano metti 1,5 km, perché a 90 km/h consumi
   un chilometro in 40 secondi. Le query vengono già centrate ~15 secondi *davanti*
   a te lungo la rotta, non sulla tua posizione.
-- **Tema mappa** — scura (default, la meno stancante di notte), chiara, satellite.
+- **Mappa** — `Auto` segue l'ora (chiara di giorno, scura dopo le 19), oppure
+  giorno/notte fissi e satellite.
+- **Orientamento** — `Verso di marcia` (la mappa ruota con te, camera inclinata,
+  come un navigatore) oppure `Nord in alto`.
+- **Edifici in 3D** — volumi sopra i 15 di zoom; spegnili se il telefono soffre.
+- **Vibrazione** — un colpo sugli avvisi, due sui divieti: si sente anche con la
+  radio alta.
 - **Schermo sempre acceso** — Wake Lock, dove il browser lo supporta.
 
 ---
 
 ## Da dove vengono i dati
 
-[OpenStreetMap](https://www.openstreetmap.org/copyright) via [Overpass API](https://overpass-api.de/),
-interrogata intorno a te mentre guidi (tre mirror in rotazione, al massimo una
-richiesta ogni 25 secondi, con backoff se rispondono male). Tile mappa: CARTO,
-OpenStreetMap o Esri a seconda del tema scelto.
+**Limiti, divieti, aree, autovelox e dossi**: [OpenStreetMap](https://www.openstreetmap.org/copyright)
+via [Overpass API](https://overpass-api.de/), interrogata intorno a te mentre guidi
+(tre mirror in rotazione, al massimo una richiesta ogni 25 secondi, con backoff se
+rispondono male).
+
+**Mappa disegnata**: tile vettoriali [OpenFreeMap](https://openfreemap.org/)
+(schema OpenMapTiles), stile in `js/style.js`. Se il servizio vettoriale non
+risponde, l'app passa da sola a tile raster (OpenStreetMap di giorno, CARTO di
+notte); il satellite è Esri. Un dettaglio che costa caro se ignorato: **se i
+caratteri delle etichette non si scaricano, MapLibre non fallisce solo i testi,
+fallisce il tile intero e la mappa resta bianca**. Per questo l'app sonda prima
+l'endpoint dei caratteri e, se non risponde, disegna la mappa senza nomi invece
+di non disegnarla affatto.
 
 I dati OSM sono collaborativi e **possono essere incompleti o superati**: in
 Albania la copertura dei `maxspeed` è discreta sulle strade principali e scarsa
@@ -124,8 +152,8 @@ scaricare la mappa della zona. Segnalazioni e impostazioni stanno in `localStora
 
 ```
 argo-drive/
-├── index.html              guscio: HUD, dock, pannelli, gate iniziale
-├── styles.css              palette ARGO (void/obsidian/voltage) + semantica di sicurezza
+├── index.html              guscio: scheda di guida, pannello, FAB, avvio
+├── styles.css              superfici, temi chiaro/scuro, semantica di sicurezza
 ├── sw.js                   service worker: guscio in precache, tile in cache runtime
 ├── manifest.webmanifest    installabile come app
 └── js/
@@ -133,18 +161,23 @@ argo-drive/
     ├── geo.js              haversine, rotte, proiezione locale, punto→polilinea, punto-in-poligono
     ├── osm.js              query Overpass, modello compatto, cache LRU, map matching
     ├── rules-albania.js    limiti di default, parsing maxspeed, verdetti di accesso, punti curati
-    ├── alerts.js           prossimità, eccesso di velocità, voce italiana e toni
+    ├── alerts.js           prossimità, eccesso di velocità, voce italiana, elenco "vicino a te"
     ├── reports.js          segnalazioni locali con scadenza, export/import JSON
-    ├── map.js              livelli Leaflet, marker, evidenziazione della strada agganciata
-    └── ui.js               DOM, impostazioni persistenti, pannelli
+    ├── style.js            stile mappa: palette giorno/notte, gerarchia stradale, 3D, cielo
+    ├── map.js              MapLibre: camera course-up, puck, overlay, fallback raster
+    └── ui.js               DOM, pannello trascinabile, impostazioni persistenti
 ```
 
-Due cicli separati apposta: ogni fix GPS aggiorna posizione e velocità (il GPS
-a volte manda cinque fix al secondo, a volte uno ogni dieci), mentre un tick a
-1 Hz rifà il map matching e rivaluta le allerte.
+Due cicli separati apposta: ogni fix GPS aggiorna posizione, velocità e camera
+(il GPS a volte manda cinque fix al secondo, a volte uno ogni dieci), mentre un
+tick a 1 Hz rifà il map matching, rivaluta le allerte e ridisegna la scheda.
 
-Il colore segue il brand ARGO — void, obsidian, voltage `#3B8EFF` — con una
-deroga dichiarata: rosso e ambra esistono solo come verdetti di sicurezza
+Tre cadute morbide, tutte silenziose per chi guida: tile vettoriali → raster,
+etichette → mappa muta, Overpass → cache locale. Nessuna di queste lascia lo
+schermo vuoto.
+
+Il colore resta quello di ARGO — un solo accento blu su superfici neutre — con
+una deroga dichiarata: rosso e ambra esistono solo come verdetti di sicurezza
 (divieto, pericolo, eccesso di velocità), mai come decorazione.
 
 ---
@@ -156,7 +189,9 @@ npm install
 CHROMIUM_PATH=/percorso/a/chromium npm test    # CHROMIUM_PATH è opzionale
 ```
 
-Due suite Playwright con GPS simulato e Overpass finto:
+Tre suite Playwright con GPS simulato, Overpass finto e **tile vettoriali
+sintetiche generate in locale** (`tests/fixtures/tileserver.mjs`), così lo stile
+viene verificato davvero e non solo compilato:
 
 - `tests/drive.test.mjs` — tragitto a Tirana a 75 km/h su strada con limite 40:
   verifica tachimetro, disco del limite, rotta ricavata dagli spostamenti,
@@ -165,6 +200,10 @@ Due suite Playwright con GPS simulato e Overpass finto:
 - `tests/offline.test.mjs` — persistenza impostazioni, segnalazione con pressione
   prolungata, export, fallback sulla cache con Overpass irraggiungibile,
   apertura dell'app completamente offline.
+- `tests/design.test.mjs` — stile vettoriale valido e caricato, camera che ruota
+  con la rotta e si inclina, cambio tema giorno/notte con gli overlay che
+  sopravvivono al ricaricamento dello stile, 3D on/off, bussola, pannello
+  trascinabile. Salva gli screenshot in `/tmp/design-*.png`.
 
 ---
 
@@ -173,6 +212,8 @@ Due suite Playwright con GPS simulato e Overpass finto:
 - Il map matching è geometrico: su svincoli sovrapposti o strade parallele a meno
   di 15 metri può agganciare quella sbagliata. Per questo la strada agganciata è
   evidenziata: se non è la tua, il limite non è il tuo.
+- La mappa vettoriale vuole WebGL: su telefoni molto vecchi conviene spegnere il
+  3D. Senza WebGL l'app non parte.
 - Niente calcolo di percorso: è un cruscotto, non un navigatore. Usalo accanto a
   Google Maps o Organic Maps se ti serve la rotta.
 - Gli autovelox mappati in OSM sono quelli fissi e noti: non aspettarti i mobili.

@@ -2,19 +2,22 @@
    ARGO Drive — app.js
    Il direttore d'orchestra: GPS → dati OSM → allerte → schermo.
 
-   Ciclo: ogni fix aggiorna posizione e velocità; un tick a 1 Hz
-   rifà il map matching e rivaluta le allerte. Separati apposta,
-   perché il GPS a volte spara 5 fix al secondo e a volte uno
-   ogni dieci.
+   Due cicli separati apposta: ogni fix GPS aggiorna posizione,
+   velocità e camera (il GPS a volte manda cinque fix al secondo,
+   a volte uno ogni dieci); un tick a 1 Hz rifà il map matching,
+   rivaluta le allerte e ridisegna la scheda di guida.
    ============================================================ */
 
 import { SpeedEstimator, msToKmh, haversine, bearing } from './geo.js';
 import { OsmSource, matchRoad, resolveLimit, isUrban } from './osm.js';
-import { AlertEngine, Voice } from './alerts.js';
+import { AlertEngine, Voice, nearbyList } from './alerts.js';
 import { Reports, REPORT_KINDS } from './reports.js';
 import { DriveMap } from './map.js';
 import { CURATED_SPOTS } from './rules-albania.js';
 import * as ui from './ui.js';
+
+const FIX_STALE_MS = 20000;
+const AUTO_COLLAPSE_MS = 8000;
 
 const state = {
   settings: ui.loadSettings(),
@@ -27,22 +30,22 @@ const state = {
   urban: false,
   alerts: [],
   wakeLock: null,
-  watchId: null,
   started: false,
-  pendingLatLng: null,
+  pendingLngLat: null,
   lastFixTs: 0,
   lastErrCode: null,
   lastErrToast: 0,
+  lastSheetTouch: 0,
+  lastTopAlert: null,
+  mapTheme: 'giorno',
 };
-
-const FIX_STALE_MS = 20000;
 
 const voice = new Voice();
 const speedometer = new SpeedEstimator();
 const engine = new AlertEngine(voice, state.settings);
-const source = new OsmSource((status) => ui.renderDataPill(status));
+const source = new OsmSource((status) => ui.renderDataChip(status));
 const reports = new Reports((items) => {
-  map.renderReports(items, REPORT_KINDS, (id) => reports.remove(id));
+  map.renderReports(items, REPORT_KINDS);
   const el = ui.$('#report-count');
   if (el) el.textContent = `${items.length} segnalazioni attive sul telefono.`;
 });
@@ -52,12 +55,24 @@ let map;
 /* ---------- avvio ---------- */
 
 function boot() {
+  state.mapTheme = ui.resolveTheme(state.settings.theme);
+  ui.applyChromeTheme(state.mapTheme);
+
   map = new DriveMap(ui.$('#map'), {
-    theme: state.settings.theme,
-    onFollowChange: (on) => ui.$('#btn-center').classList.toggle('is-on', on),
-    onMapLongPress: (latlng) => {
-      state.pendingLatLng = latlng;
-      ui.openSheet('sheet-report');
+    theme: state.mapTheme,
+    mode: state.settings.mode,
+    buildings3d: state.settings.buildings3d,
+    onFollowChange: (on) => ui.$('#btn-center').classList.toggle('is-off', !on),
+    onBearingChange: (b) => {
+      const btn = ui.$('#btn-compass');
+      btn.hidden = Math.abs(b) < 1;
+      btn.style.transform = `rotate(${-b}deg)`;
+    },
+    onFallback: (reason) => ui.toast(`Mappa vettoriale non disponibile (${reason}): passo alla mappa semplice.`),
+    onLongPress: (lngLat) => {
+      state.pendingLngLat = lngLat;
+      ui.showPanel('segnala');
+      ui.setSheet('half');
       ui.toast('Segnalazione sul punto scelto');
     },
   });
@@ -65,35 +80,45 @@ function boot() {
   voice.enabled = state.settings.voice;
   source.setRadius(state.settings.radius);
 
+  ui.initSheet(() => { state.lastSheetTouch = Date.now(); });
+  ui.initTabs();
   ui.buildInfoPanel();
   ui.buildReportChips(REPORT_KINDS, addReport);
   ui.buildLayerToggles(state.settings, (layer, on) => {
     state.settings.layers[layer] = on;
     ui.saveSettings(state.settings);
-    applyLayers();
+    map.setLayerVisible(layer, on);
   });
+
   ui.setSegActive('#theme-seg', 'theme', state.settings.theme);
+  ui.setSegActive('#mode-seg', 'mode', state.settings.mode);
   ui.setSegActive('#tol-seg', 'tol', state.settings.tolerance);
   ui.setSegActive('#radius-seg', 'radius', state.settings.radius);
   ui.setSegActive('#unit-seg', 'unit', state.settings.unit);
   ui.$('#opt-voice').checked = state.settings.voice;
+  ui.$('#opt-haptics').checked = state.settings.haptics;
   ui.$('#opt-wakelock').checked = state.settings.wakelock;
+  ui.$('#opt-3d').checked = state.settings.buildings3d;
   ui.$('#btn-voice').classList.toggle('is-on', state.settings.voice);
+  ui.$('#btn-3d').classList.toggle('is-on', state.settings.buildings3d);
 
-  map.renderCurated(CURATED_SPOTS);
-  map.renderReports(reports.items, REPORT_KINDS, (id) => reports.remove(id));
-  applyLayers();
+  map.map.on('load', () => {
+    map.renderCurated(CURATED_SPOTS);
+    map.renderReports(reports.items, REPORT_KINDS);
+    applyLayers();
+  });
+
   wireUI();
-
-  ui.renderDataPill({ state: 'idle' });
-  updateNetPill();
-  window.addEventListener('online', updateNetPill);
-  window.addEventListener('offline', updateNetPill);
+  ui.renderDataChip({ state: 'idle' });
+  updateNetChip();
+  window.addEventListener('online', updateNetChip);
+  window.addEventListener('offline', updateNetChip);
 
   setInterval(tick, 1000);
+  setInterval(refreshAutoTheme, 10 * 60 * 1000);
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* funziona lo stesso, senza offline */ });
+    navigator.serviceWorker.register('sw.js').catch(() => { /* niente offline, ma l'app gira */ });
   }
 }
 
@@ -110,19 +135,20 @@ function start() {
     return;
   }
 
-  state.watchId = navigator.geolocation.watchPosition(onFix, onGeoError, {
+  navigator.geolocation.watchPosition(onFix, onGeoError, {
     enableHighAccuracy: true,
     maximumAge: 2000,
     timeout: 20000,
   });
 
   ui.$('#gate').hidden = true;
+  map.resize();
 }
 
 /**
  * Il GPS produce errori transitori in continuazione (una galleria,
- * un palazzo, un garage). Se ho un fix recente li ignoro: avvisare
- * ogni volta trasformerebbe l'app in un allarme antifurto.
+ * un garage). Se ho un fix recente li ignoro: avvisare ogni volta
+ * trasformerebbe l'app in un allarme antifurto.
  */
 function onGeoError(err) {
   const now = Date.now();
@@ -133,7 +159,7 @@ function onGeoError(err) {
     2: 'Posizione non disponibile: galleria, garage o cielo coperto.',
     3: 'Il GPS non risponde. Esci all’aperto e riprova.',
   };
-  ui.renderGpsPill(state.fix, null, true);
+  ui.renderGpsChip(state.fix, null, true);
   if (err.code === state.lastErrCode && now - state.lastErrToast < 30000) return;
   state.lastErrCode = err.code;
   state.lastErrToast = now;
@@ -145,15 +171,10 @@ function onGeoError(err) {
 function onFix(pos) {
   const c = pos.coords;
   const fix = {
-    lat: c.latitude,
-    lon: c.longitude,
-    accuracy: c.accuracy,
-    speed: c.speed,
-    heading: c.heading,
+    lat: c.latitude, lon: c.longitude,
+    accuracy: c.accuracy, speed: c.speed, heading: c.heading,
     ts: pos.timestamp || Date.now(),
   };
-
-  // Fix con precisione oltre i 200 m fanno più danno che altro.
   if (fix.accuracy && fix.accuracy > 200 && state.fix) return;
 
   const prev = state.fix;
@@ -173,8 +194,9 @@ function onFix(pos) {
   state.fix = fix;
   state.lastFixTs = Date.now();
   state.lastErrCode = null;
-  map.updatePosition(fix, state.heading);
-  ui.renderGpsPill(fix, moving ? null : 'fermo');
+
+  map.updatePosition(fix, state.heading, state.speedMs);
+  ui.renderGpsChip(fix, moving ? null : 'fermo');
 
   source.update(fix.lat, fix.lon, state.heading, state.speedMs).then((data) => {
     if (data) map.renderData(data);
@@ -188,13 +210,14 @@ function tick() {
 
   // Posizione vecchia = allerte sbagliate. Meglio dirlo che fingere.
   if (Date.now() - state.lastFixTs > FIX_STALE_MS) {
-    ui.renderGpsPill(state.fix, null, true);
+    ui.renderGpsChip(state.fix, null, true);
     ui.renderAlerts([{
       id: 'nogps', level: 'warn', icon: 'alert', distance: 0,
       title: 'Segnale GPS perso',
       detail: 'Limiti e avvisi sono sospesi finché non torna la posizione.',
     }]);
     ui.renderSpeed(NaN, state.settings.unit, false);
+    map.highlightRoad(null);
     return;
   }
 
@@ -220,24 +243,63 @@ function tick() {
   const over = !!(state.limit.kmh && speedKmh > state.limit.kmh + state.settings.tolerance);
   ui.renderSpeed(speedKmh, state.settings.unit, over);
   ui.renderLimit(state.limit, state.settings.unit);
-  ui.renderRoadLine(state.match, state.limit);
+  ui.renderRoad(state.match, state.limit);
   ui.renderAlerts(state.alerts);
+  ui.renderNearby(nearbyList(
+    point, data,
+    state.settings.layers.reports ? reports.items : [],
+    state.settings.layers.curated ? CURATED_SPOTS : []
+  ));
+  buzz(state.alerts);
+  autoCollapse(speedKmh);
+}
+
+/** Una vibrazione quando compare un'allerta nuova: si sente anche con la radio alta. */
+function buzz(alerts) {
+  const top = alerts[0];
+  const id = top ? top.id : null;
+  if (id === state.lastTopAlert) return;
+  state.lastTopAlert = id;
+  if (!top || !state.settings.haptics || !navigator.vibrate) return;
+  if (top.level === 'danger') navigator.vibrate([60, 50, 60]);
+  else if (top.level === 'warn') navigator.vibrate(35);
+}
+
+/** In marcia il pannello torna alla scheda di guida: schermo alla mappa. */
+function autoCollapse(speedKmh) {
+  if (speedKmh < 12 || ui.getSheet() === 'peek') return;
+  if (Date.now() - state.lastSheetTouch < AUTO_COLLAPSE_MS) return;
+  ui.setSheet('peek');
+}
+
+function refreshAutoTheme() {
+  if (state.settings.theme !== 'auto') return;
+  const wanted = ui.resolveTheme('auto');
+  if (wanted === state.mapTheme) return;
+  applyTheme(wanted);
+}
+
+function applyTheme(mapTheme) {
+  state.mapTheme = mapTheme;
+  ui.applyChromeTheme(mapTheme);
+  map.setTheme(mapTheme);
 }
 
 /* ---------- segnalazioni ---------- */
 
 function addReport(kind) {
-  const ll = state.pendingLatLng
-    ? [state.pendingLatLng.lat, state.pendingLatLng.lng]
+  const ll = state.pendingLngLat
+    ? [state.pendingLngLat.lat, state.pendingLngLat.lng]
     : state.fix ? [state.fix.lat, state.fix.lon] : null;
   if (!ll) { ui.toast('Serve prima una posizione GPS'); return; }
   const note = ui.$('#report-note').value.trim();
   reports.add(kind, ll[0], ll[1], note);
   ui.$('#report-note').value = '';
-  state.pendingLatLng = null;
-  ui.closeSheets();
+  state.pendingLngLat = null;
+  ui.setSheet('peek');
   ui.toast('Segnalazione salvata');
   voice.tone('info');
+  if (state.settings.haptics && navigator.vibrate) navigator.vibrate(20);
 }
 
 function exportReports() {
@@ -273,7 +335,7 @@ async function requestWakeLock() {
   try {
     state.wakeLock = await navigator.wakeLock.request('screen');
     state.wakeLock.addEventListener('release', () => { state.wakeLock = null; });
-  } catch { /* batteria bassa o tab in background */ }
+  } catch { /* batteria bassa o scheda in background */ }
 }
 
 function requestCompass() {
@@ -295,39 +357,51 @@ function requestCompass() {
   }
 }
 
-function updateNetPill() {
+function updateNetChip() {
   ui.$('#pill-net').hidden = navigator.onLine;
 }
 
 function applyLayers() {
-  const l = state.settings.layers;
-  map.setLayerVisible('zones', l.zones);
-  map.setLayerVisible('roads', l.roads);
-  map.setLayerVisible('cameras', l.cameras);
-  map.setLayerVisible('hazards', l.hazards);
-  map.setLayerVisible('reports', l.reports);
-  map.setLayerVisible('curated', l.curated);
+  for (const [key, on] of Object.entries(state.settings.layers)) map.setLayerVisible(key, on);
 }
 
 /* ---------- eventi UI ---------- */
 
 function wireUI() {
   ui.$('#btn-start').addEventListener('click', start);
-  ui.$('#scrim').addEventListener('click', ui.closeSheets);
-  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', ui.closeSheets));
 
-  ui.$('#btn-report').addEventListener('click', () => { state.pendingLatLng = null; ui.openSheet('sheet-report'); });
-  ui.$('#btn-layers').addEventListener('click', () => ui.openSheet('sheet-layers'));
-  ui.$('#btn-info').addEventListener('click', () => ui.openSheet('sheet-info'));
-  ui.$('#btn-center').addEventListener('click', () => map.recenter());
-
-  ui.$('#btn-voice').addEventListener('click', () => {
-    state.settings.voice = !state.settings.voice;
-    voice.enabled = state.settings.voice;
+  ui.$('#btn-center').addEventListener('click', () => {
+    map.recenter();
+    if (state.settings.mode === 'rotta') return;
+    state.settings.mode = 'rotta';
     ui.saveSettings(state.settings);
-    ui.$('#btn-voice').classList.toggle('is-on', state.settings.voice);
-    ui.$('#opt-voice').checked = state.settings.voice;
-    if (state.settings.voice) { voice.unlock(); voice.say('Avvisi vocali attivi', 'info'); }
+    ui.setSegActive('#mode-seg', 'mode', 'rotta');
+    map.setMode('rotta');
+  });
+
+  ui.$('#btn-compass').addEventListener('click', () => {
+    state.settings.mode = 'nord';
+    ui.saveSettings(state.settings);
+    ui.setSegActive('#mode-seg', 'mode', 'nord');
+    map.setMode('nord');
+  });
+
+  ui.$('#btn-3d').addEventListener('click', () => toggle3D(!state.settings.buildings3d));
+  ui.$('#opt-3d').addEventListener('change', (e) => toggle3D(e.target.checked));
+
+  ui.$('#btn-voice').addEventListener('click', () => toggleVoice(!state.settings.voice));
+  ui.$('#opt-voice').addEventListener('change', (e) => toggleVoice(e.target.checked));
+
+  ui.$('#opt-haptics').addEventListener('change', (e) => {
+    state.settings.haptics = e.target.checked;
+    ui.saveSettings(state.settings);
+  });
+
+  ui.$('#opt-wakelock').addEventListener('change', (e) => {
+    state.settings.wakelock = e.target.checked;
+    ui.saveSettings(state.settings);
+    if (e.target.checked) requestWakeLock();
+    else if (state.wakeLock) { state.wakeLock.release(); state.wakeLock = null; }
   });
 
   ui.$('#btn-export').addEventListener('click', exportReports);
@@ -344,7 +418,14 @@ function wireUI() {
     state.settings.theme = b.dataset.theme;
     ui.saveSettings(state.settings);
     ui.setSegActive('#theme-seg', 'theme', state.settings.theme);
-    map.setTheme(state.settings.theme);
+    applyTheme(ui.resolveTheme(state.settings.theme));
+  }));
+
+  document.querySelectorAll('#mode-seg button').forEach((b) => b.addEventListener('click', () => {
+    state.settings.mode = b.dataset.mode;
+    ui.saveSettings(state.settings);
+    ui.setSegActive('#mode-seg', 'mode', state.settings.mode);
+    map.setMode(state.settings.mode);
   }));
 
   document.querySelectorAll('#tol-seg button').forEach((b) => b.addEventListener('click', () => {
@@ -369,20 +450,6 @@ function wireUI() {
     tick();
   }));
 
-  ui.$('#opt-voice').addEventListener('change', (e) => {
-    state.settings.voice = e.target.checked;
-    voice.enabled = e.target.checked;
-    ui.saveSettings(state.settings);
-    ui.$('#btn-voice').classList.toggle('is-on', e.target.checked);
-  });
-
-  ui.$('#opt-wakelock').addEventListener('change', (e) => {
-    state.settings.wakelock = e.target.checked;
-    ui.saveSettings(state.settings);
-    if (e.target.checked) requestWakeLock();
-    else if (state.wakeLock) { state.wakeLock.release(); state.wakeLock = null; }
-  });
-
   ui.$('#btn-refresh').addEventListener('click', () => {
     if (!state.fix) { ui.toast('Serve prima una posizione GPS'); return; }
     source.failures = 0;
@@ -393,15 +460,35 @@ function wireUI() {
     });
   });
 
+  ui.$('#sheet-body').addEventListener('pointerdown', () => { state.lastSheetTouch = Date.now(); });
+
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       requestWakeLock();
+      refreshAutoTheme();
       if (state.fix) source.update(state.fix.lat, state.fix.lon, state.heading, state.speedMs).then((d) => d && map.renderData(d));
     }
   });
 }
 
+function toggle3D(on) {
+  state.settings.buildings3d = on;
+  ui.saveSettings(state.settings);
+  ui.$('#opt-3d').checked = on;
+  ui.$('#btn-3d').classList.toggle('is-on', on);
+  map.set3D(on);
+}
+
+function toggleVoice(on) {
+  state.settings.voice = on;
+  voice.enabled = on;
+  ui.saveSettings(state.settings);
+  ui.$('#opt-voice').checked = on;
+  ui.$('#btn-voice').classList.toggle('is-on', on);
+  if (on) { voice.unlock(); voice.say('Avvisi vocali attivi', 'info'); }
+}
+
 boot();
 
 // Utile per verifiche manuali dalla console del telefono.
-window.ARGO_DRIVE = { state, source, reports, engine, map: () => map, haversine };
+window.ARGO_DRIVE = { state, source, reports, engine, map: () => map, ui };

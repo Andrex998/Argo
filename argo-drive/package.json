@@ -6,9 +6,13 @@
   "type": "module",
   "scripts": {
     "start": "npx --yes serve --listen 4173 .",
-    "test": "node tests/drive.test.mjs && node tests/offline.test.mjs"
+    "test": "node tests/drive.test.mjs && node tests/offline.test.mjs && node tests/design.test.mjs"
   },
   "devDependencies": {
-    "playwright": "^1.49.1"
+    "@mapbox/vector-tile": "^2.0.3",
+    "geojson-vt": "^4.0.2",
+    "pbf": "^4.0.1",
+    "playwright": "^1.49.1",
+    "vt-pbf": "^3.1.3"
   }
 }

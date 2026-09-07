@@ -40,6 +40,54 @@ const REPORT_META = {
   pericolo: { level: 'warn', icon: 'alert', title: 'Pericolo' },
 };
 
+/**
+ * Elenco "vicino a te": tutto ciò che sta intorno, senza il filtro
+ * del cono di marcia. Le allerte servono a chi guida; questa lista
+ * serve a chi guarda, quindi dice anche cosa si è appena passato.
+ */
+export function nearbyList(point, data, reports, curated, radius = 1200) {
+  const out = [];
+  const add = (level, icon, title, detail, distance, id) =>
+    out.push({ id, level, icon, title, detail, distance });
+
+  for (const p of (data ? data.points : [])) {
+    const meta = POINT_META[p.kind];
+    if (!meta) continue;
+    const d = haversine(point, [p.lat, p.lon]);
+    if (d <= radius) add(meta.level, meta.icon, meta.title, p.label, d, `n-pt:${p.id}`);
+  }
+  for (const z of (data ? data.zones : [])) {
+    if (outsideBbox(point, z.box, radius)) continue;
+    const inside = pointInRing(point, z.ring);
+    const hit = distanceToLine(point, z.ring);
+    const d = inside ? 0 : (hit ? hit.dist : Infinity);
+    if (d > radius) continue;
+    const label = z.kind === 'lez' ? 'Zona a emissioni limitate' : 'Area pedonale';
+    add(inside ? 'danger' : 'warn', 'block', label, z.name || 'Accesso vietato ai veicoli', d, `n-z:${z.id}`);
+  }
+  for (const r of (data ? data.roads : [])) {
+    if (!r.block && !r.rough) continue;
+    if (outsideBbox(point, r.box, 600)) continue;
+    const hit = distanceToLine(point, r.coords);
+    if (!hit || hit.dist > 600) continue;
+    add(r.block ? 'warn' : 'info', r.block ? 'block' : 'rough',
+      r.block ? 'Divieto di accesso' : 'Strada dissestata',
+      `${r.name || 'Senza nome'} — ${r.block || r.rough}`, hit.dist, `n-r:${r.id}`);
+  }
+  for (const rep of reports || []) {
+    const meta = REPORT_META[rep.kind] || REPORT_META.pericolo;
+    const d = haversine(point, [rep.lat, rep.lon]);
+    if (d <= radius * 1.5) add(meta.level, meta.icon, meta.title, rep.note || 'Segnalazione tua o del gruppo', d, `n-rep:${rep.id}`);
+  }
+  for (const c of curated || []) {
+    if (osmCoversSpot(c, data)) continue;
+    const d = Math.max(0, haversine(point, [c.lat, c.lon]) - c.radius);
+    if (d <= radius * 1.5) add('warn', c.kind === 'mountain' ? 'rough' : 'block', c.name, `${c.note} · indicativo`, d, `n-cur:${c.id}`);
+  }
+
+  return out.sort((a, b) => a.distance - b.distance).slice(0, 12);
+}
+
 export class Voice {
   constructor() {
     this.enabled = true;

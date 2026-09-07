@@ -6,10 +6,10 @@
    localStorage lato app, con TTL).
    ============================================================ */
 
-const VERSION = 'argo-drive-v1';
+const VERSION = 'argo-drive-v2';
 const SHELL = `${VERSION}-shell`;
 const TILES = `${VERSION}-tiles`;
-const TILE_CAP = 700;
+const TILE_CAP = 1200;   // i tile vettoriali coprono più superficie dei raster
 
 const SHELL_FILES = [
   './',
@@ -17,13 +17,8 @@ const SHELL_FILES = [
   './styles.css',
   './manifest.webmanifest',
   './icons/icon.svg',
-  './vendor/leaflet/leaflet.js',
-  './vendor/leaflet/leaflet.css',
-  './vendor/leaflet/images/marker-icon.png',
-  './vendor/leaflet/images/marker-icon-2x.png',
-  './vendor/leaflet/images/marker-shadow.png',
-  './vendor/leaflet/images/layers.png',
-  './vendor/leaflet/images/layers-2x.png',
+  './vendor/maplibre/maplibre-gl.js',
+  './vendor/maplibre/maplibre-gl.css',
   './js/app.js',
   './js/alerts.js',
   './js/geo.js',
@@ -31,6 +26,7 @@ const SHELL_FILES = [
   './js/osm.js',
   './js/reports.js',
   './js/rules-albania.js',
+  './js/style.js',
   './js/ui.js',
 ];
 
@@ -50,8 +46,11 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Tile (vettoriali .pbf, raster .png) e glifi dei caratteri: tutto ciò
+// che, già visto una volta, deve restare visibile senza rete.
 const isTile = (url) =>
-  /basemaps\.cartocdn\.com|tile\.openstreetmap\.org|server\.arcgisonline\.com/.test(url.hostname + url.pathname);
+  /tiles\.openfreemap\.org|basemaps\.cartocdn\.com|tile\.openstreetmap\.org|server\.arcgisonline\.com/
+    .test(url.hostname + url.pathname);
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
