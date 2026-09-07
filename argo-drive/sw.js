@@ -1,0 +1,104 @@
+/* ============================================================
+   ARGO Drive — service worker
+   L'app deve aprirsi anche a rete zero: guscio in precache,
+   tile mappa in cache runtime con tetto massimo.
+   Overpass non viene mai messo in cache qui (ci pensa
+   localStorage lato app, con TTL).
+   ============================================================ */
+
+const VERSION = 'argo-drive-v1';
+const SHELL = `${VERSION}-shell`;
+const TILES = `${VERSION}-tiles`;
+const TILE_CAP = 700;
+
+const SHELL_FILES = [
+  './',
+  './index.html',
+  './styles.css',
+  './manifest.webmanifest',
+  './icons/icon.svg',
+  './vendor/leaflet/leaflet.js',
+  './vendor/leaflet/leaflet.css',
+  './vendor/leaflet/images/marker-icon.png',
+  './vendor/leaflet/images/marker-icon-2x.png',
+  './vendor/leaflet/images/marker-shadow.png',
+  './vendor/leaflet/images/layers.png',
+  './vendor/leaflet/images/layers-2x.png',
+  './js/app.js',
+  './js/alerts.js',
+  './js/geo.js',
+  './js/map.js',
+  './js/osm.js',
+  './js/reports.js',
+  './js/rules-albania.js',
+  './js/ui.js',
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(SHELL)
+      .then((c) => Promise.allSettled(SHELL_FILES.map((f) => c.add(f))))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+const isTile = (url) =>
+  /basemaps\.cartocdn\.com|tile\.openstreetmap\.org|server\.arcgisonline\.com/.test(url.hostname + url.pathname);
+
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  if (req.method !== 'GET') return;                 // Overpass usa POST: passa dritto
+  const url = new URL(req.url);
+
+  if (isTile(url)) { e.respondWith(tileStrategy(req)); return; }
+  if (url.origin !== self.location.origin) return;  // altre risorse esterne: rete diretta
+
+  if (req.mode === 'navigate') {
+    e.respondWith(fetch(req).catch(() => caches.match('./index.html')));
+    return;
+  }
+  e.respondWith(shellStrategy(req));
+});
+
+/** Guscio: cache first, ma aggiorna in background. */
+async function shellStrategy(req) {
+  const cached = await caches.match(req);
+  const network = fetch(req)
+    .then((res) => {
+      if (res && res.ok) caches.open(SHELL).then((c) => c.put(req, res.clone()));
+      return res;
+    })
+    .catch(() => cached);
+  return cached || network;
+}
+
+/** Tile: cache first (una strada già vista resta visibile senza rete). */
+async function tileStrategy(req) {
+  const cache = await caches.open(TILES);
+  const hit = await cache.match(req);
+  if (hit) return hit;
+  try {
+    const res = await fetch(req);
+    if (res && (res.ok || res.type === 'opaque')) {
+      cache.put(req, res.clone());
+      trimTiles(cache);
+    }
+    return res;
+  } catch {
+    return hit || Response.error();
+  }
+}
+
+async function trimTiles(cache) {
+  const keys = await cache.keys();
+  if (keys.length <= TILE_CAP) return;
+  for (const k of keys.slice(0, keys.length - TILE_CAP)) cache.delete(k);
+}

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>ARGO Drive — Albania</title>
+<meta name="description" content="Mappa di guida in tempo reale: posizione, limiti di velocità, zone vietate e pericoli segnalati, con dati OpenStreetMap.">
+<meta name="theme-color" content="#050507">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="map" aria-label="Mappa"></div>
+
+<!-- ── barra di stato ───────────────────────────────────── -->
+<header class="topbar" role="status">
+  <span class="pill" id="pill-gps"><i class="dot"></i> GPS</span>
+  <span class="pill" id="pill-data"><i class="dot"></i> Dati</span>
+  <span class="pill pill-warn" id="pill-net" hidden>Offline</span>
+  <span class="spacer"></span>
+  <button class="pill pill-btn" id="btn-info" aria-label="Informazioni e regole">Info</button>
+</header>
+
+<!-- ── allerte ──────────────────────────────────────────── -->
+<div class="alert-stack" id="alert-stack" role="alert" aria-live="assertive"></div>
+
+<!-- ── HUD ──────────────────────────────────────────────── -->
+<div class="hud">
+  <div class="hud-row">
+    <div class="speed" id="speed-block" data-state="idle">
+      <span class="speed-value" id="speed-value">—</span>
+      <span class="speed-unit" id="speed-unit">km/h</span>
+    </div>
+    <div class="limit" id="limit-disc" data-state="unknown" title="Limite di velocità">
+      <span class="limit-value" id="limit-value">—</span>
+    </div>
+  </div>
+  <div class="road" id="road-line">In attesa del segnale GPS…</div>
+</div>
+
+<!-- ── dock ─────────────────────────────────────────────── -->
+<nav class="dock" aria-label="Comandi">
+  <button class="dock-btn" id="btn-report"><span class="glyph">⚑</span>Segnala</button>
+  <button class="dock-btn" id="btn-layers"><span class="glyph">◈</span>Livelli</button>
+  <button class="dock-btn is-on" id="btn-center"><span class="glyph">◎</span>Centra</button>
+  <button class="dock-btn is-on" id="btn-voice"><span class="glyph">◗</span>Voce</button>
+</nav>
+
+<!-- ── pannelli ─────────────────────────────────────────── -->
+<div class="scrim" id="scrim" hidden></div>
+
+<section class="sheet" id="sheet-report" hidden aria-label="Segnala">
+  <header class="sheet-head"><h2>Segnala qui</h2><button class="sheet-x" data-close>✕</button></header>
+  <p class="sheet-note">La segnalazione resta sul tuo telefono, sulla tua posizione attuale. Esportala per condividerla con chi viaggia con te.</p>
+  <div class="chip-grid" id="report-kinds"></div>
+  <label class="field"><span>Nota (facoltativa)</span>
+    <input type="text" id="report-note" maxlength="80" placeholder="es. buca profonda a destra">
+  </label>
+  <div class="sheet-actions">
+    <button class="btn" id="btn-export">Esporta</button>
+    <button class="btn" id="btn-import">Importa</button>
+    <button class="btn btn-danger" id="btn-clear-reports">Cancella tutte</button>
+  </div>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+  <p class="sheet-note" id="report-count"></p>
+</section>
+
+<section class="sheet" id="sheet-layers" hidden aria-label="Livelli e impostazioni">
+  <header class="sheet-head"><h2>Livelli e impostazioni</h2><button class="sheet-x" data-close>✕</button></header>
+
+  <h3 class="sheet-sub">Mostra sulla mappa</h3>
+  <div class="toggle-list" id="layer-toggles"></div>
+
+  <h3 class="sheet-sub">Mappa</h3>
+  <div class="seg" id="theme-seg">
+    <button data-theme="scuro" class="is-on">Scura</button>
+    <button data-theme="chiaro">Chiara</button>
+    <button data-theme="satellite">Satellite</button>
+  </div>
+
+  <h3 class="sheet-sub">Tolleranza sul limite</h3>
+  <div class="seg" id="tol-seg">
+    <button data-tol="0">0</button>
+    <button data-tol="5" class="is-on">+5</button>
+    <button data-tol="10">+10</button>
+  </div>
+
+  <h3 class="sheet-sub">Raggio dati stradali</h3>
+  <div class="seg" id="radius-seg">
+    <button data-radius="600">600 m</button>
+    <button data-radius="900" class="is-on">900 m</button>
+    <button data-radius="1500">1,5 km</button>
+  </div>
+
+  <h3 class="sheet-sub">Unità</h3>
+  <div class="seg" id="unit-seg">
+    <button data-unit="kmh" class="is-on">km/h</button>
+    <button data-unit="mph">mph</button>
+  </div>
+
+  <div class="toggle-list">
+    <label class="toggle"><input type="checkbox" id="opt-wakelock" checked><span>Tieni acceso lo schermo</span></label>
+    <label class="toggle"><input type="checkbox" id="opt-voice" checked><span>Avvisi vocali in italiano</span></label>
+  </div>
+  <button class="btn" id="btn-refresh">Aggiorna dati stradali ora</button>
+  <p class="sheet-note" id="data-detail"></p>
+</section>
+
+<section class="sheet sheet-tall" id="sheet-info" hidden aria-label="Informazioni">
+  <header class="sheet-head"><h2>Guidare in Albania</h2><button class="sheet-x" data-close>✕</button></header>
+  <div id="info-body"></div>
+</section>
+
+<!-- ── gate iniziale: serve un gesto per GPS, audio e wake lock ── -->
+<div class="gate" id="gate">
+  <div class="gate-inner">
+    <p class="eyebrow">ARGO Drive</p>
+    <h1>Mappa di guida<br>in tempo reale</h1>
+    <p class="gate-copy">
+      Posizione live, limite di velocità della strada che stai percorrendo,
+      aree vietate alle auto, autovelox, dossi e passaggi a livello.
+      Dati OpenStreetMap, avvisi vocali in italiano.
+    </p>
+    <button class="gate-btn" id="btn-start">Avvia</button>
+    <p class="gate-legal">
+      Serve il permesso di posizione. I dati possono essere incompleti o non aggiornati:
+      <b>la segnaletica sulla strada vince sempre</b>. Non usare il telefono mentre guidi —
+      montalo sul supporto e ascolta gli avvisi.
+    </p>
+  </div>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

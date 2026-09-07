@@ -1,0 +1,14 @@
+{
+  "name": "argo-drive",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mappa di guida in tempo reale per l'Albania: posizione, limiti di velocità, zone vietate e pericoli, con dati OpenStreetMap.",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve --listen 4173 .",
+    "test": "node tests/drive.test.mjs && node tests/offline.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
+}

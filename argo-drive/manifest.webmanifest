@@ -1,0 +1,17 @@
+{
+  "name": "ARGO Drive — Albania",
+  "short_name": "ARGO Drive",
+  "description": "Mappa di guida in tempo reale: posizione, limiti di velocità, zone vietate e pericoli, con dati OpenStreetMap.",
+  "lang": "it",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050507",
+  "theme_color": "#050507",
+  "categories": ["navigation", "travel", "utilities"],
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
