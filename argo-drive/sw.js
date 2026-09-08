@@ -6,7 +6,7 @@
    localStorage lato app, con TTL).
    ============================================================ */
 
-const VERSION = 'argo-drive-v4';
+const VERSION = 'argo-drive-v5';
 const SHELL = `${VERSION}-shell`;
 const TILES = `${VERSION}-tiles`;
 const TILE_CAP = 1200;   // i tile vettoriali coprono più superficie dei raster
@@ -17,7 +17,10 @@ const SHELL_FILES = [
   './styles.css',
   './manifest.webmanifest',
   './icons/icon.svg',
-  './icons/icon-maskable.svg',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/apple-touch-icon.png',
+  './icons/icon-maskable-512.png',
   './vendor/maplibre/maplibre-gl.js',
   './vendor/maplibre/maplibre-gl.css',
   './js/app.js',

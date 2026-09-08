@@ -51,29 +51,39 @@ sono mappati in OSM, e in cerchio tratteggiato quando sono voci curate a mano
 
 ---
 
-## Metterla in strada
+## Metterla in strada, adesso
 
-Serve **HTTPS**: senza un contesto sicuro i browser non danno la posizione.
-Da un IP di rete locale (`http://192.168…`) il GPS resta spento.
+L'app ha bisogno di **HTTPS**: senza contesto sicuro nessun browser dà la
+posizione, e da un file locale o da un IP di rete (`http://192.168…`) il GPS
+resta spento. Serve quindi un indirizzo pubblico. Nel repository c'è già il
+flusso che lo crea da solo.
 
-**GitHub Pages** — la via più corta:
+**Dal telefono, due minuti:**
 
-1. su GitHub → *Settings* → *Pages*
-2. *Source*: Deploy from a branch → branch `claude/real-time-map-ztl-speed-limits-ck84k7`, cartella `/ (root)`
-3. apri `https://<utente>.github.io/<repo>/argo-drive/` dal telefono
-4. Safari: *Condividi* → *Aggiungi a Home*; Chrome: *⋮* → *Installa app*
+1. Apri il repository su GitHub → scheda **Actions**. Dovresti vedere il flusso
+   *Pubblica ARGO Drive* già in corso o completato (parte a ogni push su
+   `argo-drive/`). Se è verde, salta al punto 3.
+2. Se compare un errore su Pages: **Settings → Pages → Source: GitHub Actions**,
+   poi in **Actions** premi *Re-run jobs* sull'ultima esecuzione.
+3. Apri `https://<tuo-utente>.github.io/<repo>/` — per questo repository è
+   **https://andrex998.github.io/Argo/**
+4. **Installala**: su iPhone, Safari → *Condividi* → *Aggiungi a Home*; su
+   Android, Chrome → *⋮* → *Installa app*. Da lì parte a schermo intero, con la
+   sua icona, e continua a funzionare in galleria o senza campo.
 
-**Vercel**: `vercel --cwd argo-drive` (sito statico, nessuna configurazione).
+> Se il repository è privato e il piano GitHub non include Pages sui repository
+> privati, la pubblicazione fallisce con un errore esplicito. In quel caso: o
+> rendi pubblico il repository, oppure `vercel --cwd argo-drive` (sito statico,
+> nessuna configurazione), oppure trascina la cartella `argo-drive` su
+> [app.netlify.com/drop](https://app.netlify.com/drop).
 
-**In locale, per svilupparci**: `npm start` (serve la cartella su
-`http://localhost:4173`, che il browser considera sicuro).
+**Per svilupparci sopra**: `npm start` serve la cartella su
+`http://localhost:4173`, che il browser considera sicuro.
 
-Installandola dalla schermata Home parte a schermo intero e continua a funzionare
-in galleria o senza campo: il service worker tiene in cache il guscio dell'app e
-le tile già viste, e i dati stradali della zona restano in `localStorage` per una
-settimana.
-
----
+Al primo avvio tocca **Avvia**: l'app chiede la posizione, sblocca l'audio degli
+avvisi e tiene acceso lo schermo. Concedi il permesso di posizione **"Mentre usi
+l'app"** e, su iPhone, tieni Safari in primo piano mentre guidi: in background
+iOS sospende il GPS delle pagine web.
 
 ## Navigare
 
@@ -232,7 +242,7 @@ CHROMIUM_PATH=/percorso/a/chromium npm test    # CHROMIUM_PATH è opzionale
 Tre suite Playwright con GPS simulato, Overpass finto e **tile vettoriali
 sintetiche generate in locale** (`tests/fixtures/tileserver.mjs`), così lo stile
 viene verificato davvero e non solo compilato. Sono **asserzioni**, non stampe:
-`npm test` esce con errore se qualcosa si rompe (122 controlli).
+`npm test` esce con errore se qualcosa si rompe (136 controlli).
 
 - `tests/drive.test.mjs` — tragitto a Tirana a 75 km/h su strada con limite 40:
   verifica tachimetro, disco del limite, rotta ricavata dagli spostamenti,
@@ -241,6 +251,9 @@ viene verificato davvero e non solo compilato. Sono **asserzioni**, non stampe:
 - `tests/offline.test.mjs` — persistenza impostazioni, segnalazione con pressione
   prolungata, export, fallback sulla cache con Overpass irraggiungibile,
   apertura dell'app completamente offline.
+- `tests/deploy.test.mjs` — l'app servita da un sottopercorso come su GitHub
+  Pages: nessun file mancante nel precache o fra le icone, service worker con
+  l'ambito giusto, avvio senza tile e riapertura senza rete.
 - `tests/guidance.test.mjs` — puro Node, senza browser: percorso sintetico
   percorso da un veicolo simulato, con aggancio al tracciato, annunci alle soglie
   giuste una volta sola, riconoscimento del fuori percorso e arrivo.

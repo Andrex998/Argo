@@ -1,0 +1,61 @@
+# Pubblica ARGO Drive su GitHub Pages.
+#
+# L'app ha bisogno di HTTPS: senza contesto sicuro il browser non dà la
+# posizione, e senza posizione l'app non serve a niente. Questo flusso
+# pubblica la cartella argo-drive/ alla radice del sito, quindi l'indirizzo
+# finale è https://<utente>.github.io/<repo>/
+#
+# Se Pages non è ancora attivo, "configure-pages" prova ad accenderlo da solo.
+# In caso contrario: Impostazioni del repository → Pages → Source: GitHub Actions.
+
+name: Pubblica ARGO Drive
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - claude/real-time-map-ztl-speed-limits-ck84k7
+    paths:
+      - 'argo-drive/**'
+      - '.github/workflows/argo-drive-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Controllo che i file essenziali ci siano
+        run: |
+          set -e
+          for f in index.html styles.css sw.js manifest.webmanifest \
+                   js/app.js js/map.js js/router.js js/guidance.js js/search.js \
+                   vendor/maplibre/maplibre-gl.js icons/icon-192.png; do
+            test -f "argo-drive/$f" || { echo "manca argo-drive/$f"; exit 1; }
+          done
+          echo "guscio dell'app completo"
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: argo-drive
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -122,6 +122,13 @@ function boot() {
   setInterval(tick, 1000);
   setInterval(refreshAutoTheme, 10 * 60 * 1000);
 
+  // Scorciatoie dell'icona in home (manifest → shortcuts).
+  const azione = new URLSearchParams(location.search).get('azione');
+  if (azione === 'cerca' || azione === 'segnala') {
+    ui.showPanel(azione === 'cerca' ? 'cerca' : 'segnala');
+    state.azioneIniziale = azione;
+  }
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* niente offline, ma l'app gira */ });
   }
@@ -148,6 +155,11 @@ function start() {
 
   ui.$('#gate').hidden = true;
   map.resize();
+  if (state.azioneIniziale) {
+    ui.setSheet(state.azioneIniziale === 'cerca' ? 'full' : 'half');
+    if (state.azioneIniziale === 'cerca') setTimeout(() => ui.$('#search-input').focus(), 400);
+    state.azioneIniziale = null;
+  }
 }
 
 /**
