@@ -15,6 +15,7 @@ on:
     branches:
       - main
       - master
+      - claude/luxury-hero-section-ZYuZh          # branch predefinito di questo repository
       - claude/real-time-map-ztl-speed-limits-ck84k7
     paths:
       - 'argo-drive/**'

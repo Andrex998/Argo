@@ -55,26 +55,33 @@ sono mappati in OSM, e in cerchio tratteggiato quando sono voci curate a mano
 
 L'app ha bisogno di **HTTPS**: senza contesto sicuro nessun browser dà la
 posizione, e da un file locale o da un IP di rete (`http://192.168…`) il GPS
-resta spento. Serve quindi un indirizzo pubblico. Nel repository c'è già il
-flusso che lo crea da solo.
+resta spento. Serve quindi un indirizzo pubblico: si ottiene con una
+impostazione sola, e il repository è già pronto per riceverla.
 
-**Dal telefono, tre tocchi (una volta sola):**
+**Dal telefono, un minuto** (via più corta, nessuna Action di mezzo):
 
-1. Repository su GitHub → **Settings → Pages → Source: GitHub Actions**.
-   Questo passaggio è manuale per forza: il flusso prova ad accendere Pages da
-   solo, ma il suo token non ha quel permesso su quasi nessun repository.
-2. Scheda **Actions** → apri l'ultima esecuzione di *Pubblica ARGO Drive* →
-   **Re-run jobs**. Da qui in poi ogni push su `argo-drive/` ripubblica da solo.
-3. Apri **https://andrex998.github.io/Argo/** (in generale
-   `https://<tuo-utente>.github.io/<repo>/`).
-4. **Installala**: su iPhone, Safari → *Condividi* → *Aggiungi a Home*; su
+1. Repository su GitHub → **Settings → Pages**
+2. *Source*: **Deploy from a branch**
+3. *Branch*: `claude/real-time-map-ztl-speed-limits-ck84k7`, cartella **`/ (root)`** → **Save**
+4. Aspetta un minuto e apri
+   **https://andrex998.github.io/Argo/argo-drive/**
+5. **Installala**: su iPhone, Safari → *Condividi* → *Aggiungi a Home*; su
    Android, Chrome → *⋮* → *Installa app*. Da lì parte a schermo intero, con la
    sua icona, e continua a funzionare in galleria o senza campo.
 
-> Se il repository è privato e il piano GitHub non include Pages sui repository
-> privati, la pubblicazione fallisce con un errore esplicito. In quel caso: o
-> rendi pubblico il repository, oppure `vercel --cwd argo-drive` (sito statico,
-> nessuna configurazione), oppure trascina la cartella `argo-drive` su
+*Via alternativa, con pubblicazione automatica a ogni push:* in **Settings →
+Pages** scegli *Source: **GitHub Actions***, poi in **Actions** premi *Re-run
+jobs* sull'ultima esecuzione di *Pubblica ARGO Drive*. L'indirizzo diventa
+`https://andrex998.github.io/Argo/` (senza `/argo-drive/`). Attenzione: se il
+branch da pubblicare non è quello predefinito del repository, va anche
+autorizzato in **Settings → Environments → github-pages → Deployment branches**.
+
+> **Vercel**, se preferisci: nuovo progetto sullo stesso repository, *Root
+> Directory* `argo-drive`, *Framework Preset* **Other**. La configurazione degli
+> header è già in `argo-drive/vercel.json`. Da riga di comando:
+> `vercel --cwd argo-drive`.
+>
+> **Netlify**: trascina la cartella `argo-drive` su
 > [app.netlify.com/drop](https://app.netlify.com/drop).
 
 **Per svilupparci sopra**: `npm start` serve la cartella su
