@@ -49,9 +49,33 @@ jobs:
           done
           echo "guscio dell'app completo"
 
-      - uses: actions/configure-pages@v5
+      - id: pages
+        uses: actions/configure-pages@v5
         with:
           enablement: true
+
+      # Se il token del flusso non può accendere Pages da solo (è la
+      # norma su molti repository), la spiegazione deve stare qui, nella
+      # pagina del run, non in un file che nessuno apre mentre è in viaggio.
+      - name: Cosa fare se Pages non è attivo
+        if: failure() && steps.pages.outcome == 'failure'
+        run: |
+          {
+            echo "## Pages non è ancora attivo su questo repository"
+            echo ""
+            echo "Il flusso ha provato ad accenderlo da solo, ma il permesso non c'è."
+            echo "Servono due tocchi, una volta sola:"
+            echo ""
+            echo "1. **Settings → Pages → Source: GitHub Actions**"
+            echo "2. torna in **Actions**, apri l'ultima esecuzione e premi **Re-run jobs**"
+            echo ""
+            echo "Poi l'app sarà su **https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/**"
+            echo "e ogni push successivo la ripubblicherà da solo."
+            echo ""
+            echo "Se il repository è privato e il piano non include Pages sui repository privati,"
+            echo "la strada più corta è renderlo pubblico, oppure pubblicare la cartella"
+            echo "\`argo-drive\` su Vercel o Netlify."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-pages-artifact@v3
         with:

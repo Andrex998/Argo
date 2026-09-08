@@ -58,15 +58,15 @@ posizione, e da un file locale o da un IP di rete (`http://192.168…`) il GPS
 resta spento. Serve quindi un indirizzo pubblico. Nel repository c'è già il
 flusso che lo crea da solo.
 
-**Dal telefono, due minuti:**
+**Dal telefono, tre tocchi (una volta sola):**
 
-1. Apri il repository su GitHub → scheda **Actions**. Dovresti vedere il flusso
-   *Pubblica ARGO Drive* già in corso o completato (parte a ogni push su
-   `argo-drive/`). Se è verde, salta al punto 3.
-2. Se compare un errore su Pages: **Settings → Pages → Source: GitHub Actions**,
-   poi in **Actions** premi *Re-run jobs* sull'ultima esecuzione.
-3. Apri `https://<tuo-utente>.github.io/<repo>/` — per questo repository è
-   **https://andrex998.github.io/Argo/**
+1. Repository su GitHub → **Settings → Pages → Source: GitHub Actions**.
+   Questo passaggio è manuale per forza: il flusso prova ad accendere Pages da
+   solo, ma il suo token non ha quel permesso su quasi nessun repository.
+2. Scheda **Actions** → apri l'ultima esecuzione di *Pubblica ARGO Drive* →
+   **Re-run jobs**. Da qui in poi ogni push su `argo-drive/` ripubblica da solo.
+3. Apri **https://andrex998.github.io/Argo/** (in generale
+   `https://<tuo-utente>.github.io/<repo>/`).
 4. **Installala**: su iPhone, Safari → *Condividi* → *Aggiungi a Home*; su
    Android, Chrome → *⋮* → *Installa app*. Da lì parte a schermo intero, con la
    sua icona, e continua a funzionare in galleria o senza campo.
