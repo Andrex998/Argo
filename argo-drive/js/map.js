@@ -20,12 +20,16 @@ const COLORS = {
   warn: '#FFB020',
   voltage: '#3B8EFF',
   trace: '#3B8EFF',
+  route: '#1A73E8',        // il blu del percorso: più saturo dell'accento
+  routeCase: '#0B3D91',
+  routeDone: '#9AA3B2',    // quel che ti sei lasciato dietro
+  alt: '#9AA3B2',
 };
 
 const GLYPHS = {
   camera: '📸', calming: '⏛', crossing: '🚂', barrier: '⛓', hazard: '⚠️',
   buca: '🕳', incidente: '💥', chiusa: '⛔', polizia: '👮', autovelox: '📸',
-  animali: '🐄', pericolo: '⚠️',
+  animali: '🐄', pericolo: '⚠️', destinazione: '🏁',
 };
 
 const EMPTY = { type: 'FeatureCollection', features: [] };
@@ -56,6 +60,7 @@ export class DriveMap {
     this.overlays = {
       zone: EMPTY, vietate: EMPTY, dissestate: EMPTY, agganciata: EMPTY,
       punti: EMPTY, segnalazioni: EMPTY, curati: EMPTY, precisione: EMPTY, scia: EMPTY,
+      percorso: EMPTY, percorsoFatto: EMPTY, percorsiAlt: EMPTY, destinazione: EMPTY,
     };
     this.trace = [];
 
@@ -255,6 +260,36 @@ export class DriveMap {
     layer({
       id: 'l-curati-bordo', type: 'line', source: 'curati',
       paint: { 'line-color': COLORS.warn, 'line-width': 1.5, 'line-dasharray': [3, 3], 'line-opacity': 0.7 },
+    });
+    // Percorso: alternative sotto, tracciato attivo sopra, parte già
+    // percorsa spenta. Ordine e spessori sono quelli di un navigatore:
+    // la linea deve leggersi con un'occhiata di mezzo secondo.
+    layer({
+      id: 'l-alt', type: 'line', source: 'percorsiAlt',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': COLORS.alt, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4, 18, 9], 'line-opacity': 0.55 },
+    });
+    layer({
+      id: 'l-percorso-bordo', type: 'line', source: 'percorso',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': COLORS.routeCase, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 7, 18, 20] },
+    });
+    layer({
+      id: 'l-percorso', type: 'line', source: 'percorso',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': COLORS.route, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 18, 14] },
+    });
+    layer({
+      id: 'l-percorso-fatto', type: 'line', source: 'percorsoFatto',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': COLORS.routeDone, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 18, 14], 'line-opacity': 0.85 },
+    });
+    layer({
+      id: 'l-destinazione', type: 'symbol', source: 'destinazione',
+      layout: {
+        'icon-image': 'pin-destinazione', 'icon-size': 0.55, 'icon-allow-overlap': true,
+        'icon-anchor': 'bottom', 'icon-pitch-alignment': 'viewport', 'icon-rotation-alignment': 'viewport',
+      },
     });
     layer({
       id: 'l-agganciata', type: 'line', source: 'agganciata',
@@ -457,10 +492,17 @@ export class DriveMap {
   /** Più corri, più lontano guardi: come fa qualunque navigatore. */
   zoomForSpeed(speedMs) {
     const kmh = (speedMs || 0) * 3.6;
+    // Vicino a una manovra si stringe: la svolta si deve vedere.
+    if (Number.isFinite(this.manovraVicina) && this.manovraVicina < 180) return kmh < 55 ? 17.6 : 16.8;
     if (kmh < 25) return 17;
     if (kmh < 55) return 16.3;
     if (kmh < 85) return 15.7;
     return 15.2;
+  }
+
+  /** Distanza dalla prossima manovra: la usa solo la camera. */
+  setManeuverDistance(m) {
+    this.manovraVicina = m;
   }
 
   camera(fix, heading, speedMs, duration = 900) {
@@ -602,6 +644,89 @@ export class DriveMap {
     });
   }
 
+  /* ---------- percorso ---------- */
+
+  /** Disegna il percorso attivo, le alternative e la bandierina. */
+  showRoute(route, alternatives = [], destinazione = null) {
+    this.setSource('percorso', route ? linea(route.coords) : EMPTY);
+    this.setSource('percorsiAlt', {
+      type: 'FeatureCollection',
+      features: alternatives.map((r) => linea(r.coords).features[0]),
+    });
+    this.setSource('percorsoFatto', EMPTY);
+    this.setSource('destinazione', destinazione
+      ? { type: 'FeatureCollection', features: [{
+          type: 'Feature',
+          properties: { icon: 'pin-destinazione', titolo: destinazione.name || 'Destinazione', dettaglio: destinazione.detail || '', fonte: '' },
+          geometry: { type: 'Point', coordinates: [destinazione.lon, destinazione.lat] },
+        }] }
+      : EMPTY);
+    this.route = route;
+  }
+
+  /** Spegne la parte di percorso già fatta: si vede quanto manca. */
+  updateProgress(alongM) {
+    if (!this.route || !Number.isFinite(alongM)) return;
+    const { coords, cumulative } = this.route;
+    let i = 1;
+    while (i < cumulative.length && cumulative[i] < alongM) i++;
+    if (i < 2) { this.setSource('percorsoFatto', EMPTY); return; }
+    this.setSource('percorsoFatto', linea(coords.slice(0, i)));
+  }
+
+  clearRoute() {
+    this.route = null;
+    for (const id of ['percorso', 'percorsoFatto', 'percorsiAlt', 'destinazione']) this.setSource(id, EMPTY);
+  }
+
+  /**
+   * Inquadra tutto il percorso nella fascia di schermo libera.
+   *
+   * Non si usa un margine inferiore grande quanto il pannello: oltre
+   * circa metà altezza MapLibre non riesce più a calcolare la camera
+   * e restituisce null (verificato: a 420 px su 880 smette). Si
+   * inquadra quindi a schermo pieno e poi si sposta la camera in su,
+   * riducendo lo zoom in proporzione alla fascia davvero visibile.
+   */
+  fitRoute(route, opts = {}) {
+    if (!route || !route.coords.length) return false;
+    let minLat = 90, minLon = 180, maxLat = -90, maxLon = -180;
+    for (const [la, lo] of route.coords) {
+      if (la < minLat) minLat = la;
+      if (la > maxLat) maxLat = la;
+      if (lo < minLon) minLon = lo;
+      if (lo > maxLon) maxLon = lo;
+    }
+    const canvas = this.map.getCanvas();
+    const h = canvas.clientHeight || 800;
+    // Fascia realmente libera: sotto la barra di ricerca, sopra il pannello.
+    const cima = Math.max(0, opts.visibleTop || 0);
+    const fondo = Math.max(cima + 160, Math.min(opts.visibleBottom || h, h));
+
+    this.setFollow(false);
+    this.map.stop();
+    // In marcia la camera tiene un margine in alto per mettere il
+    // veicolo nel terzo basso: va azzerato, o l'inquadratura del
+    // percorso risulta spostata di trecento pixel verso il basso.
+    this.map.jumpTo({ pitch: 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 } });
+
+    const base = this.map.cameraForBounds(
+      [[minLon, minLat], [maxLon, maxLat]],
+      { padding: { top: 60, bottom: 60, left: 50, right: 50 } }
+    );
+    if (!base) return false;
+
+    const utile = Math.max(120, fondo - cima - 44);      // 22 px di aria per lato
+    const rapporto = Math.min(1, utile / Math.max(1, h - 120));
+
+    // Prima l'inquadratura giusta al centro dello schermo, poi lo
+    // spostamento verso la fascia libera: 'offset' di easeTo non si
+    // comporta come ci si aspetta quando si passa anche un centro.
+    this.map.jumpTo({ center: base.center, zoom: base.zoom + Math.log2(rapporto), pitch: 0, bearing: 0 });
+    this.map.panBy([0, h / 2 - (cima + fondo) / 2], { duration: 600 });
+    return true;
+  }
+
   setLayerVisible(name, visible) {
     const groups = {
       zones: ['l-zone-fill', 'l-zone-bordo'],
@@ -626,6 +751,11 @@ export class DriveMap {
 }
 
 /* ---------- helper geometrici ---------- */
+
+const linea = (coords) => ({
+  type: 'FeatureCollection',
+  features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords.map(([la, lo]) => [lo, la]) } }],
+});
 
 function circleFeature([lat, lon], radiusM, properties) {
   const coords = [];

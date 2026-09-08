@@ -10,6 +10,8 @@
 
 import { formatDistance } from './geo.js';
 import { COUNTRY_BRIEF } from './rules-albania.js';
+import { maneuverIcon } from './router.js';
+import { orarioArrivo, durataParlata } from './guidance.js';
 
 const SETTINGS_KEY = 'argo-drive:settings:v2';
 
@@ -38,6 +40,15 @@ export const LAYER_LABELS = [
 const GLYPH = {
   block: '⛔', camera: '📸', bump: '⏛', rail: '🚂', gate: '⛓',
   alert: '⚠️', rough: '〰', speed: '⏱', police: '👮',
+};
+
+/** Frecce delle manovre: leggibili di sbieco, a 90 km/h. */
+const MANOVRA = {
+  dritto: '↑', sinistra: '↰', destra: '↱',
+  'sinistra-lieve': '↖', 'destra-lieve': '↗',
+  'sinistra-secca': '⬅', 'destra-secca': '➡',
+  inversione: '↩', rotonda: '↻', rampa: '⤴', immissione: '⤴', uscita: '⤵',
+  arrivo: '🏁', partenza: '▲',
 };
 
 export const $ = (sel) => document.querySelector(sel);
@@ -77,6 +88,7 @@ export function applyChromeTheme(mapTheme) {
 const SHEET_STATES = ['peek', 'half', 'full'];
 let sheetState = 'peek';
 let onSheetState = () => {};
+let remisura = () => {};
 
 export function initSheet(onChange) {
   onSheetState = onChange || (() => {});
@@ -88,10 +100,15 @@ export function initSheet(onChange) {
   // il valore vero lo conosce solo il DOM, quindi lo misura lui e lo
   // scrive nella variabile che il CSS usa per la trasformazione.
   const measurePeek = () => {
-    const peek = handle.offsetHeight + card.offsetHeight + 6;
+    const eta = $('#etabar');
+    // In navigazione sopra il bordo c'è anche la barra dell'arrivo,
+    // con il suo margine inferiore: va contata, o resta fuori schermo.
+    const extra = eta && !eta.hidden ? eta.offsetHeight + 12 : 0;
+    const peek = handle.offsetHeight + card.offsetHeight + extra + 6;
     if (peek > 40) document.documentElement.style.setProperty('--peek', `${peek}px`);
     return peek;
   };
+  remisura = measurePeek;
   measurePeek();
   window.addEventListener('resize', measurePeek);
   window.addEventListener('orientationchange', () => setTimeout(measurePeek, 250));
@@ -227,7 +244,8 @@ function tipoStrada(hw) {
 
 export function renderAlerts(alerts) {
   const stack = $('#alert-stack');
-  const top = alerts.slice(0, 2);
+  const inNav = document.body.classList.contains('in-navigazione');
+  const top = alerts.slice(0, inNav ? 1 : 2);
   // Il titolo entra nella firma: l'allerta di velocità ha id e distanza
   // fissi, e senza il titolo resterebbe congelata sul primo "+N km/h".
   const sig = top.map((a) => `${a.id}:${a.title}:${Math.round(a.distance / 25)}`).join('|');
@@ -262,6 +280,122 @@ export function renderNearby(items) {
         ${a.distance > 15 ? `<div class="n-dist">${formatDistance(a.distance)}</div>` : ''}
       </li>`).join('')
     : '<li class="nearby-empty">Niente di rilevante entro un chilometro.</li>';
+}
+
+/* ---------- navigazione ---------- */
+
+/** Passa fra modalità esplorazione (barra di ricerca) e navigazione. */
+export function setNavMode(on) {
+  $('#btn-search').hidden = on;
+  $('#maneuver').hidden = !on;
+  $('#etabar').hidden = !on;
+  document.body.classList.toggle('in-navigazione', on);
+  // La barra dell'arrivo alza la parte visibile del pannello: senza
+  // rimisurare resterebbe sotto il bordo dello schermo.
+  remisura();
+}
+
+export function renderManeuver(nav) {
+  if (!nav) return;
+  $('#man-icon').textContent = MANOVRA[nav.icon] || '↑';
+  $('#man-dist').textContent = nav.arrived ? 'Arrivato' : formatDistance(nav.distanceToManeuver);
+  $('#man-street').textContent = nav.instruction || '';
+  const then = $('#man-then');
+  if (nav.after && !nav.arrived) {
+    then.hidden = false;
+    $('#man-then-icon').textContent = MANOVRA[maneuverIcon(nav.after)] || '↑';
+  } else {
+    then.hidden = true;
+  }
+}
+
+export function renderEta(nav) {
+  if (!nav) return;
+  $('#eta-time').textContent = nav.arrived ? 'Arrivato' : orarioArrivo(nav.eta);
+  $('#eta-rest').textContent = nav.arrived
+    ? (nav.destination && nav.destination.name) || ''
+    : `${durataParlata(nav.remainingS)} · ${formatDistance(nav.remainingM)}`;
+}
+
+/* ---------- ricerca ---------- */
+
+export function buildCategoryChips(categorie, onPick) {
+  const box = $('#search-cats');
+  box.innerHTML = categorie.map((c) => `
+    <button class="cat" data-cat="${c.id}"><span>${c.emoji}</span>${c.label}</button>`).join('');
+  box.querySelectorAll('.cat').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const attiva = chip.classList.contains('is-on');
+      box.querySelectorAll('.cat').forEach((c) => c.classList.remove('is-on'));
+      if (!attiva) chip.classList.add('is-on');
+      onPick(attiva ? null : chip.dataset.cat);
+    });
+  });
+}
+
+export function clearCategory() {
+  document.querySelectorAll('#search-cats .cat').forEach((c) => c.classList.remove('is-on'));
+}
+
+export function searchNote(text) {
+  const el = $('#search-note');
+  el.hidden = !text;
+  el.textContent = text || '';
+}
+
+/**
+ * Elenco dei risultati. `azione` è l'etichetta del secondo pulsante
+ * (serve per il punto scelto sulla mappa: "Segnala qui").
+ */
+export function renderResults(items, onPick, vuoto = 'Nessun risultato.') {
+  const list = $('#search-results');
+  if (!items.length) {
+    list.innerHTML = `<li class="nearby-empty">${escapeHtml(vuoto)}</li>`;
+    return;
+  }
+  list.innerHTML = items.map((r, i) => `
+    <li data-i="${i}">
+      <span class="r-icon">${r.emoji || '📍'}</span>
+      <div>
+        <div class="r-name">${escapeHtml(r.name)}</div>
+        ${r.detail ? `<div class="r-detail">${escapeHtml(r.detail)}</div>` : ''}
+      </div>
+      ${Number.isFinite(r.distance) ? `<div class="r-dist">${formatDistance(r.distance)}</div>` : ''}
+    </li>`).join('');
+  list.querySelectorAll('li[data-i]').forEach((li) => {
+    li.addEventListener('click', () => onPick(items[Number(li.dataset.i)]));
+  });
+}
+
+/** Selettore dei percorsi alternativi: senza, dire "2 percorsi" è una bugia. */
+export function renderRouteChoices(percorsi, attivo, onPick) {
+  const box = $('#route-alts');
+  if (!percorsi || percorsi.length < 2) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = percorsi.map((r, i) => `
+    <button class="route-alt ${i === attivo ? 'is-on' : ''}" data-i="${i}">
+      ${i === 0 ? 'Più rapido' : `Alternativa ${i}`} · ${durataParlata(r.duration)} · ${formatDistance(r.distance)}
+    </button>`).join('');
+  box.querySelectorAll('.route-alt').forEach((b) => {
+    b.addEventListener('click', () => onPick(Number(b.dataset.i)));
+  });
+}
+
+export function renderRoutePreview(route, destinazione, alternative = 0) {
+  $('#route-time').textContent = durataParlata(route.duration);
+  $('#route-meta').textContent =
+    `${formatDistance(route.distance)} · arrivo ${orarioArrivo(new Date(Date.now() + route.duration * 1000))}`;
+  $('#route-badge').textContent = alternative > 0 ? `${alternative + 1} percorsi` : 'percorso più rapido';
+  $('#route-dest').innerHTML =
+    `<b>${escapeHtml(destinazione.name)}</b>${destinazione.detail ? `<span>${escapeHtml(destinazione.detail)}</span>` : ''}`;
+  $('#route-steps').innerHTML = route.steps
+    .filter((s) => s.type !== 'depart')
+    .map((s) => `
+      <li>
+        <span class="s-icon">${MANOVRA[maneuverIcon(s)] || '↑'}</span>
+        <span>${escapeHtml(s.instruction)}</span>
+        <span class="s-dist">${formatDistance(s.distance)}</span>
+      </li>`).join('');
 }
 
 /* ---------- stato ---------- */

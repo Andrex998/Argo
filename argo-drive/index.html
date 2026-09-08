@@ -31,17 +31,33 @@
 
 <div id="map" aria-label="Mappa"></div>
 
-<!-- ── stato ────────────────────────────────────────────── -->
-<header class="topbar">
+<!-- ── testa: ricerca, manovra, stato, allerte ───────────── -->
+<div class="topstack">
+  <button class="searchbar" id="btn-search" aria-label="Cerca una destinazione">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M16 16 L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span>Dove vuoi andare?</span>
+  </button>
+
+  <div class="maneuver" id="maneuver" hidden aria-live="polite">
+    <div class="man-icon" id="man-icon">↑</div>
+    <div class="man-body">
+      <div class="man-dist" id="man-dist">—</div>
+      <div class="man-street" id="man-street"></div>
+    </div>
+    <div class="man-then" id="man-then" hidden><span>poi</span><b id="man-then-icon">↑</b></div>
+  </div>
+
   <div class="chips" role="status">
     <span class="chip" id="pill-gps"><i class="dot"></i><span>GPS</span></span>
     <span class="chip" id="pill-data"><i class="dot"></i><span>Dati</span></span>
     <span class="chip chip-alert" id="pill-net" hidden>Offline</span>
   </div>
-</header>
 
-<!-- ── allerte ──────────────────────────────────────────── -->
-<div class="alerts" id="alert-stack" role="alert" aria-live="assertive"></div>
+  <div class="alerts" id="alert-stack" role="alert" aria-live="assertive"></div>
+</div>
 
 <!-- ── pannello inferiore ───────────────────────────────── -->
 <section class="sheet" id="sheet" data-state="peek" aria-label="Pannello di guida">
@@ -61,16 +77,59 @@
     </div>
   </div>
 
+  <div class="etabar" id="etabar" hidden>
+    <div class="eta-main">
+      <b id="eta-time">—</b>
+      <span id="eta-rest">—</span>
+    </div>
+    <button class="eta-stop" id="btn-stop-nav">Esci</button>
+  </div>
+
   <div class="sheet-body" id="sheet-body">
     <nav class="tabs" id="tabs" role="tablist" aria-label="Sezioni del pannello">
-      <button class="tab is-on" data-panel="vicino" role="tab" aria-selected="true">Vicino a te</button>
+      <button class="tab is-on" data-panel="cerca" role="tab" aria-selected="true">Cerca</button>
+      <button class="tab" data-panel="vicino" role="tab" aria-selected="false">Vicino a te</button>
       <button class="tab" data-panel="segnala" role="tab" aria-selected="false">Segnala</button>
       <button class="tab" data-panel="livelli" role="tab" aria-selected="false">Livelli</button>
       <button class="tab" data-panel="info" role="tab" aria-selected="false">Info</button>
     </nav>
 
+    <!-- cerca -->
+    <div class="panel is-on" data-panel="cerca">
+      <div class="searchfield">
+        <input type="search" id="search-input" placeholder="Luogo, indirizzo o città" autocomplete="off" enterkeyhint="search">
+        <button id="search-clear" aria-label="Cancella" hidden>✕</button>
+      </div>
+      <div class="cats" id="search-cats"></div>
+      <p class="note" id="search-note" hidden></p>
+      <ul class="results" id="search-results"></ul>
+    </div>
+
+    <!-- percorso calcolato -->
+    <div class="panel" data-panel="percorso">
+      <div class="route-head">
+        <div>
+          <div class="route-time" id="route-time">—</div>
+          <div class="route-meta" id="route-meta">—</div>
+        </div>
+        <div class="route-badge" id="route-badge">percorso più rapido</div>
+      </div>
+      <div class="route-alts" id="route-alts" hidden></div>
+      <div class="route-dest" id="route-dest"></div>
+      <div class="row">
+        <button class="btn btn-primary" id="btn-go">Avvia navigazione</button>
+        <button class="btn" id="btn-cancel-route">Annulla</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="btn-fav">⭐ Salva luogo</button>
+        <button class="btn" id="btn-share">Condividi arrivo</button>
+      </div>
+      <h3 class="sub">Indicazioni</h3>
+      <ol class="steps" id="route-steps"></ol>
+    </div>
+
     <!-- vicino a te -->
-    <div class="panel is-on" data-panel="vicino">
+    <div class="panel" data-panel="vicino">
       <ul class="nearby" id="nearby"><li class="nearby-empty">Niente di rilevante nel raggio d’azione.</li></ul>
     </div>
 

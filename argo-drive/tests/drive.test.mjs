@@ -49,6 +49,7 @@ await page.evaluate(()=>{window.SAID=[]; const orig=window.speechSynthesis.speak
 await page.click('#btn-start'); await page.waitForTimeout(1200);
 
 const seen=new Set(); const track=[];
+const tPartenza = Date.now();
 for(let i=1;i<=40;i++){
   await ctx.setGeolocation({latitude:41.32700,longitude:19.8130+i*0.00025,accuracy:8});
   await page.waitForTimeout(1000);
@@ -63,7 +64,12 @@ for(let i=1;i<=40;i++){
 }
 console.log('marcia simulata verso est a ~75 km/h');
 check('la rotta viene ricavata dagli spostamenti (~90°)', near(track.at(-1).heading, 90, 6), track.at(-1).heading);
-check('la velocità stimata è quella reale', near(+track.at(-1).speed, 75, 8), track.at(-1).speed);
+// La velocità attesa si calcola sul tempo davvero trascorso: sotto
+// rendering software un "passo da un secondo" può durarne 1,2.
+const metriPercorsi = 40 * 0.00025 * 111320 * Math.cos(41.3275 * Math.PI / 180);
+const attesaKmh = (metriPercorsi / ((Date.now() - tPartenza) / 1000)) * 3.6;
+check('la velocità stimata corrisponde a quella reale',
+  near(+track.at(-1).speed, attesaKmh, 7), { mostrata: track.at(-1).speed, attesa: Math.round(attesaKmh) });
 
 const tipi = [...seen];
 check('avvisa gli autovelox', tipi.includes('Autovelox'), tipi);

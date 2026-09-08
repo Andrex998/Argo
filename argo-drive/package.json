@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "npx --yes serve --listen 4173 .",
-    "test": "node tests/drive.test.mjs && node tests/offline.test.mjs && node tests/design.test.mjs"
+    "test": "node tests/guidance.test.mjs && node tests/drive.test.mjs && node tests/offline.test.mjs && node tests/design.test.mjs && node tests/navigate.test.mjs"
   },
   "devDependencies": {
     "@mapbox/vector-tile": "^2.0.3",

@@ -6,7 +6,7 @@
    localStorage lato app, con TTL).
    ============================================================ */
 
-const VERSION = 'argo-drive-v3';
+const VERSION = 'argo-drive-v4';
 const SHELL = `${VERSION}-shell`;
 const TILES = `${VERSION}-tiles`;
 const TILE_CAP = 1200;   // i tile vettoriali coprono più superficie dei raster
@@ -25,8 +25,11 @@ const SHELL_FILES = [
   './js/geo.js',
   './js/map.js',
   './js/osm.js',
+  './js/guidance.js',
   './js/reports.js',
+  './js/router.js',
   './js/rules-albania.js',
+  './js/search.js',
   './js/style.js',
   './js/ui.js',
 ];

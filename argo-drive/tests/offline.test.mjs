@@ -55,15 +55,33 @@ check('i FAB spariscono con il pannello aperto',
   await page.evaluate(()=>getComputedStyle(document.querySelector('.fabs')).opacity === '0'));
 await page.evaluate(()=>window.ARGO_DRIVE.ui.setSheet('peek')); await page.waitForTimeout(300);
 
-// segnalazione con long press sulla mappa
+// pressione prolungata: sceglie un punto sulla mappa come destinazione,
+// e lo stesso punto resta disponibile per segnalarlo
+await page.evaluate(()=>window.ARGO_DRIVE.ui.setSheet('peek'));
+await page.waitForTimeout(300);
 await page.mouse.move(200, 420); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up();
+await page.waitForTimeout(900);
+const dopoPressione = await page.evaluate(()=>({
+  cerca: document.querySelector('.panel[data-panel="cerca"]').classList.contains('is-on'),
+  risultati: [...document.querySelectorAll('#search-results li')].map(li=>li.textContent.trim()),
+  nota: document.querySelector('#search-note').textContent,
+  punto: !!window.ARGO_DRIVE.state.pendingLngLat,
+}));
+check('la pressione prolungata propone il punto come destinazione',
+  dopoPressione.cerca && dopoPressione.punto && dopoPressione.risultati.length === 1, dopoPressione);
+check('senza rete il punto resta comunque utilizzabile',
+  dopoPressione.risultati[0].includes('Punto sulla mappa'), dopoPressione.risultati);
+check('spiega che lo stesso punto si può segnalare', dopoPressione.nota.includes('Segnala'), dopoPressione.nota);
+
+// dallo stesso punto si crea la segnalazione
+await page.evaluate(()=>{ window.ARGO_DRIVE.ui.setSheet('full'); window.ARGO_DRIVE.ui.showPanel('segnala'); });
 await page.waitForTimeout(400);
 const sheetOpen = await page.evaluate(()=>document.querySelector('.panel[data-panel="segnala"]').classList.contains('is-on'));
 await page.fill('#report-note','buca profonda');
 await page.click('.chip-btn[data-kind="buca"]'); await page.waitForTimeout(400);
 const rep = await page.evaluate(()=>window.ARGO_DRIVE.reports.items[0]);
 console.log('\n3) segnalazioni');
-check('la pressione prolungata apre il pannello segnala', sheetOpen === true);
+check('la scheda Segnala resta raggiungibile', sheetOpen === true);
 check('la segnalazione nasce nel punto premuto, non sul GPS',
   rep && rep.kind === 'buca' && rep.note === 'buca profonda' && Math.abs(rep.lat - 41.3200) > 0.0002, rep);
 

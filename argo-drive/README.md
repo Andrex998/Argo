@@ -1,9 +1,10 @@
 # ARGO Drive — Albania
 
-Mappa di guida in tempo reale per un viaggio in auto in Albania: **dove sei**,
-**a che velocità vai**, **qual è il limite della strada che stai percorrendo**,
-**quali aree sono vietate alle auto** e **cosa hai davanti** (autovelox, dossi,
-passaggi a livello, fondo dissestato, divieti di accesso).
+Navigatore per un viaggio in auto in Albania: **dove vuoi andare** (ricerca,
+percorso, indicazioni vocali svolta per svolta, orario di arrivo, ricalcolo se
+sbagli strada) e **cosa hai intorno mentre guidi** (limite della strada che stai
+percorrendo, aree vietate alle auto, autovelox, dossi, passaggi a livello, fondo
+dissestato).
 
 App statica: HTML + CSS + JavaScript a moduli. Nessun build step, nessun account,
 nessun server. La mappa gira su **MapLibre GL** con tile vettoriali e uno stile
@@ -17,6 +18,9 @@ La libreria è vendorizzata in `vendor/`, così l'app si apre anche senza rete.
 | In tempo reale, sì | Da dove arriva |
 |---|---|
 | Posizione, rotta e velocità | GPS del telefono (`watchPosition`) |
+| Ricerca di luoghi e indirizzi | Photon (OpenStreetMap), Nominatim come riserva |
+| Percorso, indicazioni e orario di arrivo | OSRM pubblico (profilo auto) |
+| Ricalcolo quando esci dal percorso | confronto continuo posizione/tracciato |
 | Limite della strada che stai percorrendo | `maxspeed` OpenStreetMap + map matching sulla geometria stradale |
 | Allarme superamento del limite (voce + schermo rosso) | confronto continuo velocità/limite con tolleranza regolabile |
 | Aree pedonali, strade vietate ai veicoli, LEZ | tag OSM `highway=pedestrian`, `motor_vehicle=no`, `boundary=low_emission_zone` |
@@ -31,7 +35,9 @@ cielo e orizzonte nella vista in marcia.
 
 **Quello che questa app non può fare, e nessuna app onesta senza backend può fare:**
 non esiste un feed pubblico e gratuito di traffico, incidenti e pattuglie in tempo
-reale per l'Albania. Waze e Google hanno reti di utenti proprietarie e chiuse.
+reale per l'Albania. Gli orari di arrivo sono quindi calcolati sulla velocità
+libera delle strade, corretti con l'andatura che stai davvero tenendo: **non
+sanno nulla della coda che hai davanti**. Waze e Google hanno reti di utenti proprietarie e chiuse.
 Al posto di fingere, qui trovi le **segnalazioni manuali**: le crei con un tocco,
 restano sul telefono, e le esporti in un file JSON che chi viaggia con te può
 importare. Vera collaborazione, senza server e senza raccontarti una favola.
@@ -68,6 +74,29 @@ le tile già viste, e i dati stradali della zona restano in `localStorage` per u
 settimana.
 
 ---
+
+## Navigare
+
+1. Tocca **Dove vuoi andare?** in alto.
+2. Scrivi un luogo o un indirizzo, oppure usa le pastiglie: benzina, parcheggio,
+   mangiare, dormire, farmacia, ospedale, bancomat, officina, spesa. Le categorie
+   cercano entro 5 km e ordinano per distanza reale.
+3. Puoi anche **tenere premuto un punto sulla mappa**: l'app scopre che cos'è e
+   lo propone come destinazione.
+4. Scegli fra i percorsi proposti (durata e distanza sono sulle pastiglie), poi
+   **Avvia navigazione**.
+5. In marcia: scheda blu in alto con la manovra e la distanza, "poi" con la
+   manovra successiva, barra in basso con orario di arrivo, tempo e chilometri
+   che mancano, e **Esci** per interrompere.
+
+Gli annunci vocali arrivano a 500, 200 e 100 metri dalla svolta in città, e a
+2 km, 1 km, 500 e 200 metri fuori città — perché a 90 all'ora cento metri sono
+quattro secondi. Se esci dal percorso l'app se ne accorge dopo quattro secondi
+(non al primo scarto del GPS), lo dice e ricalcola.
+
+**Salva luogo** mette la destinazione fra i preferiti, che compaiono in cima alla
+ricerca la volta dopo. **Condividi arrivo** manda a chi ti aspetta un messaggio
+con l'orario previsto e il punto sulla mappa.
 
 ## In auto
 
@@ -167,6 +196,9 @@ argo-drive/
     ├── rules-albania.js    limiti di default, parsing maxspeed, verdetti di accesso, punti curati
     ├── alerts.js           prossimità, eccesso di velocità, voce italiana, elenco "vicino a te"
     ├── reports.js          segnalazioni locali con scadenza, export/import JSON
+    ├── router.js           percorso via OSRM e manovre tradotte in italiano
+    ├── search.js           ricerca luoghi, categorie, preferiti e destinazioni recenti
+    ├── guidance.js         guida svolta per svolta: aggancio, annunci, ricalcolo, arrivo
     ├── style.js            stile mappa: palette giorno/notte, gerarchia stradale, 3D, cielo
     ├── map.js              MapLibre: camera course-up, puck, overlay, fallback raster
     └── ui.js               DOM, pannello trascinabile, impostazioni persistenti
@@ -200,7 +232,7 @@ CHROMIUM_PATH=/percorso/a/chromium npm test    # CHROMIUM_PATH è opzionale
 Tre suite Playwright con GPS simulato, Overpass finto e **tile vettoriali
 sintetiche generate in locale** (`tests/fixtures/tileserver.mjs`), così lo stile
 viene verificato davvero e non solo compilato. Sono **asserzioni**, non stampe:
-`npm test` esce con errore se qualcosa si rompe (77 controlli).
+`npm test` esce con errore se qualcosa si rompe (122 controlli).
 
 - `tests/drive.test.mjs` — tragitto a Tirana a 75 km/h su strada con limite 40:
   verifica tachimetro, disco del limite, rotta ricavata dagli spostamenti,
@@ -209,6 +241,12 @@ viene verificato davvero e non solo compilato. Sono **asserzioni**, non stampe:
 - `tests/offline.test.mjs` — persistenza impostazioni, segnalazione con pressione
   prolungata, export, fallback sulla cache con Overpass irraggiungibile,
   apertura dell'app completamente offline.
+- `tests/guidance.test.mjs` — puro Node, senza browser: percorso sintetico
+  percorso da un veicolo simulato, con aggancio al tracciato, annunci alle soglie
+  giuste una volta sola, riconoscimento del fuori percorso e arrivo.
+- `tests/navigate.test.mjs` — il giro completo: ricerca, anteprima con percorsi
+  alternativi, avvio, scheda manovra, barra dell'arrivo, avanzamento sulla mappa,
+  deviazione con ricalcolo, arrivo, ricerca per categoria.
 - `tests/design.test.mjs` — stile vettoriale valido e caricato, camera che ruota
   con la rotta e si inclina, cambio tema giorno/notte con gli overlay e i livelli
   spenti che sopravvivono al ricaricamento dello stile, 3D on/off, bussola,
@@ -226,8 +264,12 @@ viene verificato davvero e non solo compilato. Sono **asserzioni**, non stampe:
   evidenziata: se non è la tua, il limite non è il tuo.
 - La mappa vettoriale vuole WebGL: su telefoni molto vecchi conviene spegnere il
   3D. Senza WebGL l'app non parte.
-- Niente calcolo di percorso: è un cruscotto, non un navigatore. Usalo accanto a
-  Google Maps o Organic Maps se ti serve la rotta.
+- Nessun dato di traffico: i tempi non tengono conto delle code, e il percorso
+  "più rapido" è il più rapido a strade libere.
+- Il calcolo del percorso passa da istanze pubbliche di OSRM: sono gratuite ma
+  senza garanzie: se sono sature, l'app lo dice invece di restare in attesa.
+- Nessuna indicazione di corsia né vista degli svincoli: quelle richiedono dati
+  che OpenStreetMap non ha ovunque.
 - Gli autovelox mappati in OSM sono quelli fissi e noti: non aspettarti i mobili.
 - I limiti presunti sono regole generali per automobili: i neopatentati hanno
   soglie più basse e la segnaletica locale prevale sempre.

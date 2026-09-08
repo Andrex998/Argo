@@ -144,11 +144,13 @@ await page.mouse.down();
 await page.mouse.move(box.x + box.width / 2, box.y - 260, { steps: 12 });
 await page.mouse.up();
 await page.waitForTimeout(500);
+await page.evaluate(() => window.ARGO_DRIVE.ui.showPanel('vicino'));
+await page.waitForTimeout(400);
 console.log('\n3) pannello trascinabile');
 const sheet = await page.evaluate(() => ({
   stato: document.querySelector('#sheet').dataset.state,
   vicine: document.querySelectorAll('#nearby li').length,
-  vuoto: !!document.querySelector('.nearby-empty'),
+  vuoto: !!document.querySelector('#nearby .nearby-empty'),
 }));
 check('il trascinamento apre il pannello', sheet.stato === 'half', sheet.stato);
 check('l\'elenco "vicino a te" è popolato', sheet.vicine > 0 && !sheet.vuoto, sheet);
@@ -243,10 +245,12 @@ await page.waitForTimeout(900);   // durante l'attesa la camera continua a inseg
 await page.mouse.up();
 await page.waitForTimeout(400);
 const pressione = await page.evaluate(() => ({
-  pannello: document.querySelector('.panel[data-panel="segnala"]').classList.contains('is-on'),
+  pannello: document.querySelector('.panel[data-panel="cerca"]').classList.contains('is-on'),
   punto: !!window.ARGO_DRIVE.state.pendingLngLat,
+  risultati: document.querySelectorAll('#search-results li').length,
 }));
-check('la pressione prolungata apre le segnalazioni anche in marcia', pressione.pannello && pressione.punto, pressione);
+check('la pressione prolungata sceglie un punto anche in marcia',
+  pressione.pannello && pressione.punto && pressione.risultati === 1, pressione);
 
 console.log('\n8) tema satellite');
 await page.evaluate(() => { window.ARGO_DRIVE.ui.setSheet('full'); window.ARGO_DRIVE.ui.showPanel('livelli'); });
