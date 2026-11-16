@@ -50,6 +50,7 @@ def settings() -> Settings:
         capital=1000.0,
         fee_rate=0.001,
         regime_filter=False,
+        fear_greed=False,  # the demo never touches the network
         reanalyze_hours=0.0,
         cooldown_hours=0.0,
     )

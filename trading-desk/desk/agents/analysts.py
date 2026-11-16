@@ -124,7 +124,7 @@ def news(llm: LLM, brief: str, cfg: Settings) -> NewsReport:
 
 def sentiment(llm: LLM, brief: str, cfg: Settings) -> SentimentReport:
     prompt = brief
-    if index := fear_greed():
+    if cfg.fear_greed and (index := fear_greed()):
         prompt += f"\nCrypto Fear & Greed index: {index}"
     return llm.ask(SENTIMENT + _language(cfg), prompt, SentimentReport, web_search=True)
 

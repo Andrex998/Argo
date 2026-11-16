@@ -120,3 +120,15 @@ def test_http_server_serves_the_page_and_the_api(demo_db):
             urllib.request.urlopen(base + "/api/secret")
     finally:
         server.shutdown()
+
+
+def test_demo_never_touches_the_network(tmp_path, monkeypatch):
+    import socket
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("the demo tried to open a network connection")
+
+    monkeypatch.setattr(socket, "create_connection", refuse)
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    demo.run(tmp_path / "demo.db", threading.Event(), pace=0.0, loop=False)
+    assert "buy" in kinds(tmp_path / "demo.db")

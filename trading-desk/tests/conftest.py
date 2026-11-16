@@ -59,5 +59,10 @@ class Clock:
 def cfg() -> Settings:
     # The market-regime filter needs a BTC series; tests that use it switch it on.
     return Settings(
-        _env_file=None, capital=1000.0, quote="USDC", fee_rate=0.001, regime_filter=False
+        _env_file=None,
+        capital=1000.0,
+        quote="USDC",
+        fee_rate=0.001,
+        regime_filter=False,
+        fear_greed=False,  # tests never touch the network
     )

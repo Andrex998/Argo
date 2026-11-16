@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     min_confidence: float = 0.6
     reanalyze_hours: float = 6.0  # don't pay to re-analyse a symbol just judged
     max_searches: int = 3  # web searches per research agent
+    fear_greed: bool = True  # give the Sentiment analyst the public Fear & Greed index
     refusal_fallback: bool = True  # let the API retry a declined request on a fallback model
     anthropic_api_key: str = Field(default="", validation_alias="ANTHROPIC_API_KEY")
 
