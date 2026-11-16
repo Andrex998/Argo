@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tempfile
+import threading
 import time
 import traceback
+import webbrowser
 from datetime import datetime
+from pathlib import Path
 
-from desk import backtest, radar
+from desk import backtest, dashboard, demo, radar
 from desk.agents import charts, scout
 from desk.agents.llm import AgentUnavailable, ClaudeLLM
 from desk.broker import BrokerError, LiveBroker, PaperBroker
@@ -107,8 +111,47 @@ def cmd_cycle(cfg: Settings, args: argparse.Namespace) -> None:
     trading_desk(cfg, args).cycle()
 
 
+def start_dashboard(
+    cfg: Settings, db_path: Path, args: argparse.Namespace, demo_mode: bool = False
+):
+    """Serve the dashboard on a background thread and say where it is."""
+    try:
+        server = dashboard.serve(cfg, db_path, time.time, args.host, args.port, demo_mode)
+    except OSError as e:
+        raise SystemExit(
+            f"Porta {args.port} non disponibile ({e}). Scegline un'altra con --port."
+        ) from e
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    url = (
+        f"http://{'localhost' if args.host in ('127.0.0.1', '0.0.0.0') else args.host}:{args.port}"
+    )
+    print(f"Dashboard: {url}", flush=True)
+    if args.open:
+        webbrowser.open(url)
+    return server
+
+
+def cmd_dashboard(cfg: Settings, args: argparse.Namespace) -> None:
+    stop = threading.Event()
+    if args.demo:
+        cfg = demo.settings()
+        db_path = Path(tempfile.mkdtemp(prefix="desk-demo-")) / "demo.db"
+        threading.Thread(target=demo.run, args=(db_path, stop), daemon=True).start()
+        print("Demo: mercati e analisti fittizi, in un database temporaneo.")
+    else:
+        db_path = cfg.db_path
+    start_dashboard(cfg, db_path, args, demo_mode=args.demo)
+    print("Ctrl+C per chiudere.")
+    try:
+        stop.wait()
+    except KeyboardInterrupt:
+        stop.set()
+
+
 def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
     desk = trading_desk(cfg, args)
+    if args.dashboard:
+        start_dashboard(cfg, cfg.db_path, args)
     period = desk.market.candle_ms / 1000
     next_cycle = 0.0
     mode = "solo regole" if desk.llm is None else f"analisti {cfg.model}"
@@ -122,6 +165,7 @@ def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
                     desk.cycle()
                     # Next pass shortly after the next candle closes.
                     next_cycle = (time.time() // period + 1) * period + 20
+                    desk.store.set("next_cycle", next_cycle)
                 else:
                     desk.monitor()
             except Exception as e:  # keep watching open positions whatever goes wrong
@@ -299,9 +343,19 @@ def main(argv: list[str] | None = None) -> None:
     command("cycle", cmd_cycle, "un ciclo completo del desk", trades=True).add_argument(
         "--rules-only", action="store_true", help=rules
     )
-    command("run", cmd_run, "il desk gira in continuo", trades=True).add_argument(
-        "--rules-only", action="store_true", help=rules
-    )
+
+    def web(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--port", type=int, default=8787, help="porta della dashboard")
+        p.add_argument("--host", default="127.0.0.1", help="indirizzo su cui ascoltare")
+        p.add_argument("--open", action="store_true", help="apre la dashboard nel browser")
+
+    run = command("run", cmd_run, "il desk gira in continuo", trades=True)
+    run.add_argument("--rules-only", action="store_true", help=rules)
+    run.add_argument("--dashboard", action="store_true", help="avvia anche la dashboard")
+    web(run)
+    board = command("dashboard", cmd_dashboard, "pagina web con gli agenti in diretta")
+    board.add_argument("--demo", action="store_true", help="sessione dimostrativa, dati fittizi")
+    web(board)
     command("status", cmd_status, "equity, posizioni, risultati e spesa per gli analisti")
     command("journal", cmd_journal, "il diario del desk: chi ha detto cosa e perché").add_argument(
         "-n", type=int, default=40, help="quante righe mostrare"

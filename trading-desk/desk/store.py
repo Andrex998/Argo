@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS events (
     message TEXT, data TEXT);
 CREATE TABLE IF NOT EXISTS cooldowns (symbol TEXT PRIMARY KEY, until REAL);
 CREATE TABLE IF NOT EXISTS reviews (symbol TEXT PRIMARY KEY, ts REAL);
+CREATE TABLE IF NOT EXISTS equity (ts REAL PRIMARY KEY, equity REAL);
 """
+TABLES = ("kv", "positions", "trades", "events", "cooldowns", "reviews", "equity")
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,11 +53,27 @@ class Event:
 
 
 class Store:
-    def __init__(self, path: Path | str):
-        if path != ":memory:":
+    def __init__(self, path: Path | str, *, readonly: bool = False):
+        """Open the desk's database. A read-only store never creates or changes anything."""
+        if readonly:
+            self.db = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=10)
+            return
+        in_memory = str(path) == ":memory:"
+        if not in_memory:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path, isolation_level=None)  # autocommit
+        self.db = sqlite3.connect(path, isolation_level=None, timeout=10)  # autocommit
+        if not in_memory:
+            # Lets the dashboard read while the desk writes.
+            self.db.execute("PRAGMA journal_mode=WAL")
         self.db.executescript(SCHEMA)
+
+    def close(self) -> None:
+        self.db.close()
+
+    def reset(self) -> None:
+        """Empty every table. Used by the demo to start a session over."""
+        for table in TABLES:
+            self.db.execute(f"DELETE FROM {table}")
 
     # --- key/value state ------------------------------------------------------
 
@@ -66,12 +84,19 @@ class Store:
     def get_float(self, key: str, default: float = 0.0) -> float:
         return float(self.get(key, str(default)))
 
+    def get_json(self, key: str) -> dict:
+        raw = self.get(key)
+        return json.loads(raw) if raw else {}
+
     def set(self, key: str, value: str | float) -> None:
         self.db.execute(
             "INSERT INTO kv (key, value) VALUES (?, ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             (key, str(value)),
         )
+
+    def set_json(self, key: str, value: dict) -> None:
+        self.set(key, json.dumps(value, ensure_ascii=False))
 
     def add(self, key: str, amount: float) -> None:
         self.set(key, self.get_float(key) + amount)
@@ -124,6 +149,22 @@ class Store:
     def mark_reviewed(self, symbol: str, ts: float) -> None:
         self.db.execute("INSERT OR REPLACE INTO reviews VALUES (?, ?)", (symbol, ts))
 
+    # --- equity history -------------------------------------------------------
+
+    def add_equity(self, ts: float, equity: float, min_gap: float = 0.0) -> None:
+        """Record a point, unless one was just recorded and equity has barely moved."""
+        last = self.db.execute("SELECT ts, equity FROM equity ORDER BY ts DESC LIMIT 1").fetchone()
+        if last and ts - last[0] < min_gap and abs(equity - last[1]) < 0.0005 * last[1]:
+            return
+        self.db.execute("INSERT OR REPLACE INTO equity VALUES (?, ?)", (ts, equity))
+
+    def equity_curve(self, limit: int = 400) -> list[tuple[float, float]]:
+        """The latest points, oldest first."""
+        rows = self.db.execute(
+            "SELECT ts, equity FROM equity ORDER BY ts DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return rows[::-1]
+
     # --- journal --------------------------------------------------------------
 
     def log(self, ts: float, agent: str, symbol: str, message: str, data: dict | None) -> None:
@@ -137,3 +178,26 @@ class Store:
             "SELECT ts, agent, symbol, message FROM events ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
         return [Event(*row) for row in reversed(rows)]
+
+    def events_after(self, after_id: int, limit: int = 300) -> list[dict]:
+        """Journal entries newer than `after_id`, oldest first; the latest ones when it is 0."""
+        columns = "id, ts, agent, symbol, message, data"
+        if after_id > 0:
+            rows = self.db.execute(
+                f"SELECT {columns} FROM events WHERE id > ? ORDER BY id LIMIT ?", (after_id, limit)
+            ).fetchall()
+        else:
+            rows = self.db.execute(
+                f"SELECT {columns} FROM events ORDER BY id DESC LIMIT ?", (limit,)
+            ).fetchall()[::-1]
+        return [
+            {
+                "id": id_,
+                "ts": ts,
+                "agent": agent,
+                "symbol": symbol,
+                "message": message,
+                "data": json.loads(data) if data else {},
+            }
+            for id_, ts, agent, symbol, message, data in rows
+        ]
