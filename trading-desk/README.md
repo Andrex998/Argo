@@ -61,6 +61,7 @@ Per accendere gli analisti metti `ANTHROPIC_API_KEY` in `.env` e lancia `uv run 
 | `desk status` | Equity, posizioni, risultati, spesa stimata per gli analisti |
 | `desk journal` | Chi ha detto cosa e perché |
 | `desk backtest` | Le regole rigiocate sullo storico, con commissioni e slippage |
+| `desk radar <indirizzo>` | Punteggio di rischio di un token DEX (memecoin) |
 | `desk halt` / `desk resume` | Blocca o riattiva le nuove entrate |
 | `desk close-all` | Vende tutte le posizioni del desk |
 
@@ -109,6 +110,30 @@ Rifallo tu con `uv run desk backtest --days 30` (per le candele a 4 ore:
 `DESK_TIMEFRAME=4h uv run desk backtest --days 120`). Kraken fornisce al massimo 720
 candele di storico per mercato.
 
+## Radar: il filtro per le memecoin
+
+`desk radar <contract address>` è il motore di ARGO // RADAR portato in Python. Legge
+DexScreener e, per Solana, RugCheck, e dà un punteggio da 0 a 100 con la stessa regola
+dell'originale: il dato che manca non si inventa, vale zero.
+
+- 40 punti on-chain (volume, liquidità, pressione in acquisto, momentum, età).
+- 20 punti di sicurezza. Mint o freeze authority attive, LP bloccata sotto il 50% o
+  top 10 wallet oltre il 40% fanno fallire il gate: punteggio limitato a 15.
+- 40 punti social e crescita degli holder non sono verificabili in automatico, quindi
+  una scansione senza input manuali arriva al massimo a 56.
+- Su token EVM la sicurezza non è verificata e il punteggio è limitato a 49.
+
+I punteggi coincidono con quelli del motore JavaScript originale su dodici casi di
+riferimento (`tests/radar_reference.json`), con una differenza voluta: il conto del
+pool di liquidità non viene contato tra i top holder. Sui lanci recenti il pool o la
+bonding curve detiene gran parte della supply, e l'originale lo leggeva come una
+balena facendo fallire il gate su quasi tutti i token nuovi.
+
+Due limiti: è tarato sui lanci recenti (su token maturi con liquidità concentrata,
+come BONK, il gate LP dà "EVITARE"), e **non è collegato al trading**. Il desk opera
+solo su exchange centralizzati: comprare token on-chain richiede una chiave privata
+sulla macchina e uno strato di esecuzione che qui non esiste.
+
 ## Quanto costano gli analisti
 
 Ogni mercato discusso richiede quattro chiamate a Claude, due con ricerca web. Con il
@@ -146,6 +171,7 @@ Limiti da conoscere prima:
 - **Dati reali su Kraken**: scansione, ciclo completo in paper trading, loop continuo,
   blocco e riattivazione, backtest. Alcune operazioni del backtest sono state
   ricontrollate a mano sulle candele.
+- **Radar**: provato su token reali Solana ed EVM attraverso DexScreener e RugCheck.
 - **Binance**: non provato. L'ambiente di sviluppo non può raggiungerlo per un blocco
   geografico; il codice è lo stesso, ma il primo `desk scan` va guardato.
 - **Chiamate a Claude e ordini reali**: provati solo contro controfigure che imitano
@@ -166,6 +192,7 @@ desk/
   market.py           dati di mercato (ccxt)
   desk.py             orchestrazione di un ciclo
   backtest.py         le stesse regole sullo storico
+  radar.py            punteggio di rischio per token DEX
   store.py            SQLite: cassa, posizioni, operazioni, diario
   cli.py              i comandi
 ```

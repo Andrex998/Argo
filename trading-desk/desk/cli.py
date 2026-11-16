@@ -8,7 +8,7 @@ import time
 import traceback
 from datetime import datetime
 
-from desk import backtest
+from desk import backtest, radar
 from desk.agents import charts, scout
 from desk.agents.llm import AgentUnavailable, ClaudeLLM
 from desk.broker import BrokerError, LiveBroker, PaperBroker
@@ -219,6 +219,41 @@ def cmd_backtest(cfg: Settings, args: argparse.Namespace) -> None:
     )
 
 
+def cmd_radar(cfg: Settings, args: argparse.Namespace) -> None:
+    try:
+        report = radar.scan(args.address, time.time() * 1000)
+    except radar.RadarError as e:
+        raise SystemExit(f"Radar: {e}") from e
+    price = "—" if report.price is None else f"${report.price:.6g}"
+    print(f"{report.name} ${report.symbol} · {report.chain}")
+    market_cap, liquidity = _usd(report.market_cap), _usd(report.liquidity)
+    print(f"Prezzo {price} · market cap {market_cap} · liquidità {liquidity}")
+    print(f"\nPunteggio {report.total}/100 · {report.tier} · dati verificati {report.coverage}%")
+    if report.gate:
+        print(f"GATE FALLITO: struttura compatibile con un rug. Punteggio limitato a {report.cap}.")
+    elif report.cap:
+        print(f"Sicurezza non verificata: punteggio limitato a {report.cap}.")
+    print()
+    for item in report.items:
+        points = f"{item.points}/{item.max}" if item.verified else f"0/{item.max} non verificato"
+        print(f"  {item.label:<26} {item.value:>18}   {points}")
+    if report.traps:
+        print("\nTrappole: " + " · ".join(report.traps))
+    print(
+        "\nÈ una lettura del rischio, non un segnale di acquisto. Social e crescita degli holder "
+        "non si possono verificare in automatico, quindi valgono zero."
+    )
+
+
+def _usd(amount: float | None) -> str:
+    if amount is None:
+        return "—"
+    for size, unit in ((1e9, "B"), (1e6, "M"), (1e3, "k")):
+        if amount >= size:
+            return f"${amount / size:.2f}{unit}"
+    return f"${amount:.2f}"
+
+
 def cmd_halt(cfg: Settings, args: argparse.Namespace) -> None:
     Store(cfg.db_path).set("halted", "fermato a mano")
     print("Desk fermo: nessuna nuova entrata. Le posizioni aperte restano gestite da `desk run`.")
@@ -265,6 +300,9 @@ def main(argv: list[str] | None = None) -> None:
     )
     command("backtest", cmd_backtest, "le regole del desk rigiocate sullo storico").add_argument(
         "--days", type=int, default=30, help="giorni di storico"
+    )
+    command("radar", cmd_radar, "punteggio di rischio di un token DEX (memecoin)").add_argument(
+        "address", help="contract address Solana o EVM"
     )
     command("halt", cmd_halt, "blocca le nuove entrate")
     command("resume", cmd_resume, "riattiva il desk dopo un blocco")
