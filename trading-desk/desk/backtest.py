@@ -61,6 +61,7 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
     candle_s = (timeline[1] - timeline[0]) / 1000
     index = {s: {c.ts: i for i, c in enumerate(candles)} for s, candles in histories.items()}
 
+    leader = f"BTC/{cfg.quote}"
     broker = PaperBroker(cfg)
     cash = peak = day_start = cfg.capital
     day = ""
@@ -151,6 +152,12 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
         )
         if risk.blocked(book, cfg):
             continue
+        if cfg.regime_filter and leader in bars:
+            i = index[leader][ts]
+            if i >= scout.MIN_CANDLES and charts.market_falling(
+                histories[leader][max(0, i - WINDOW + 1) : i + 1]
+            ):
+                continue
         candidates = []
         for symbol in bars:
             i = index[symbol][ts]
@@ -169,7 +176,7 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             book.exposure += decision.notional
             book.open_symbols |= {plan.symbol}
 
-    btc = next((c for s, c in histories.items() if s.startswith("BTC/")), None)
+    btc = histories.get(leader)
     return Result(
         start_ts=timeline[0] / 1000,
         end_ts=timeline[-1] / 1000 + candle_s,

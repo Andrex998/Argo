@@ -101,10 +101,12 @@ def cmd_cycle(cfg: Settings, args: argparse.Namespace) -> None:
 
 def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
     desk = trading_desk(cfg, args)
-    period = cfg.cycle_minutes * 60
+    period = desk.market.candle_ms / 1000
     next_cycle = 0.0
     mode = "solo regole" if desk.llm is None else f"analisti {cfg.model}"
-    desk.say("DESK", f"avviato in modalità {cfg.mode} ({mode}), ciclo ogni {cfg.cycle_minutes} min")
+    desk.say(
+        "DESK", f"avviato in modalità {cfg.mode} ({mode}), un ciclo a ogni candela {cfg.timeframe}"
+    )
     try:
         while True:
             try:

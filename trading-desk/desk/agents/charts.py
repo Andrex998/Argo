@@ -6,6 +6,8 @@ and identical in live trading and in the backtest.
 
 from __future__ import annotations
 
+from typing import Literal
+
 from desk.agents.scout import SURGE
 from desk.config import Settings
 from desk.indicators import atr, ema, rsi
@@ -16,18 +18,26 @@ SWING = 10  # candles defining the nearest support
 RANGE = 60  # candles defining the range the surge started from
 
 
+def trend_of(price: float, ema_fast: float, ema_slow: float) -> Literal["up", "down", "sideways"]:
+    if price > ema_slow and ema_fast > ema_slow:
+        return "up"
+    if price < ema_slow and ema_fast < ema_slow:
+        return "down"
+    return "sideways"
+
+
+def market_falling(candles: list[Candle]) -> bool:
+    """True when the market leader is in a downtrend: a poor moment to buy breakouts."""
+    closes = [c.close for c in candles]
+    return trend_of(closes[-1], ema(closes, FAST), ema(closes, SLOW)) == "down"
+
+
 def plan(symbol: str, candles: list[Candle], cfg: Settings) -> ChartPlan:
     closes = [c.close for c in candles]
     entry = closes[-1]
     ema_fast, ema_slow = ema(closes, FAST), ema(closes, SLOW)
     rsi_now, atr_now = rsi(closes), atr(candles)
-
-    if entry > ema_slow and ema_fast > ema_slow:
-        trend = "up"
-    elif entry < ema_slow and ema_fast < ema_slow:
-        trend = "down"
-    else:
-        trend = "sideways"
+    trend = trend_of(entry, ema_fast, ema_slow)
 
     # The stop sits a volatility-sized distance below entry, never tighter than the floor.
     stop_distance = max(cfg.atr_stop_mult * atr_now, entry * cfg.min_stop_pct / 100)

@@ -60,3 +60,11 @@ def test_benchmark_is_btc_buy_and_hold(cfg):
 def test_too_little_history_is_an_error(cfg):
     with pytest.raises(ValueError):
         backtest.run({"SOL/USDC": history([])[:30]}, cfg)
+
+
+def test_regime_filter_keeps_the_backtest_out_of_a_falling_market(cfg):
+    falling_btc = series(zigzag(135, 100.0, -0.005, 0.003), [1000.0] * 135)
+    histories = {"SOL/USDC": history([0.01] * 12 + [-0.03] * 3), "BTC/USDC": falling_btc}
+    assert len(backtest.run(histories, cfg).trades) == 1
+    cfg.regime_filter = True
+    assert backtest.run(histories, cfg).trades == []

@@ -159,3 +159,10 @@ def test_paper_round_trip_costs_fees_and_slippage(cfg):
     assert bought.quote_delta == pytest.approx(-(200.2 + 0.2002))
     assert sold.quote_delta == pytest.approx(199.8 - 0.1998)
     assert bought.quote_delta + sold.quote_delta < 0
+
+
+def test_gate_rejects_trades_that_fees_would_eat(cfg):
+    cfg.fee_rate = 0.004  # 0.8% in fees plus 0.2% slippage per round trip
+    tight = risk.evaluate(plan(stop=98.0), book(), cfg, now=0)  # 2% stop: costs are half the risk
+    assert tight.action == "REJECT" and "commissioni" in tight.reasons[0]
+    assert risk.evaluate(plan(stop=96.0), book(), cfg, now=0).approved  # 4% stop: a quarter

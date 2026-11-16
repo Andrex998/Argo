@@ -138,7 +138,7 @@ class Desk:
             return
 
         book = self.book()
-        if reason := risk.blocked(book, self.cfg):
+        if reason := risk.blocked(book, self.cfg) or self._market_falling():
             self.say("RISK", f"nessuna nuova entrata: {reason}")
             return
 
@@ -190,6 +190,18 @@ class Desk:
             )
             self._open(plan, decision)
             book = self.book()
+
+    def _market_falling(self) -> str:
+        """Why the wider market rules out new longs right now, or '' if it does not."""
+        if not self.cfg.regime_filter:
+            return ""
+        leader = f"BTC/{self.cfg.quote}"
+        try:
+            falling = charts.market_falling(self.market.candles(leader))
+        except MarketError as e:
+            self.say("RISK", f"trend di {leader} non valutabile, filtro di mercato saltato: {e}")
+            return ""
+        return f"{leader} in trend ribassista" if falling else ""
 
     def _debate(self, candidate: Candidate, plan: ChartPlan, now: float) -> float | None:
         """Run the analysts on one setup. Returns the size factor for a BUY, else None."""

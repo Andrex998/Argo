@@ -177,3 +177,10 @@ def test_missing_credentials_are_caught_at_startup(monkeypatch):
         monkeypatch.delenv(name, raising=False)
     with pytest.raises(AgentUnavailable, match="credenziale"):
         ClaudeLLM(Settings(_env_file=None))
+
+
+def test_refusal_fallback_can_be_switched_off():
+    llm, requests, _ = claude(response())
+    llm.cfg.refusal_fallback = False
+    llm.ask("system", "prompt", Verdict)
+    assert "betas" not in requests[0] and "fallbacks" not in requests[0]

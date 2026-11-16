@@ -1,5 +1,6 @@
 from desk.agents import charts, scout
 from desk.indicators import atr, ema, rsi
+from desk.market import is_pegged
 from desk.models import Candle
 from tests.conftest import breakout, dump, quiet, series
 
@@ -80,3 +81,8 @@ def test_charts_rejects_a_stop_wider_than_the_limit(cfg):
     )
     plan = charts.plan("SOL/USDC", wild, cfg)
     assert any("stop" in reason for reason in plan.reasons)
+
+
+def test_stablecoins_and_fiat_are_not_tradable_bases():
+    assert all(is_pegged(base) for base in ("USDT", "USDC", "USDG", "PYUSD", "EURC", "DAI", "GBP"))
+    assert not any(is_pegged(base) for base in ("BTC", "ETH", "SOL", "JUP", "SUI"))

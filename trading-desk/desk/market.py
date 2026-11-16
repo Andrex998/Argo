@@ -10,35 +10,18 @@ import ccxt
 from desk.config import Settings
 from desk.models import Candle
 
-# Bases that are not a directional bet: stablecoins and fiat.
-PEGGED = frozenset(
-    {
-        "USDT",
-        "USDC",
-        "DAI",
-        "TUSD",
-        "FDUSD",
-        "USDE",
-        "USDP",
-        "USDS",
-        "USD1",
-        "PYUSD",
-        "BUSD",
-        "UST",
-        "EURC",
-        "EURT",
-        "AEUR",
-        "USD",
-        "EUR",
-        "GBP",
-        "AUD",
-        "CHF",
-        "JPY",
-        "TRY",
-        "BRL",
-    }
-)
+# Bases that are not a directional bet: fiat and anything pegged to it. New
+# stablecoins appear all the time, so any ticker containing USD or EUR is skipped too.
+PEGGED = frozenset({"DAI", "GHO", "FRAX", "UST", "GBP", "AUD", "CHF", "JPY", "TRY", "BRL"})
 LEVERAGED = re.compile(r"\d+[LS]$")  # BTC3L, ETH5S, ...
+
+# Binance lists futures on separate hosts that are restricted in some regions.
+# The desk trades spot only, so it never needs to load them.
+SPOT_ONLY = {"binance": {"fetchMarkets": {"types": ["spot"]}}}
+
+
+def is_pegged(base: str) -> bool:
+    return base in PEGGED or "USD" in base or "EUR" in base
 
 
 class MarketError(Exception):
@@ -62,7 +45,7 @@ def make_exchange(cfg: Settings, *, authenticated: bool = False) -> ccxt.Exchang
         raise SystemExit(f"Exchange '{cfg.exchange}' non supportato da ccxt.")
     params: dict = {
         "enableRateLimit": True,
-        "options": {"defaultType": "spot"},
+        "options": {"defaultType": "spot", **SPOT_ONLY.get(cfg.exchange, {})},
         "requests_trust_env": True,  # honour system proxy and CA settings
     }
     if authenticated:
@@ -95,7 +78,7 @@ class CcxtMarket:
             if market.get("quote") != self.cfg.quote:
                 continue
             base = market.get("base") or ""
-            if base in PEGGED or LEVERAGED.search(base):
+            if is_pegged(base) or LEVERAGED.search(base):
                 continue
             volume = ticker.get("quoteVolume")
             if volume is None:

@@ -81,6 +81,12 @@ def evaluate(
         return reject(plan.reasons[0])
     if plan.risk_per_unit <= 0:
         return reject("stop non valido")
+    # A tight stop on an expensive venue loses to fees even when the idea is right.
+    cost_r = 2 * (cfg.fee_rate + cfg.slippage) * plan.entry / plan.risk_per_unit
+    if cost_r > cfg.max_cost_r:
+        return reject(
+            f"commissioni e slippage al {cost_r:.0%} del rischio (massimo {cfg.max_cost_r:.0%})"
+        )
 
     # Lose at most risk_per_trade_pct of equity if the stop is hit.
     risk_budget = book.equity * cfg.risk_per_trade_pct / 100 * size_factor

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from desk.config import Settings
+from desk.market import MarketError
 from desk.models import Candle
 
 HOUR_MS = 3_600_000
@@ -65,6 +66,8 @@ class FakeMarket:
         return [(symbol, 10_000_000.0) for symbol in self.data]
 
     def candles(self, symbol: str, limit: int = 200) -> list[Candle]:
+        if symbol not in self.data:
+            raise MarketError(f"{symbol}: mercato non disponibile")
         return self.data[symbol][-limit:]
 
     def price(self, symbol: str) -> float:
@@ -99,4 +102,7 @@ class Clock:
 
 @pytest.fixture
 def cfg() -> Settings:
-    return Settings(_env_file=None, capital=1000.0)
+    # The market-regime filter needs a BTC series; tests that use it switch it on.
+    return Settings(
+        _env_file=None, capital=1000.0, quote="USDC", fee_rate=0.001, regime_filter=False
+    )

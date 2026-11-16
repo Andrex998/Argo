@@ -232,3 +232,29 @@ def test_debates_per_cycle_are_capped(cfg):
     desk.cycle()
     assert fake.calls.count("Verdict") == 1
     assert len(desk.store.positions()) == 1
+
+
+# --- market regime -------------------------------------------------------------
+
+
+def test_no_new_longs_while_btc_is_falling(cfg):
+    cfg.regime_filter = True
+    desk, _, _ = make_desk(cfg, {SYMBOL: breakout(), "BTC/USDC": dump()})
+    desk.cycle()
+    assert desk.store.positions() == []
+    assert "nessuna nuova entrata: BTC/USDC in trend ribassista" in journal(desk)
+
+
+def test_longs_are_allowed_while_btc_holds_up(cfg):
+    cfg.regime_filter = True
+    desk, _, _ = make_desk(cfg, {SYMBOL: breakout(), "BTC/USDC": quiet()})
+    desk.cycle()
+    assert [p.symbol for p in desk.store.positions()] == [SYMBOL]
+
+
+def test_regime_filter_is_skipped_when_btc_is_not_listed(cfg):
+    cfg.regime_filter = True
+    desk, _, _ = make_desk(cfg, {SYMBOL: breakout()})
+    desk.cycle()
+    assert len(desk.store.positions()) == 1
+    assert "filtro di mercato saltato" in journal(desk)

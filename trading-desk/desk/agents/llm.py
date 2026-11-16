@@ -82,11 +82,12 @@ class ClaudeLLM:
             "thinking": {"type": "adaptive"},
             "output_config": {"effort": effort},
             "output_format": schema,
+        }
+        if self.cfg.refusal_fallback:
             # If a safety classifier declines, the API re-runs the request on its
             # recommended fallback model instead of returning a refusal.
-            "betas": [FALLBACK_BETA],
-            "fallbacks": "default",
-        }
+            request["betas"] = [FALLBACK_BETA]
+            request["fallbacks"] = "default"
         if web_search:
             request["tools"] = [
                 {
