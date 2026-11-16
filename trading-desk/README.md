@@ -65,11 +65,34 @@ Per accendere gli analisti metti `ANTHROPIC_API_KEY` in `.env` e lancia `uv run 
 | `desk halt` / `desk resume` | Blocca o riattiva le nuove entrate |
 | `desk close-all` | Vende tutte le posizioni del desk |
 
-Tutte le impostazioni sono in `.env.example`, con il loro significato. I default
-puntano a Kraken con coppie in USD e commissione taker dello 0,4%: è la configurazione
-su cui il desk è stato provato con dati reali. Su Kraken le coppie in EUR abbastanza
-liquide sono una decina, quelle in USD una quarantina. Per un altro exchange cambia
-`DESK_EXCHANGE`, `DESK_QUOTE` e `DESK_FEE_RATE`.
+Tutte le impostazioni sono in `.env.example`, con il loro significato.
+
+## Quale piattaforma
+
+Il desk parla con gli exchange attraverso [ccxt](https://github.com/ccxt/ccxt): per
+cambiare piattaforma bastano tre righe in `.env`. Se sbagli valuta, `desk scan` ti
+elenca quelle quotate sull'exchange.
+
+| Piattaforma | `.env` | Stato |
+|---|---|---|
+| Kraken | `DESK_EXCHANGE=kraken` `DESK_QUOTE=USD` `DESK_FEE_RATE=0.004` | Provato con dati reali. È il default. |
+| BingX | `DESK_EXCHANGE=bingx` `DESK_QUOTE=USDT` `DESK_FEE_RATE=0.001` | Provato con dati reali. |
+| Bybit EU (residenti UE) | `DESK_EXCHANGE=bybiteu` `DESK_QUOTE=USDC` | Non provato: blocca per posizione il server di sviluppo. Quota in USDC ed EUR. |
+| Bybit globale | `DESK_EXCHANGE=bybit` `DESK_QUOTE=USDT` | Non provato, stesso motivo. |
+| Phantom | — | Non supportato: vedi sotto. |
+| FOMO | — | Non automatizzabile: non risulta un'API pubblica. |
+
+In `DESK_FEE_RATE` va la commissione taker spot del tuo conto: quella indicata per
+BingX è un'ipotesi da verificare.
+
+**Bybit e Bybit EU sono conti diversi.** Chi risiede nell'UE opera su bybit.eu, con
+chiavi API proprie che non funzionano su bybit.com e viceversa.
+
+**Phantom è un wallet, non un exchange.** Non ha un'API a cui un bot si collega: per
+operare da solo il bot dovrebbe tenere la chiave privata del wallet e scambiare
+on-chain. Questo strato non esiste nel progetto. Se un giorno lo aggiungi, usa un
+wallet nuovo creato apposta, con dentro solo la cifra che accetti di perdere: mai la
+chiave o la frase di recupero del wallet principale.
 
 ## Le regole di rischio
 
@@ -86,18 +109,21 @@ liquide sono una decina, quelle in USD una quarantina. Per un altro exchange cam
 
 ## Cosa dice il backtest
 
-Solo regole (Scout, Charts, Risk, uscite), senza analisti, su dati reali di Kraken,
-40 mercati in USD, commissione 0,4% e slippage 0,1% per lato. Misurato il 16/11/2026.
+Solo regole (Scout, Charts, Risk, uscite), senza analisti, su dati reali. Kraken: 40
+mercati in USD, commissione 0,4%. BingX: 27 mercati in USDT, commissione ipotizzata
+0,1%. Slippage 0,1% per lato. Misurato il 16/11/2026.
 
-| Candele | Periodo | Desk | BTC tenuto fermo | Operazioni | Vincenti | Drawdown max |
+| Exchange, candele | Periodo | Desk | BTC tenuto fermo | Operazioni | Vincenti | Drawdown max |
 |---|---|---|---|---|---|---|
-| 1h | 30 giorni | −6,8% | −19,9% | 33 | 12% | 7,4% |
-| 4h | 120 giorni | +13,5% | +0,8% | 85 | 38% | 8,7% |
+| Kraken, 1h | 30 giorni | −6,8% | −19,9% | 33 | 12% | 7,4% |
+| Kraken, 4h | 120 giorni | +13,5% | +0,8% | 85 | 38% | 8,7% |
+| BingX, 1h | 120 giorni | +1,2% | +2,1% | 200 | 27% | 11,5% |
 
 Come leggerli:
 
-- Sono due campioni piccoli che si contraddicono. Non dimostrano che il desk guadagna,
-  e nemmeno che su 4h funziona: è un solo periodo.
+- Il campione più grande, 200 operazioni su BingX, chiude in pari: guadagno medio per
+  operazione zero. È la lettura più onesta delle regole da sole: non perdono e non
+  hanno un vantaggio. I due campioni Kraken sono piccoli e si contraddicono.
 - L'universo è quello dei mercati più liquidi **oggi**, quindi contiene già i vincitori
   del periodo. I numeri sono ottimistici.
 - La prima versione, senza i due filtri su costi e trend di mercato, sullo stesso mese
@@ -168,12 +194,13 @@ Limiti da conoscere prima:
 
 - **Logica** di Scout, Charts, Risk, uscite, contabilità e backtest: test automatici
   (`uv run pytest`) su mercati sintetici.
-- **Dati reali su Kraken**: scansione, ciclo completo in paper trading, loop continuo,
-  blocco e riattivazione, backtest. Alcune operazioni del backtest sono state
+- **Dati reali su Kraken e BingX**: scansione e backtest su entrambi; su Kraken anche
+  ciclo completo in paper trading, loop continuo, blocco e riattivazione. Alcune operazioni del backtest sono state
   ricontrollate a mano sulle candele.
 - **Radar**: provato su token reali Solana ed EVM attraverso DexScreener e RugCheck.
-- **Binance**: non provato. L'ambiente di sviluppo non può raggiungerlo per un blocco
-  geografico; il codice è lo stesso, ma il primo `desk scan` va guardato.
+- **Bybit, Bybit EU e Binance**: non provati. Rifiutano le connessioni dal server di
+  sviluppo per posizione geografica; il codice è lo stesso, ma il primo `desk scan` dal
+  tuo computer va guardato.
 - **Chiamate a Claude e ordini reali**: provati solo contro controfigure che imitano
   l'SDK e l'exchange, mai contro i servizi veri. Il primo giro con una chiave Anthropic
   e i primi ordini live vanno seguiti a vista, con capitale minimo. Se un analista

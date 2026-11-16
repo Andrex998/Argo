@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from typing import Protocol
 
 import ccxt
@@ -87,6 +88,19 @@ class CcxtMarket:
                 rows.append((symbol, float(volume)))
         rows.sort(key=lambda row: row[1], reverse=True)
         return rows[: self.cfg.universe_size]
+
+    def quotes(self) -> list[tuple[str, int]]:
+        """Quote currencies of the exchange's spot markets with how many pairs each has."""
+        try:
+            markets = self.ex.load_markets()
+        except ccxt.BaseError as e:
+            raise MarketError(f"{self.cfg.exchange}: {e}") from e
+        counts = Counter(
+            market["quote"]
+            for market in markets.values()
+            if market.get("spot") and market.get("active") is not False and market.get("quote")
+        )
+        return counts.most_common()
 
     def candles(self, symbol: str, limit: int = 200) -> list[Candle]:
         return self._closed(self._fetch(symbol, limit=limit + 1))[-limit:]

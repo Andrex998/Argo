@@ -86,3 +86,29 @@ def test_charts_rejects_a_stop_wider_than_the_limit(cfg):
 def test_stablecoins_and_fiat_are_not_tradable_bases():
     assert all(is_pegged(base) for base in ("USDT", "USDC", "USDG", "PYUSD", "EURC", "DAI", "GBP"))
     assert not any(is_pegged(base) for base in ("BTC", "ETH", "SOL", "JUP", "SUI"))
+
+
+def test_the_exchanges_the_desk_documents_are_known_to_ccxt():
+    from desk.config import Settings
+    from desk.market import make_exchange
+
+    for exchange in ("kraken", "bybiteu", "bybit", "bingx"):
+        built = make_exchange(Settings(_env_file=None, exchange=exchange))
+        assert built.id == exchange
+        assert built.options["defaultType"] == "spot"
+
+
+def test_quote_currencies_are_listed_most_used_first(cfg):
+    from types import SimpleNamespace
+
+    from desk.market import CcxtMarket
+
+    markets = {
+        "BTC/USDC": {"spot": True, "quote": "USDC"},
+        "ETH/USDC": {"spot": True, "quote": "USDC"},
+        "BTC/EUR": {"spot": True, "quote": "EUR"},
+        "OLD/EUR": {"spot": True, "quote": "EUR", "active": False},
+        "BTC/USDT:USDT": {"spot": False, "quote": "USDT"},
+    }
+    exchange = SimpleNamespace(load_markets=lambda: markets, parse_timeframe=lambda tf: 3600)
+    assert CcxtMarket(exchange, cfg).quotes() == [("USDC", 2), ("EUR", 1)]

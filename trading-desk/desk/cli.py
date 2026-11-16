@@ -81,6 +81,14 @@ def cmd_scan(cfg: Settings, args: argparse.Namespace) -> None:
         f"{result.scanned} mercati {cfg.quote} analizzati su {cfg.exchange} "
         f"({cfg.timeframe}), {len(result.candidates)} con volume anomalo."
     )
+    if not result.scanned and not result.failed:
+        # Usually the wrong quote currency for this exchange: show what it actually lists.
+        listed = ", ".join(f"{quote} ({count})" for quote, count in market.quotes()[:6])
+        print(
+            f"Nessun mercato in {cfg.quote} supera {cfg.min_quote_volume:,.0f} di volume. "
+            f"Valute quotate su {cfg.exchange}: {listed}. "
+            "Cambia DESK_QUOTE o abbassa DESK_MIN_QUOTE_VOLUME."
+        )
     for candidate in result.candidates:
         plan = charts.plan(candidate.symbol, result.candles[candidate.symbol], cfg)
         verdict = (
