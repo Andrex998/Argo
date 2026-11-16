@@ -39,7 +39,12 @@ Tre scelte di progetto contano più delle altre:
 
 ## Per iniziare
 
-Serve [uv](https://docs.astral.sh/uv/).
+Il modo più semplice: fai doppio clic su `start.bat` (Windows) oppure lancia `./start.sh`
+(Mac, Linux). Installa quello che serve, avvia il desk in paper trading e apre la
+dashboard nel browser. `start.sh` è stato provato; `start.bat` no, perché il progetto
+è stato sviluppato su Linux.
+
+A mano serve [uv](https://docs.astral.sh/uv/).
 
 ```bash
 cd trading-desk
@@ -57,7 +62,8 @@ Per accendere gli analisti metti `ANTHROPIC_API_KEY` in `.env` e lancia `uv run 
 |---|---|
 | `desk scan` | Fotografia del mercato, senza operare |
 | `desk cycle` | Un solo giro completo del desk |
-| `desk run` | Giro completo a ogni chiusura di candela, controllo delle posizioni ogni minuto |
+| `desk run` | Giro completo a ogni chiusura di candela, controllo delle posizioni ogni minuto. Con `--dashboard` avvia anche la pagina web |
+| `desk dashboard` | La pagina web con gli agenti in diretta. Con `--demo` mostra una sessione dimostrativa |
 | `desk status` | Equity, posizioni, risultati, spesa stimata per gli analisti |
 | `desk journal` | Chi ha detto cosa e perché |
 | `desk backtest` | Le regole rigiocate sullo storico, con commissioni e slippage |
@@ -66,6 +72,30 @@ Per accendere gli analisti metti `ANTHROPIC_API_KEY` in `.env` e lancia `uv run 
 | `desk close-all` | Vende tutte le posizioni del desk |
 
 Tutte le impostazioni sono in `.env.example`, con il loro significato.
+
+## La dashboard
+
+![La dashboard durante una sessione demo](docs/dashboard.png)
+
+`uv run desk run --dashboard --open` avvia il desk e apre `http://localhost:8787`. La
+pagina si aggiorna da sola ogni due secondi e mostra:
+
+- **Gli agenti**: chi ha parlato per ultimo e chi sta lavorando in questo momento
+  ("cerca cosa ha mosso il prezzo", "risponde alle obiezioni e decide").
+- **La conversazione**: una discussione per ogni mercato, con le obiezioni dello
+  Skeptic e sotto, una per una, le risposte del Chief: respinta o concessa.
+- **Il conto**: equity, andamento, posizioni aperte rispetto a stop e target, e quanto
+  di ogni limite di rischio è già usato.
+
+Per vederla muoversi senza aspettare il mercato: `uv run desk dashboard --demo --open`.
+La demo fa girare il desk vero (Scout, Charts, Risk, uscite) su cinque mercati
+inventati, con analisti che leggono battute preparate. È marcata come demo in ogni
+schermata, e i suoi risultati non dicono nulla su quelli reali.
+
+La pagina è di sola lettura: non ha pulsanti né indirizzi che inviano ordini o cambiano
+impostazioni. Non carica nulla da altri siti. Ascolta solo sul tuo computer; per aprirla
+da un altro dispositivo della stessa rete aggiungi `--host 0.0.0.0`, sapendo che chiunque
+su quella rete potrà vedere il conto.
 
 ## Quale piattaforma
 
@@ -198,6 +228,8 @@ Limiti da conoscere prima:
   ciclo completo in paper trading, loop continuo, blocco e riattivazione. Alcune operazioni del backtest sono state
   ricontrollate a mano sulle candele.
 - **Radar**: provato su token reali Solana ed EVM attraverso DexScreener e RugCheck.
+- **Dashboard**: provata in un browser vero, su schermo grande e su telefono, tema
+  chiaro e scuro, con la sessione demo e con il desk su dati reali di Kraken.
 - **Bybit, Bybit EU e Binance**: non provati. Rifiutano le connessioni dal server di
   sviluppo per posizione geografica; il codice è lo stesso, ma il primo `desk scan` dal
   tuo computer va guardato.
@@ -220,6 +252,9 @@ desk/
   desk.py             orchestrazione di un ciclo
   backtest.py         le stesse regole sullo storico
   radar.py            punteggio di rischio per token DEX
+  dashboard.py        server locale di sola lettura
+  dashboard.html      la pagina
+  demo.py             sessione dimostrativa per la dashboard
   store.py            SQLite: cassa, posizioni, operazioni, diario
   cli.py              i comandi
 ```
