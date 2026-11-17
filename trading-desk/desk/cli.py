@@ -12,7 +12,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-from desk import backtest, dashboard, demo, radar
+from desk import backtest, dashboard, demo, radar, snapshot
 from desk.agents import charts, scout
 from desk.agents.llm import AgentUnavailable, ClaudeLLM
 from desk.broker import BrokerError, LiveBroker, PaperBroker
@@ -197,6 +197,11 @@ def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
             time.sleep(cfg.monitor_seconds)
     except KeyboardInterrupt:
         desk.say("DESK", "fermato dall'utente; le posizioni aperte restano senza controllo")
+
+
+def cmd_snapshot(cfg: Settings, args: argparse.Namespace) -> None:
+    for path in snapshot.run(cfg, args.out):
+        print(path.resolve())
 
 
 def cmd_status(cfg: Settings, args: argparse.Namespace) -> None:
@@ -405,6 +410,9 @@ def main(argv: list[str] | None = None) -> None:
     board.add_argument("--demo", action="store_true", help="sessione dimostrativa, dati fittizi")
     web(board)
     command("status", cmd_status, "equity, posizioni, risultati e spesa per gli analisti")
+    command(
+        "snapshot", cmd_snapshot, "fotografia del desk per la pagina ARGO DESK Live"
+    ).add_argument("--out", type=Path, default=Path("data/live"), help="cartella dei file")
     command("journal", cmd_journal, "il diario del desk: chi ha detto cosa e perché").add_argument(
         "-n", type=int, default=40, help="quante righe mostrare"
     )
