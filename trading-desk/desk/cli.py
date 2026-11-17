@@ -325,6 +325,15 @@ def cmd_close_all(cfg: Settings, args: argparse.Namespace) -> None:
     trading_desk(cfg, args).close_all()
 
 
+def _never_crash_on_print() -> None:
+    """A console that cannot show a character must print '?' rather than stop the desk.
+    Git Bash on Windows, for one, hands Python the cp1252 code page, which has no '→'."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(errors="replace")
+
+
 def _keep_console_responsive() -> None:
     """On Windows a click inside the console window starts a text selection, and any
     program that prints is frozen until the selection ends: the desk would stop
@@ -387,6 +396,7 @@ def main(argv: list[str] | None = None) -> None:
     command("close-all", cmd_close_all, "vende tutte le posizioni del desk", trades=True)
 
     args = parser.parse_args(argv)
+    _never_crash_on_print()
     _keep_console_responsive()
     try:
         args.handler(Settings(), args)

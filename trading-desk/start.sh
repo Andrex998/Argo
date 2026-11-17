@@ -3,6 +3,7 @@
 # Extra arguments are passed on to `desk run`, for example: ./start.sh --port 8790
 set -e
 cd "$(dirname "$0")"
+export PYTHONUTF8=1 PYTHONUNBUFFERED=1
 
 if ! command -v uv >/dev/null 2>&1; then
   echo "Installo uv, che gestisce Python e le dipendenze..."
