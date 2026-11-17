@@ -2,6 +2,13 @@
 rem Starts the desk in paper trading together with its dashboard.
 rem Double-click this file, or run it from a terminal. Extra arguments go to "desk run".
 cd /d "%~dp0"
+title ARGO DESK
+set PYTHONUTF8=1
+
+if not exist pyproject.toml (
+  echo Prima estrai lo ZIP: tasto destro sul file, "Estrai tutto", poi avvia start.bat dalla cartella estratta.
+  goto done
+)
 
 where uv >nul 2>nul
 if errorlevel 1 (

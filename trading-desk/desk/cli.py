@@ -325,6 +325,22 @@ def cmd_close_all(cfg: Settings, args: argparse.Namespace) -> None:
     trading_desk(cfg, args).close_all()
 
 
+def _keep_console_responsive() -> None:
+    """On Windows a click inside the console window starts a text selection, and any
+    program that prints is frozen until the selection ends: the desk would stop
+    trading without a word. Turn that selection mode off for this window."""
+    if sys.platform != "win32":
+        return
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    console_input = kernel32.GetStdHandle(-10)  # STD_INPUT_HANDLE
+    mode = ctypes.c_uint32()
+    if kernel32.GetConsoleMode(console_input, ctypes.byref(mode)):
+        quick_edit, extended_flags = 0x0040, 0x0080
+        kernel32.SetConsoleMode(console_input, (mode.value & ~quick_edit) | extended_flags)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="desk", description="Desk di trading multi-agente. Parte in paper trading."
@@ -371,6 +387,7 @@ def main(argv: list[str] | None = None) -> None:
     command("close-all", cmd_close_all, "vende tutte le posizioni del desk", trades=True)
 
     args = parser.parse_args(argv)
+    _keep_console_responsive()
     try:
         args.handler(Settings(), args)
     except MarketError as e:
