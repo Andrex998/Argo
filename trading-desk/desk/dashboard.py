@@ -167,7 +167,9 @@ def serve(
                 self.send_error(HTTPStatus.NOT_FOUND)
 
         def _json(self, payload: dict) -> None:
-            self._send(json.dumps(payload, ensure_ascii=False).encode(), "application/json")
+            self._send(
+                json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8"
+            )
 
         def _send(self, body: bytes, content_type: str) -> None:
             self.send_response(HTTPStatus.OK)
