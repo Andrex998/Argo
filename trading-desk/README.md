@@ -77,8 +77,12 @@ Tutte le impostazioni sono in `.env.example`, con il loro significato.
 
 ![La dashboard durante una sessione demo](docs/dashboard.png)
 
-`uv run desk run --dashboard --open` avvia il desk e apre `http://localhost:8787`. La
-pagina si aggiorna da sola ogni due secondi e mostra:
+`uv run desk run --dashboard --open` avvia il desk e apre `http://127.0.0.1:8787`. Se
+quella porta è occupata, o riservata da Windows (succede con WSL, Docker o Hyper-V), la
+dashboard ne prende un'altra e il browser si apre comunque sull'indirizzo giusto. Gira un
+solo desk alla volta: se lo riavvii mentre è già acceso, ti apre la dashboard di quello
+che sta girando invece di partire una seconda volta. La pagina si aggiorna da sola ogni
+due secondi e mostra:
 
 - **Gli agenti**: chi ha parlato per ultimo e chi sta lavorando in questo momento
   ("cerca cosa ha mosso il prezzo", "risponde alle obiezioni e decide").

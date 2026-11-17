@@ -7,7 +7,9 @@ or changes a setting, so leaving it open cannot move money.
 from __future__ import annotations
 
 import json
+import socket
 import sqlite3
+import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
@@ -128,6 +130,18 @@ def events(db_path: Path, after_id: int) -> dict:
         store.close()
 
 
+class _Server(ThreadingHTTPServer):
+    """On Windows, SO_REUSEADDR lets a second program bind a port that is already taken,
+    after which requests reach either one. Ask Windows for the port exclusively instead."""
+
+    allow_reuse_address = sys.platform != "win32"
+
+    def server_bind(self) -> None:
+        if sys.platform == "win32":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def serve(
     cfg: Settings,
     db_path: Path,
@@ -168,4 +182,4 @@ def serve(
         def log_message(self, format: str, *args) -> None:
             pass  # one line per poll would bury the desk's own output
 
-    return ThreadingHTTPServer((host, port), Handler)
+    return _Server((host, port), Handler)

@@ -18,6 +18,7 @@ from desk.agents.llm import AgentUnavailable, ClaudeLLM
 from desk.broker import BrokerError, LiveBroker, PaperBroker
 from desk.config import Settings
 from desk.desk import Desk, init_book, value_book
+from desk.instance import AlreadyRunning, claim
 from desk.market import CcxtMarket, MarketError, make_exchange
 from desk.store import Store
 
@@ -52,6 +53,18 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
         )
     if live and cfg.mode != "live":
         raise SystemExit("--live richiede anche DESK_MODE=live in .env.")
+
+    try:
+        claim(cfg.db_path)
+    except AlreadyRunning:
+        url = Store(cfg.db_path).get("dashboard_url")
+        if url and getattr(args, "open", False):
+            webbrowser.open(url)
+        where = f" La sua dashboard: {url}" if url else ""
+        raise SystemExit(
+            f"Il desk è già acceso in un'altra finestra.{where}\n"
+            "Ne può girare uno solo alla volta: chiudi l'altra finestra prima di riavviarlo."
+        ) from None
 
     exchange = make_exchange(cfg, authenticated=live)
     if live:
@@ -114,21 +127,31 @@ def cmd_cycle(cfg: Settings, args: argparse.Namespace) -> None:
 def start_dashboard(
     cfg: Settings, db_path: Path, args: argparse.Namespace, demo_mode: bool = False
 ):
-    """Serve the dashboard on a background thread and say where it is."""
-    try:
-        server = dashboard.serve(cfg, db_path, time.time, args.host, args.port, demo_mode)
-    except OSError as e:
-        raise SystemExit(
-            f"Porta {args.port} non disponibile ({e}). Scegline un'altra con --port."
-        ) from e
+    """Serve the dashboard on a background thread and say where it is.
+
+    A port can be taken by another program or reserved by Windows, which sets aside
+    whole ranges for WSL, Docker and Hyper-V. Then the dashboard moves to another one:
+    the address is printed and the browser is opened on it either way.
+    """
+    server, error = None, None
+    for port in dict.fromkeys(p for p in (args.port, args.port + 1000, 0) if p < 65536):
+        try:
+            server = dashboard.serve(cfg, db_path, time.time, args.host, port, demo_mode)
+            break
+        except OSError as e:
+            error = e
+    if server is None:
+        raise SystemExit(f"Nessuna porta disponibile per la dashboard ({error}).")
+    port = server.server_address[1]
+    if port != args.port:
+        print(f"La porta {args.port} non è disponibile: la dashboard usa la {port}.", flush=True)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    url = (
-        f"http://{'localhost' if args.host in ('127.0.0.1', '0.0.0.0') else args.host}:{args.port}"
-    )
+    host = "127.0.0.1" if args.host in ("127.0.0.1", "0.0.0.0") else args.host
+    url = f"http://{host}:{port}"
     print(f"Dashboard: {url}", flush=True)
     if args.open:
         webbrowser.open(url)
-    return server
+    return server, url
 
 
 def cmd_dashboard(cfg: Settings, args: argparse.Namespace) -> None:
@@ -150,8 +173,8 @@ def cmd_dashboard(cfg: Settings, args: argparse.Namespace) -> None:
 
 def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
     desk = trading_desk(cfg, args)
-    if args.dashboard:
-        start_dashboard(cfg, cfg.db_path, args)
+    url = start_dashboard(cfg, cfg.db_path, args)[1] if args.dashboard else ""
+    desk.store.set("dashboard_url", url)
     period = desk.market.candle_ms / 1000
     next_cycle = 0.0
     mode = "solo regole" if desk.llm is None else f"analisti {cfg.model}"
