@@ -25,6 +25,7 @@ class Book:
     peak_equity: float
     halted: str = ""  # reason trading is stopped; empty when allowed
     cooldowns: dict[str, float] = field(default_factory=dict)  # symbol -> barred until
+    fresh: bool = True  # False when a price came from the last valuation, not the exchange
 
 
 @dataclass(slots=True)

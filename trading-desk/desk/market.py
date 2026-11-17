@@ -29,6 +29,29 @@ class MarketError(Exception):
     """The exchange could not be reached or returned unusable data."""
 
 
+class MarketUnavailable(MarketError):
+    """The exchange could not be reached right now: no connection, timeout, outage or rate limit.
+
+    Unlike a plain MarketError (an unknown symbol, say), this one says nothing about
+    the market itself, so a decision that needs the data must wait for it.
+    """
+
+
+def market_error(e: ccxt.BaseError, what: str) -> MarketError:
+    """The ccxt error in words a user can act on, keeping the original text."""
+    detail = str(e)[:300]
+    if "CERTIFICATE_VERIFY_FAILED" in repr(e) or "CERTIFICATE_VERIFY_FAILED" in detail:
+        return MarketUnavailable(
+            f"{what}: certificato HTTPS non riconosciuto. Di solito è un antivirus che "
+            f"analizza le connessioni HTTPS ({detail})"
+        )
+    if isinstance(e, ccxt.NetworkError):
+        return MarketUnavailable(
+            f"{what}: connessione assente o exchange non raggiungibile ({detail})"
+        )
+    return MarketError(f"{what}: {detail}")
+
+
 class Market(Protocol):
     def universe(self) -> list[tuple[str, float]]:
         """Most liquid tradable pairs as (symbol, 24h quote volume), largest first."""
@@ -47,7 +70,7 @@ def make_exchange(cfg: Settings, *, authenticated: bool = False) -> ccxt.Exchang
     params: dict = {
         "enableRateLimit": True,
         "options": {"defaultType": "spot", **SPOT_ONLY.get(cfg.exchange, {})},
-        "requests_trust_env": True,  # honour system proxy and CA settings
+        "requests_trust_env": True,  # honour proxy settings from the environment
     }
     if authenticated:
         if not (cfg.exchange_api_key and cfg.exchange_api_secret):
@@ -70,7 +93,7 @@ class CcxtMarket:
             markets = self.ex.load_markets()
             tickers = self.ex.fetch_tickers()
         except ccxt.BaseError as e:
-            raise MarketError(f"{self.cfg.exchange}: {e}") from e
+            raise market_error(e, self.cfg.exchange) from e
         rows: list[tuple[str, float]] = []
         for symbol, ticker in tickers.items():
             market = markets.get(symbol)
@@ -94,7 +117,7 @@ class CcxtMarket:
         try:
             markets = self.ex.load_markets()
         except ccxt.BaseError as e:
-            raise MarketError(f"{self.cfg.exchange}: {e}") from e
+            raise market_error(e, self.cfg.exchange) from e
         counts = Counter(
             market["quote"]
             for market in markets.values()
@@ -124,7 +147,7 @@ class CcxtMarket:
         try:
             last = self.ex.fetch_ticker(symbol).get("last")
         except ccxt.BaseError as e:
-            raise MarketError(f"{symbol}: {e}") from e
+            raise market_error(e, symbol) from e
         if not last:
             raise MarketError(f"{symbol}: nessun prezzo disponibile")
         return float(last)
@@ -133,7 +156,7 @@ class CcxtMarket:
         try:
             return self.ex.fetch_ohlcv(symbol, self.cfg.timeframe, **kwargs)
         except ccxt.BaseError as e:
-            raise MarketError(f"{symbol}: {e}") from e
+            raise market_error(e, symbol) from e
 
     def _closed(self, rows: list[list]) -> list[Candle]:
         """Drop the candle still forming: signals must not change after the fact."""

@@ -16,13 +16,24 @@ if errorlevel 1 (
   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
   set "PATH=%USERPROFILE%\.local\bin;%PATH%"
 )
-uv sync --quiet
+where uv >nul 2>nul
+if errorlevel 1 (
+  echo Installazione di uv non riuscita: controlla la connessione a internet e riprova.
+  goto done
+)
+
+echo Preparo Python e le librerie. La prima volta servono alcuni minuti: non chiudere la finestra.
+uv sync
+if errorlevel 1 (
+  echo Riprovo con i certificati di Windows, per gli antivirus che analizzano le connessioni HTTPS...
+  set UV_SYSTEM_CERTS=1
+  uv sync
+)
 if errorlevel 1 goto done
 
-rem Without an Anthropic key the analysts cannot run: the desk decides by rules alone.
-set MODE=--rules-only
-findstr /R /C:"^ANTHROPIC_API_KEY=." .env >nul 2>nul && set MODE=
-uv run desk run %MODE% --dashboard --open %*
+echo Avvio del desk...
+rem The analysts need an Anthropic key in .env; without one the desk decides by rules alone.
+uv run desk run --rules-if-no-key --dashboard --open %*
 
 :done
 echo.

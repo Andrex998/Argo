@@ -41,8 +41,21 @@ Tre scelte di progetto contano più delle altre:
 
 Il modo più semplice: fai doppio clic su `start.bat` (Windows) oppure lancia `./start.sh`
 (Mac, Linux). Installa quello che serve, avvia il desk in paper trading e apre la
-dashboard nel browser. `start.sh` è stato provato; `start.bat` no, perché il progetto
-è stato sviluppato su Linux.
+dashboard nel browser. Se in `.env` c'è una chiave Anthropic usa gli analisti, altrimenti
+decide con le sole regole. Entrambi sono stati provati: `start.sh` su Linux, `start.bat`
+su un PC Windows 11.
+
+Sul PC, mentre il desk è acceso:
+
+- **Il PC non va in sospensione** da solo (lo schermo può spegnersi). Chiudere il
+  portatile o scegliere Sospendi lo ferma comunque: al risveglio il diario dice per
+  quanti minuti è rimasto fermo.
+- **La finestra nera va lasciata aperta**: chiuderla ferma il desk. Gira un solo desk
+  alla volta; un secondo doppio clic apre la dashboard di quello già acceso.
+- **Se cade la connessione** il desk non compra (non può verificare il trend di BTC),
+  tiene i prezzi dell'ultima valutazione e riprova la scansione dopo cinque minuti.
+- **Antivirus che analizzano le connessioni HTTPS** (Avast, Kaspersky, Bitdefender...):
+  il desk usa i certificati di Windows, come il browser, quindi funziona anche con loro.
 
 A mano serve [uv](https://docs.astral.sh/uv/).
 
@@ -54,6 +67,7 @@ cp .env.example .env        # facoltativo: i default sono già in paper trading
 uv run desk scan            # cosa vedono ora Scout e Charts
 uv run desk backtest --days 30
 uv run desk run --rules-only   # desk in continuo, senza analisti LLM, soldi finti
+uv run desk snapshot        # i dati per la pagina ARGO DESK Live su claude.ai
 ```
 
 Per accendere gli analisti metti `ANTHROPIC_API_KEY` in `.env` e lancia `uv run desk run`.
@@ -65,6 +79,7 @@ Per accendere gli analisti metti `ANTHROPIC_API_KEY` in `.env` e lancia `uv run 
 | `desk run` | Giro completo a ogni chiusura di candela, controllo delle posizioni ogni minuto. Con `--dashboard` avvia anche la pagina web |
 | `desk dashboard` | La pagina web con gli agenti in diretta. Con `--demo` mostra una sessione dimostrativa |
 | `desk status` | Equity, posizioni, risultati, spesa stimata per gli analisti |
+| `desk snapshot` | Scrive in `data/live` i quattro file della pagina ARGO DESK Live su claude.ai |
 | `desk journal` | Chi ha detto cosa e perché |
 | `desk backtest` | Le regole rigiocate sullo storico, con commissioni e slippage |
 | `desk radar <indirizzo>` | Punteggio di rischio di un token DEX (memecoin) |
@@ -258,6 +273,8 @@ desk/
   radar.py            punteggio di rischio per token DEX
   dashboard.py        server locale di sola lettura
   dashboard.html      la pagina
+  snapshot.py         i dati per la pagina ARGO DESK Live su claude.ai
+  instance.py         un solo desk per database
   demo.py             sessione dimostrativa per la dashboard
   store.py            SQLite: cassa, posizioni, operazioni, diario
   cli.py              i comandi

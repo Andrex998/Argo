@@ -1,0 +1,3 @@
+# start.sh must reach Git Bash with LF endings, start.bat cmd.exe with CRLF.
+*.sh text eol=lf
+*.bat -text

@@ -20,7 +20,7 @@ from desk.agents import analysts, charts, scout
 from desk.agents.llm import LLM, AgentUnavailable, Usage
 from desk.broker import Broker, BrokerError
 from desk.config import Settings
-from desk.market import Market, MarketError
+from desk.market import Market, MarketError, MarketUnavailable
 from desk.models import Candidate, ChartPlan, Position
 from desk.store import Store, Trade
 
@@ -84,7 +84,9 @@ class Desk:
         """Leave a sign of life and a point on the equity curve."""
         now = self.clock()
         self.store.set("heartbeat", now)
-        self.store.add_equity(now, self.book().equity, self.equity_interval)
+        book = self.book()
+        if book.fresh:  # a stale price would draw a step that never happened
+            self.store.add_equity(now, book.equity, self.equity_interval)
 
     # --- exits ----------------------------------------------------------------
 
@@ -176,35 +178,49 @@ class Desk:
 
     # --- entries --------------------------------------------------------------
 
-    def cycle(self) -> None:
-        """One full pass of the desk: manage exits, scan, debate, trade."""
-        self.monitor()
-        self._look_for_entries()
-        self._pulse()
+    def cycle(self) -> bool:
+        """One full pass of the desk: manage exits, scan, debate, trade.
 
-    def _look_for_entries(self) -> None:
+        Returns False when the markets could not be scanned, so the caller can try
+        again within the same candle instead of waiting for the next one.
+        """
+        self.monitor()
+        scanned = self._look_for_entries()
+        self._pulse()
+        return scanned
+
+    def _look_for_entries(self) -> bool:
         try:
             with self._working("SCOUT", "scansiona i mercati"):
                 scan = scout.scan(self.market, self.cfg)
         except MarketError as e:
-            self.say("SCOUT", f"scansione non riuscita: {e}", kind="error")
-            return
+            self.say("SCOUT", f"scansione non riuscita, riprovo tra poco: {e}", kind="error")
+            return False
+        if scan.failed and not scan.scanned:
+            self.say(
+                "SCOUT",
+                f"scansione non riuscita, riprovo tra poco: {scan.failed} mercati non leggibili",
+                kind="error",
+            )
+            return False
         flagged = ", ".join(f"{c.symbol} {c.rvol:.1f}x" for c in scan.candidates) or "nessuno"
+        skipped = f" ({scan.failed} non leggibili)" if scan.failed else ""
         self.say(
             "SCOUT",
-            f"{scan.scanned} mercati analizzati, {len(scan.candidates)} con volume anomalo: "
-            f"{flagged}",
+            f"{scan.scanned} mercati analizzati{skipped}, {len(scan.candidates)} con volume "
+            f"anomalo: {flagged}",
             kind="scan",
             scanned=scan.scanned,
+            failed=scan.failed,
             flagged=[{"symbol": c.symbol, "rvol": c.rvol} for c in scan.candidates],
         )
         if not scan.candidates:
-            return
+            return True
 
         book = self.book()
         if reason := risk.blocked(book, self.cfg) or self._market_falling():
             self.say("RISK", f"nessuna nuova entrata: {reason}", kind="blocked")
-            return
+            return True
 
         debates = 0
         for candidate in scan.candidates:
@@ -275,6 +291,9 @@ class Desk:
         leader = f"BTC/{self.cfg.quote}"
         try:
             falling = charts.market_falling(self.market.candles(leader))
+        except MarketUnavailable as e:
+            # Unreachable is not "not falling": without the answer, no new longs.
+            return f"trend di {leader} non verificabile in questo momento ({e})"
         except MarketError as e:
             self.say("RISK", f"trend di {leader} non valutabile, filtro di mercato saltato: {e}")
             return ""
@@ -408,20 +427,34 @@ def init_book(store: Store, cfg: Settings) -> None:
 
 
 def value_book(store: Store, market: Market, now: float) -> risk.Book:
-    """Value the account now, rolling the trading day and the equity peak forward."""
+    """Value the account now, rolling the trading day and the equity peak forward.
+
+    A price the exchange cannot give right now is taken from the last valuation. Such a
+    book is not fresh: it does not open a new trading day or raise the peak, since both
+    would then rest on a stale figure.
+    """
     positions = store.positions()
-    prices = {p.symbol: _last_price(market, p) for p in positions}
+    known = store.get_json("prices") if positions else {}
+    prices, fresh = {}, True
+    for p in positions:
+        try:
+            prices[p.symbol] = market.price(p.symbol)
+        except MarketError:
+            prices[p.symbol] = known.get(p.symbol, p.entry_price)
+            fresh = False
     store.set_json("prices", prices)  # the dashboard values positions without the exchange
     exposure = sum(p.qty * prices[p.symbol] for p in positions)
     cash = store.get_float("cash")
     equity = cash + exposure
 
-    today = datetime.fromtimestamp(now, UTC).date().isoformat()
-    if store.get("day") != today:
-        store.set("day", today)
-        store.set("day_start_equity", equity)
-    peak = max(store.get_float("peak_equity"), equity)
-    store.set("peak_equity", peak)
+    peak = store.get_float("peak_equity")
+    if fresh:
+        today = datetime.fromtimestamp(now, UTC).date().isoformat()
+        if store.get("day") != today:
+            store.set("day", today)
+            store.set("day_start_equity", equity)
+        peak = max(peak, equity)
+        store.set("peak_equity", peak)
 
     return risk.Book(
         equity=equity,
@@ -432,14 +465,8 @@ def value_book(store: Store, market: Market, now: float) -> risk.Book:
         peak_equity=peak,
         halted=store.get("halted"),
         cooldowns=store.cooldowns(now),
+        fresh=fresh,
     )
-
-
-def _last_price(market: Market, pos: Position) -> float:
-    try:
-        return market.price(pos.symbol)
-    except MarketError:
-        return pos.entry_price  # value at cost until the price is back
 
 
 def _dump(report: BaseModel | None) -> str:

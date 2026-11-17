@@ -9,6 +9,7 @@ import threading
 import time
 import traceback
 import webbrowser
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -36,9 +37,16 @@ COLORS = {
 }
 
 
+# Windows consoles show colour codes as text until a program asks for them.
+_ansi = sys.platform != "win32"
+
+RETRY_SECONDS = 300  # a scan that failed is tried again within the same candle
+GAP_SECONDS = 15 * 60  # a pause this long between two passes means the PC slept or froze
+
+
 def print_event(ts: float, agent: str, symbol: str, message: str) -> None:
     tag = f"{agent:<9}"
-    if sys.stdout.isatty():
+    if _ansi and sys.stdout.isatty():
         tag = f"\033[{COLORS.get(agent, '0')}m{tag}\033[0m"
     subject = f"{symbol} · " if symbol else ""
     print(f"{datetime.fromtimestamp(ts):%d/%m %H:%M:%S} {tag} {subject}{message}", flush=True)
@@ -84,6 +92,9 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
         try:
             desk.llm = ClaudeLLM(cfg, on_usage=desk.record_usage)
         except AgentUnavailable as e:
+            if getattr(args, "rules_if_no_key", False):
+                print(f"Analisti spenti ({e}): il desk decide con le sole regole.")
+                return desk
             raise SystemExit(
                 f"Analisti non disponibili: {e}. Imposta ANTHROPIC_API_KEY in .env "
                 "oppure usa --rules-only per far girare il desk senza analisti."
@@ -166,17 +177,54 @@ def cmd_dashboard(cfg: Settings, args: argparse.Namespace) -> None:
     start_dashboard(cfg, db_path, args, demo_mode=args.demo)
     print("Ctrl+C per chiudere.")
     try:
-        stop.wait()
+        while not stop.wait(0.5):  # a bare wait() never sees Ctrl+C on Windows
+            pass
     except KeyboardInterrupt:
         stop.set()
+
+
+@dataclass
+class Schedule:
+    period: float  # seconds per candle
+    next_cycle: float = 0.0
+    last_pass: float = 0.0
+
+
+def run_once(desk: Desk, schedule: Schedule, now: float) -> None:
+    """One pass of the loop: a full cycle when one is due, otherwise a check of the exits."""
+    if schedule.last_pass and now - schedule.last_pass > GAP_SECONDS:
+        minutes = round((now - schedule.last_pass) / 60)
+        desk.say(
+            "DESK",
+            f"il desk è rimasto fermo per {minutes} minuti (PC in sospensione?): "
+            "riprendo i controlli",
+            kind="gap",
+            minutes=minutes,
+        )
+    schedule.last_pass = now
+    if now < schedule.next_cycle:
+        desk.monitor()
+        return
+    schedule.next_cycle = now + RETRY_SECONDS  # stands if the cycle fails or raises
+    try:
+        if desk.cycle():
+            # Next pass shortly after the next candle closes.
+            schedule.next_cycle = (now // schedule.period + 1) * schedule.period + 20
+    finally:
+        desk.store.set("next_cycle", schedule.next_cycle)
 
 
 def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
     desk = trading_desk(cfg, args)
     url = start_dashboard(cfg, cfg.db_path, args)[1] if args.dashboard else ""
     desk.store.set("dashboard_url", url)
-    period = desk.market.candle_ms / 1000
-    next_cycle = 0.0
+    if _keep_awake():
+        print(
+            "Il PC non andrà in sospensione finché il desk è acceso (lo schermo può spegnersi). "
+            "Chiudere il portatile o scegliere Sospendi lo ferma comunque.",
+            flush=True,
+        )
+    schedule = Schedule(period=desk.market.candle_ms / 1000)
     mode = "solo regole" if desk.llm is None else f"analisti {cfg.model}"
     desk.say(
         "DESK", f"avviato in modalità {cfg.mode} ({mode}), un ciclo a ogni candela {cfg.timeframe}"
@@ -184,16 +232,13 @@ def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
     try:
         while True:
             try:
-                if time.time() >= next_cycle:
-                    desk.cycle()
-                    # Next pass shortly after the next candle closes.
-                    next_cycle = (time.time() // period + 1) * period + 20
-                    desk.store.set("next_cycle", next_cycle)
-                else:
-                    desk.monitor()
+                run_once(desk, schedule, time.time())
             except Exception as e:  # keep watching open positions whatever goes wrong
                 traceback.print_exc()
-                desk.say("DESK", f"errore inatteso, il desk continua: {e}")
+                try:
+                    desk.say("DESK", f"errore inatteso, il desk continua: {e}", kind="error")
+                except Exception:  # the journal itself failed (disk full, file locked)
+                    traceback.print_exc()
             time.sleep(cfg.monitor_seconds)
     except KeyboardInterrupt:
         desk.say("DESK", "fermato dall'utente; le posizioni aperte restano senza controllo")
@@ -365,7 +410,9 @@ def _never_crash_on_print() -> None:
 def _keep_console_responsive() -> None:
     """On Windows a click inside the console window starts a text selection, and any
     program that prints is frozen until the selection ends: the desk would stop
-    trading without a word. Turn that selection mode off for this window."""
+    trading without a word. Turn that selection mode off for this window, and let the
+    console show the agents' colours instead of their codes."""
+    global _ansi
     if sys.platform != "win32":
         return
     import ctypes
@@ -376,6 +423,36 @@ def _keep_console_responsive() -> None:
     if kernel32.GetConsoleMode(console_input, ctypes.byref(mode)):
         quick_edit, extended_flags = 0x0040, 0x0080
         kernel32.SetConsoleMode(console_input, (mode.value & ~quick_edit) | extended_flags)
+    console_output = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+    if kernel32.GetConsoleMode(console_output, ctypes.byref(mode)):
+        virtual_terminal = 0x0004
+        _ansi = bool(kernel32.SetConsoleMode(console_output, mode.value | virtual_terminal))
+
+
+def _keep_awake() -> bool:
+    """Ask Windows not to sleep while this process runs; the screen may still turn off.
+    Windows drops the request when the process ends. Returns whether it was granted."""
+    if sys.platform != "win32":
+        return False
+    import ctypes
+
+    continuous, system_required = 0x80000000, 0x00000001
+    return bool(ctypes.windll.kernel32.SetThreadExecutionState(continuous | system_required))
+
+
+def _use_system_certificates() -> None:
+    """Check HTTPS certificates against the operating system's own store, as browsers do.
+
+    An antivirus that inspects HTTPS adds its root certificate there and nowhere else, so
+    Python's bundled list would reject every connection to the exchange.
+    """
+    if sys.platform not in ("win32", "darwin"):
+        return
+    try:
+        import truststore
+    except ImportError:
+        return
+    truststore.inject_into_ssl()
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -393,9 +470,10 @@ def main(argv: list[str] | None = None) -> None:
 
     rules = "senza analisti LLM: decide solo il codice (Scout, Charts, Risk)"
     command("scan", cmd_scan, "cosa vedono ora Scout e Charts, senza operare")
-    command("cycle", cmd_cycle, "un ciclo completo del desk", trades=True).add_argument(
-        "--rules-only", action="store_true", help=rules
-    )
+    no_key = "usa gli analisti se c'è la chiave Anthropic, altrimenti solo le regole"
+    cycle = command("cycle", cmd_cycle, "un ciclo completo del desk", trades=True)
+    cycle.add_argument("--rules-only", action="store_true", help=rules)
+    cycle.add_argument("--rules-if-no-key", action="store_true", help=no_key)
 
     def web(p: argparse.ArgumentParser) -> None:
         p.add_argument("--port", type=int, default=8787, help="porta della dashboard")
@@ -404,6 +482,7 @@ def main(argv: list[str] | None = None) -> None:
 
     run = command("run", cmd_run, "il desk gira in continuo", trades=True)
     run.add_argument("--rules-only", action="store_true", help=rules)
+    run.add_argument("--rules-if-no-key", action="store_true", help=no_key)
     run.add_argument("--dashboard", action="store_true", help="avvia anche la dashboard")
     web(run)
     board = command("dashboard", cmd_dashboard, "pagina web con gli agenti in diretta")
@@ -427,6 +506,7 @@ def main(argv: list[str] | None = None) -> None:
     command("close-all", cmd_close_all, "vende tutte le posizioni del desk", trades=True)
 
     args = parser.parse_args(argv)
+    _use_system_certificates()
     _never_crash_on_print()
     _keep_console_responsive()
     try:
