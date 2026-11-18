@@ -364,6 +364,7 @@ class Desk:
             )
             self._open(plan, decision, book.equity)
             book = self.book()
+        return True
 
     def _market_falling(self) -> str:
         """Why the wider market rules out new longs right now, or '' if it does not."""

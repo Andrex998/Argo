@@ -37,7 +37,7 @@ def test_snapshot_of_a_session_fits_the_page(tmp_path):
 
 
 def test_snapshot_before_the_desk_ever_ran(tmp_path):
-    docs = snapshot.build(tmp_path / "none.db", Settings(), now=1.0)
+    docs = snapshot.build(tmp_path / "none.db", Settings(_env_file=None), now=1.0)
     assert docs["account"]["ready"] is False
     assert docs["feed"]["items"] == [] and docs["book"]["positions"] == []
 

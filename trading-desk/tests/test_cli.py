@@ -14,7 +14,7 @@ from desk.store import Store
 
 def test_a_console_without_a_character_prints_a_placeholder(monkeypatch):
     raw = io.BytesIO()
-    console = io.TextIOWrapper(raw, encoding="cp1252")
+    console = io.TextIOWrapper(raw, encoding="cp1252", newline="\n")  # no \r\n on Windows
     monkeypatch.setattr(sys, "stdout", console)
 
     cli._never_crash_on_print()

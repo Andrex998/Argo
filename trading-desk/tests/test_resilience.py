@@ -134,6 +134,16 @@ def test_the_loop_retries_a_failed_scan_within_the_candle(cfg):
     assert schedule.next_cycle == 3 * 3600 + 20  # back on the candle clock
 
 
+def test_a_cycle_that_buys_waits_for_the_next_candle(cfg):
+    """A pass that ends with a purchase is complete: the next one comes with the next candle,
+    not five minutes later on the same candles."""
+    desk, _, _ = make_desk(cfg, {SYMBOL: breakout()})
+    schedule = cli.Schedule(period=3600)
+    cli.run_once(desk, schedule, now=7200 + 30)
+    assert desk.store.positions()  # it bought
+    assert schedule.next_cycle == 3 * 3600 + 20
+
+
 def test_the_loop_says_when_the_pc_was_asleep(cfg):
     desk, _, _ = make_desk(cfg, {SYMBOL: quiet()})
     schedule = cli.Schedule(period=3600, next_cycle=10**9)
