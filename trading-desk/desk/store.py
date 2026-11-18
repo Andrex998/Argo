@@ -205,7 +205,8 @@ class Store:
     def add_perps_trade(self, trade: PerpTrade) -> None:
         marks = ", ".join("?" * len(fields(PerpTrade)))
         self.db.execute(
-            f"INSERT INTO perps_trades ({PERP_TRADE}) VALUES ({marks})", tuple(asdict(trade).values())
+            f"INSERT INTO perps_trades ({PERP_TRADE}) VALUES ({marks})",
+            tuple(asdict(trade).values()),
         )
 
     def perps_trades(self) -> list[PerpTrade]:

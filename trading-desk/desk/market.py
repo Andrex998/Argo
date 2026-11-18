@@ -51,6 +51,10 @@ def market_error(e: ccxt.BaseError, what: str) -> MarketError:
             f"analizza le connessioni HTTPS ({detail})"
         )
     if isinstance(e, ccxt.NetworkError):
+        if "restricted location" in detail or " 451 " in detail:  # Binance's location block
+            return MarketUnavailable(
+                f"{what}: l'exchange rifiuta le richieste da questa posizione geografica ({detail})"
+            )
         return MarketUnavailable(
             f"{what}: connessione assente o exchange non raggiungibile ({detail})"
         )

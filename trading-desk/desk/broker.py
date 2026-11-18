@@ -28,7 +28,9 @@ class Broker(Protocol):
 class PerpsBroker(Protocol):
     def open(self, symbol: str, side: Side, qty: float, ref_price: float) -> Fill: ...
 
-    def close(self, symbol: str, side: Side, qty: float, entry: float, ref_price: float) -> Fill: ...
+    def close(
+        self, symbol: str, side: Side, qty: float, entry: float, ref_price: float
+    ) -> Fill: ...
 
 
 class PaperBroker:

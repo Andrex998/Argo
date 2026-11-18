@@ -4,6 +4,10 @@ It writes one JSON file per document of the page's store, read from the desk's
 database alone: nothing here touches the network or the desk's state. A Claude
 session then copies the files into the page. Run it as `desk snapshot` or, on a
 copy that predates that command, `python -m desk.snapshot`.
+
+The perpetuals desk publishes the same four documents under its own ids,
+`perps_account`, `perps_feed`, `perps_curve` and `perps_book`, so both desks can share
+the page's store.
 """
 
 from __future__ import annotations
@@ -24,6 +28,15 @@ FEED_SIZE = 80  # latest journal entries on the page
 CURVE_POINTS = 240  # equity points drawn, spread over the whole history
 TRADES_SHOWN = 25
 DOCUMENTS = ("account", "feed", "curve", "book")
+
+
+def documents(cfg: Settings) -> tuple[str, ...]:
+    """The ids the page stores this desk's documents under."""
+    return tuple(_prefix(cfg) + name for name in DOCUMENTS)
+
+
+def _prefix(cfg: Settings) -> str:
+    return "perps_" if cfg.market == "perps" else ""
 
 
 def _num(value: float, digits: int = 2) -> float | None:
@@ -49,11 +62,18 @@ def _spread(points: list, limit: int) -> list:
 
 
 def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
-    """The page's documents, keyed by name."""
+    """The page's documents, keyed by their ids in the page's store."""
+    return {_prefix(cfg) + name: doc for name, doc in _documents(db_path, cfg, now).items()}
+
+
+def _documents(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
+    perps = cfg.market == "perps"
     st = dashboard.state(db_path, cfg, now)
     at = _num(now, 0)
     if not st["ready"]:
         account = {"at": at, "ready": False, "mode": cfg.mode, "exchange": cfg.exchange}
+        if perps:
+            account["market"] = "perps"
         empty = {"at": at}
         return {
             "account": account,
@@ -80,14 +100,16 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
             "ORDER BY id DESC LIMIT 1"
         ).fetchone()
         curve = store.equity_curve(limit=100_000)
-        every_trade = store.trades()
+        every_trade = store.perps_trades() if perps else store.trades()
         trades = every_trade[-TRADES_SHOWN:]
-        shadows = store.leverage_books(cfg.leverage_levels, cfg.capital)
         prices = store.get_json("prices")
-        try:
-            shadow_results = store.leverage_results(TRADES_SHOWN)
-        except sqlite3.OperationalError:  # a database from before simulated leverage
-            shadow_results = []
+        shadows, shadow_results = [], []
+        if not perps:  # the perpetuals desk trades with leverage itself: no shadow books
+            shadows = store.leverage_books(cfg.leverage_levels, cfg.capital)
+            try:
+                shadow_results = store.leverage_results(TRADES_SHOWN)
+            except sqlite3.OperationalError:  # a database from before simulated leverage
+                shadow_results = []
     finally:
         store.close()
 
@@ -132,6 +154,17 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
         "rvol_min": _num(cfg.rvol_min, 1),
         **{key: _num(value, 1) for key, value in st["limits"].items()},
     }
+    if perps:
+        account |= {
+            "market": "perps",
+            "analysts": "solo regole",
+            "margin": _num(st["margin"]),
+            "margin_pct": _num(st["margin"] / equity * 100 if equity else 0, 1),
+            "funding": _num(st["funding"]),
+            "max_leverage": _num(cfg.perps_max_leverage, 1),
+            "max_position_pct": _num(cfg.perps_cap_position_pct, 1),
+            "oi_filter": cfg.perps_oi_filter,
+        }
 
     scan = None
     if scan_row:
@@ -141,6 +174,7 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
             "scanned": facts.get("scanned"),
             "flagged": [
                 {"symbol": f["symbol"], "rvol": _num(f["rvol"], 1)}
+                | ({"side": f["side"]} if "side" in f else {})
                 for f in facts.get("flagged", [])
             ],
         }
@@ -155,6 +189,7 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
                 "kind": e["data"].get("kind", "note"),
                 "message": e["message"],
             }
+            | ({"side": e["data"]["side"]} if "side" in e["data"] else {})  # perpetuals only
             for e in events
         ],
         "agents": sorted(
@@ -182,6 +217,7 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
                 "pnl_pct": _num(p["pnl_pct"]),
                 "opened": _num(p["entry_ts"], 0),
             }
+            | (_perps_position(p) if perps else {})
             for p in st["positions"]
         ],
         "trades": [
@@ -195,10 +231,27 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
                 "r": _num(t.r_multiple),
                 "reason": t.reason,
             }
+            | (
+                {"side": t.side, "leverage": _num(t.leverage, 1), "funding": _num(t.funding)}
+                if perps
+                else {}
+            )
             for t in reversed(trades)
         ],
     }
-    book["leverage"] = {
+    if not perps:
+        book["leverage"] = _shadows(cfg, shadows, shadow_results, prices)
+    return {
+        "account": account,
+        "feed": feed,
+        "curve": {"at": at, "points": _spread(points, CURVE_POINTS)},
+        "book": book,
+    }
+
+
+def _shadows(cfg: Settings, shadows: list, shadow_results: list, prices: dict) -> dict:
+    """The spot desk's simulated leverage: its shadow books, open legs and results."""
+    return {
         "fee": cfg.futures_fee_rate,
         "funding_8h": cfg.funding_rate_8h,
         "maintenance": cfg.maintenance_margin,
@@ -243,11 +296,16 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
             for r in shadow_results
         ],
     }
+
+
+def _perps_position(p: dict) -> dict:
+    """What a perpetual position adds: its side and what it ties up and risks."""
     return {
-        "account": account,
-        "feed": feed,
-        "curve": {"at": at, "points": _spread(points, CURVE_POINTS)},
-        "book": book,
+        "side": p["side"],
+        "leverage": _num(p["leverage"], 1),
+        "margin": _num(p["margin"]),
+        "liquidation": _price(p["liquidation"]),
+        "funding": _num(p["funding"]),
     }
 
 

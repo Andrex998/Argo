@@ -227,7 +227,7 @@ footer{margin-top:18px;font-size:12px;color:var(--mut);max-width:80ch}
   <div class="card tile"><div class="lbl">Oggi</div><div class="val"><span class="delta flat" id="today">—</span></div><div class="foot" id="todayNote">dall'inizio della giornata (UTC)</div></div>
   <div class="card tile"><div class="lbl">Calo dal picco</div><div class="val" id="dd">—</div><div class="foot" id="ddNote"></div></div>
   <div class="card tile"><div class="lbl">Operazioni chiuse</div><div class="val" id="trades">—</div><div class="foot" id="tradesNote"></div></div>
-  <div class="card tile"><div class="lbl">Spesa analisti</div><div class="val" id="llm">—</div><div class="foot" id="llmNote"></div></div>
+  <div class="card tile"><div class="lbl" id="llmLbl">Spesa analisti</div><div class="val" id="llm">—</div><div class="foot" id="llmNote"></div></div>
 </section>
 
 <section class="card" aria-label="Agenti">
@@ -397,14 +397,14 @@ function bodyFor(e){
   switch (d.kind){
     case "scan": {
       out.push(text(`${d.scanned} mercati analizzati, ${d.flagged.length} con volume anomalo`));
-      if (d.flagged.length) out.push(extra(...d.flagged.flatMap(f => [chip(`${f.symbol} · volume ${f.rvol.toLocaleString("it-IT", {maximumFractionDigits:1})}x`), " "])));
+      if (d.flagged.length) out.push(extra(...d.flagged.flatMap(f => [chip(`${f.symbol} · volume ${f.rvol.toLocaleString("it-IT", {maximumFractionDigits:1})}x` + (f.side ? (f.side === "short" ? " · in calo" : " · in salita") : "")), " "])));
       break;
     }
     case "plan":
-      out.push(text(`Trend ${d.trend === "up" ? "in salita" : d.trend}, RSI ${Math.round(d.rsi)}`));
+      out.push(text((d.side ? d.side.toUpperCase() + " · " : "") + `Trend ${d.trend === "up" ? "in salita" : d.trend === "down" ? "in discesa" : d.trend}, RSI ${Math.round(d.rsi)}`));
       out.push(h("div", {class:"levels"},
         h("span", {}, "entrata ", h("b", {text:price(d.entry)})),
-        h("span", {}, "stop ", h("b", {text:price(d.stop)}), ` (−${d.stop_pct.toLocaleString("it-IT", {maximumFractionDigits:1})}%)`),
+        h("span", {}, "stop ", h("b", {text:price(d.stop)}), ` (${d.side === "short" ? "+" : "−"}${d.stop_pct.toLocaleString("it-IT", {maximumFractionDigits:1})}%)`),
         h("span", {}, "target ", h("b", {text:price(d.target)}))));
       break;
     case "news":
@@ -438,8 +438,9 @@ function bodyFor(e){
       break;
     }
     case "sell":
+    case "close":
       out.push(h("div", {class:"msg-t"}, chip((d.pnl >= 0 ? "▲ " : "▼ ") + (d.pnl >= 0 ? "+" : "") + money(d.pnl), d.pnl >= 0 ? "good" : "crit"),
-        ` Venduto a ${price(d.price)} (${d.reason}), ${d.r >= 0 ? "+" : ""}${d.r.toLocaleString("it-IT", {maximumFractionDigits:1})}R`));
+        ` ${d.side === "short" ? "Ricomprato" : "Venduto"} a ${price(d.price)} (${d.reason}), ${d.r >= 0 ? "+" : ""}${d.r.toLocaleString("it-IT", {maximumFractionDigits:1})}R`));
       break;
     default:
       out.push(text(e.message));
@@ -477,7 +478,9 @@ function appendEvents(events, fresh){
       else if (d.kind === "verdict") setOutcome(t, d.decision === "BUY" ? "BUY richiesto" : "· " + d.decision);
       else if (d.kind === "buy_cancelled") setOutcome(t, "! BUY annullato", "warn");
       else if (d.kind === "buy") setOutcome(t, "✓ comprato", "good");
-      else if (d.kind === "sell") setOutcome(t, d.pnl >= 0 ? "▲ chiuso in utile" : "▼ chiuso in perdita", d.pnl >= 0 ? "good" : "crit");
+      else if (d.kind === "open") setOutcome(t, `✓ aperto ${d.side}`, "good");
+      else if (d.kind === "sell" || d.kind === "close") setOutcome(t, d.pnl >= 0 ? "▲ chiuso in utile" : "▼ chiuso in perdita", d.pnl >= 0 ? "good" : "crit");
+      else if (d.kind === "liquidation" && d.side) setOutcome(t, "✕ liquidata", "crit");
     } else feed.insertBefore(el, $("more"));
     const card = S.cards.get(e.agent);
     if (card){
@@ -520,6 +523,12 @@ function renderState(st){
   const badges = $("badges"); badges.replaceChildren();
   if (st.demo) badges.append(h("span", {class:"badge demo", text:"Demo · mercati e analisti fittizi"}));
   badges.append(st.mode === "live" ? h("span", {class:"badge live", text:"Live · soldi veri"}) : h("span", {class:"badge", text:"Paper · soldi finti"}));
+  if (st.market === "perps"){
+    badges.append(h("span", {class:"badge", text:`Perpetui · long e short · leva massima x${st.max_leverage}`}));
+    document.title = "ARGO // DESK PERPETUI";
+    const executor = S.cards.get("EXECUTOR");
+    if (executor) executor.card.querySelector(".role").textContent = "Apre, sposta lo stop, chiude";
+  }
   badges.append(h("span", {class:"badge", text:`${st.exchange} · ${st.quote} · ${st.timeframe}`}));
 
   const notice = $("notice");
@@ -542,8 +551,14 @@ function renderState(st){
   const tr = st.trades;
   $("trades").textContent = tr.count;
   $("tradesNote").textContent = tr.count ? `${tr.wins} in utile · R medio ${(tr.avg_r >= 0 ? "+" : "") + tr.avg_r.toLocaleString("it-IT", {minimumFractionDigits:2, maximumFractionDigits:2})}` : "ancora nessuna";
-  $("llm").textContent = "$" + money(st.llm.cost);
-  $("llmNote").textContent = st.demo ? "nella demo gli analisti non costano" : `stima · ${Math.round(st.llm.searches)} ricerche web`;
+  if (st.market === "perps"){
+    $("llmLbl").textContent = "Margine impegnato";
+    $("llm").textContent = money(st.margin);
+    $("llmNote").textContent = `funding ${st.funding > 0 ? "pagato" : "incassato"} in tutto ${money(Math.abs(st.funding))} ${st.quote}`;
+  } else {
+    $("llm").textContent = "$" + money(st.llm.cost);
+    $("llmNote").textContent = st.demo ? "nella demo gli analisti non costano" : `stima · ${Math.round(st.llm.searches)} ricerche web`;
+  }
 
   renderPositions(st); renderLimits(st, dd, today); renderClosed(st);
   const key = st.equity_curve.length + ":" + (st.equity_curve.length ? st.equity_curve[st.equity_curve.length - 1].join() : "");
@@ -568,12 +583,12 @@ function renderPositions(st){
   $("posSub").textContent = `${st.positions.length} di ${st.limits.max_open_positions}`;
   if (!st.positions.length){ box.append(h("div", {class:"empty", text:"Nessuna posizione aperta."})); return; }
   for (const p of st.positions){
-    const lo = Math.min(p.stop, p.entry, p.last), hi = Math.max(p.target, p.last);
+    const lo = Math.min(p.stop, p.entry, p.last, p.target), hi = Math.max(p.stop, p.entry, p.last, p.target);
     const pad = (hi - lo) * 0.04, x = v => ((v - (lo - pad)) / (hi - lo + 2 * pad) * 100).toFixed(2) + "%";
     const d = h("span", {}); delta(d, p.pnl_pct, pct(p.pnl_pct));
     const gain = h("div", {class:"gain"});
     gain.style.left = x(Math.min(p.entry, p.last)); gain.style.width = (Math.abs(p.last - p.entry) / (hi - lo + 2 * pad) * 100).toFixed(2) + "%";
-    gain.style.background = p.last >= p.entry ? "var(--good-fill)" : "var(--crit-fill)";
+    gain.style.background = (p.side === "short" ? p.last <= p.entry : p.last >= p.entry) ? "var(--good-fill)" : "var(--crit-fill)";
     const tick = (cls, v, title) => { const t = h("div", {class:"tick " + cls, title}); t.style.left = x(v); return t; };
     const dot = h("div", {class:"dot", title:"prezzo ora " + price(p.last)}); dot.style.left = x(p.last);
     // Each label sits under its own tick; near an edge it hugs the edge instead of overflowing.
@@ -585,8 +600,8 @@ function renderPositions(st){
       return el;
     };
     box.append(h("div", {class:"pos"},
-      h("div", {class:"pos-h"}, h("b", {text:p.symbol}), d, h("span", {class:"mut num", text:`${p.pnl >= 0 ? "+" : ""}${money(p.pnl)} ${st.quote}`})),
-      h("div", {class:"pos-x mut num", text:`entrata ${price(p.entry)} · ora ${price(p.last)}`}),
+      h("div", {class:"pos-h"}, h("b", {text:p.symbol}), p.side ? chip(p.side.toUpperCase(), p.side === "short" ? "warn" : "") : null, d, h("span", {class:"mut num", text:`${p.pnl >= 0 ? "+" : ""}${money(p.pnl)} ${st.quote}`})),
+      h("div", {class:"pos-x mut num", text:`entrata ${price(p.entry)} · ora ${price(p.last)}` + (p.side ? ` · leva x${p.leverage.toLocaleString("it-IT", {maximumFractionDigits:1})} · margine ${money(p.margin)} · liquidazione ${price(p.liquidation)}` : "")}),
       h("div", {class:"range", role:"img", "aria-label":`Stop ${price(p.stop)}, entrata ${price(p.entry)}, prezzo ora ${price(p.last)}, target ${price(p.target)}`},
         h("div", {class:"track"}), gain, tick("stop", p.stop, "stop " + price(p.stop)), tick("", p.entry, "entrata " + price(p.entry)),
         tick("", p.target, "target " + price(p.target)), dot),
@@ -595,7 +610,7 @@ function renderPositions(st){
 }
 function renderLimits(st, dd, today){
   const rows = [
-    ["Capitale investito", st.equity ? st.exposure / st.equity * 100 : 0, st.limits.max_exposure_pct, "%"],
+    [st.market === "perps" ? "Valore delle posizioni" : "Capitale investito", st.equity ? st.exposure / st.equity * 100 : 0, st.limits.max_exposure_pct, "%"],
     ["Posizioni aperte", st.positions.length, st.limits.max_open_positions, ""],
     ["Perdita di oggi", Math.max(0, -today), st.limits.max_daily_loss_pct, "%"],
     ["Calo dal picco", dd, st.limits.max_drawdown_pct, "%"],
@@ -615,7 +630,7 @@ function renderClosed(st){
   if (!st.trades.recent.length){ box.append(h("div", {class:"empty", text:"Ancora nessuna operazione chiusa."})); return; }
   for (const t of st.trades.recent){
     const d = h("span", {}); delta(d, t.pnl, (t.pnl >= 0 ? "+" : "") + money(t.pnl));
-    box.append(h("div", {class:"rowline"}, h("span", {class:"sym", text:t.symbol}), h("span", {class:"why", text:t.reason}), d,
+    box.append(h("div", {class:"rowline"}, h("span", {class:"sym", text:t.symbol + (t.side ? " " + t.side : "")}), h("span", {class:"why", text:t.reason}), d,
       h("span", {class:"mut num", text:(t.r >= 0 ? "+" : "") + t.r.toLocaleString("it-IT", {minimumFractionDigits:1, maximumFractionDigits:1}) + "R"})));
   }
 }

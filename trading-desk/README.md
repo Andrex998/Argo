@@ -94,6 +94,9 @@ uv run desk snapshot        # i dati per la pagina ARGO DESK Live su claude.ai
 
 Per accendere gli analisti metti `ANTHROPIC_API_KEY` in `.env` e lancia `uv run desk run`.
 
+Accanto al desk spot può girare un secondo desk, solo con soldi finti, che opera al
+rialzo e al ribasso sui contratti perpetui: vedi [Il desk dei perpetui](#il-desk-dei-perpetui-solo-soldi-finti).
+
 | Comando | A cosa serve |
 |---|---|
 | `desk scan` | Fotografia del mercato, senza operare |
@@ -233,7 +236,8 @@ Il primo scarica i dati, il secondo prova ogni anno a parte, il terzo i tre anni
 
 ### Rialzo e ribasso sui contratti perpetui (ricerca)
 
-È solo una ricerca: il desk oggi compra spot e solo al rialzo. Il test usa tre anni di
+Il desk spot compra solo al rialzo. Queste regole le mette in pratica il
+[desk dei perpetui](#il-desk-dei-perpetui-solo-soldi-finti), solo con soldi finti. Il test usa tre anni di
 contratti perpetui di Binance (novembre 2023 – ottobre 2026), con i finanziamenti veri
 e la commissione dei perpetui (0,05%). Le monete sono le 36 del 2023 senza le memecoin,
 che restano senza leva.
@@ -381,6 +385,53 @@ Da leggere con prudenza:
 
 Il dettaglio per livello lo stampa `desk backtest`.
 
+## Il desk dei perpetui (solo soldi finti)
+
+Un secondo desk, separato da quello spot, che opera **al rialzo e al ribasso** sui
+contratti perpetui di Binance (USDⓈ-M, in USDT). Segue le regole della ricerca qui
+sopra: rialzo e ribasso, misura piena, regola C delle posizioni aperte. È **solo paper
+trading**: prezzi veri, soldi finti. Non usa chiavi API e si rifiuta di partire con
+`DESK_MODE=live` o `--live`.
+
+**Come si avvia.** Doppio clic su `start-perps.bat` (Windows) oppure `./start-perps.sh`
+(Mac, Linux). Si apre una seconda finestra, "ARGO DESK PERPETUI", con la sua dashboard
+su `http://127.0.0.1:8788`; se la porta è occupata ne prende un'altra e la scrive. Il
+desk spot continua a girare come prima. I due desk hanno ciascuno il suo database
+(`data/desk-paper-perps.db` per i perpetui), il suo capitale finto e il suo diario.
+Ogni comando accetta `--market perps`, per esempio `uv run desk status --market perps`.
+
+**Cosa cambia rispetto allo spot:**
+- **Long e short.** Con BTC in salita apre solo posizioni al rialzo (long), con BTC in
+  discesa solo al ribasso (short, che guadagna se il prezzo scende), con BTC laterale
+  niente. Le regole al ribasso sono quelle al rialzo rovesciate.
+- **Il rischio resta l'1% del capitale allo stop.** La leva serve solo a impegnare meno
+  capitale: ogni posizione mette come margine al massimo l'11% del capitale e usa la
+  leva che basta per arrivare alla dimensione decisa dal rischio, mai oltre x3. Una
+  posizione vale al massimo il 33% del capitale, tutte insieme il 150%.
+- **Margine isolato.** Una posizione può perdere al massimo il suo margine. A x3 la
+  liquidazione è a circa il 32% dall'entrata, molto oltre lo stop. Se il PC resta
+  spento, al riavvio il desk controlla il prezzo peggiore del periodo, come per la leva
+  simulata.
+- **Funding ogni 8 ore** (00, 08 e 16 UTC): con il tasso positivo i long pagano gli
+  short, con il tasso negativo il contrario. Il diario scrive ogni pagamento e incasso.
+- **Soldi nuovi.** Entra solo se nelle ultime 24 ore sono cresciute le posizioni aperte
+  su quella moneta (open interest, contato in monete e non in dollari). Se Binance non
+  dà il dato, entra senza filtro e lo scrive. `DESK_PERPS_OI_FILTER=false` lo spegne.
+- **Niente memecoin**, mai: solo le monete della lista della leva (`DESK_LEVERAGE_BASES`).
+- **Solo regole.** Gli analisti Claude non partecipano: le loro istruzioni sono scritte
+  per gli acquisti spot.
+- **Commissione** dei perpetui: 0,05% sul valore intero della posizione.
+- Gli altri limiti sono quelli dello spot: 5 posizioni, perdita giornaliera del 3%,
+  12 ore di pausa dopo una perdita, stop del desk al 15% di calo dal picco.
+
+Da sapere:
+- Nella ricerca, con la misura piena e la regola C, il calo massimo è stato del 13,5%,
+  vicino al 15% che ferma il desk finché non lanci `desk resume --market perps`.
+- Binance non risponde al server di sviluppo: il primo avvio sul PC va guardato. Se
+  Binance non accetta richieste dall'Italia, il diario lo scrive ("posizione geografica").
+- La pagina live riceve i dati dei perpetui come documenti a parte: `perps_account`,
+  `perps_feed`, `perps_curve`, `perps_book`.
+
 ## Radar: il filtro per le memecoin
 
 `desk radar <contract address>` è il motore di ARGO // RADAR portato in Python. Legge
@@ -448,6 +499,12 @@ Limiti da conoscere prima:
 - **Bybit, Bybit EU e Binance**: non provati. Rifiutano le connessioni dal server di
   sviluppo per posizione geografica; il codice è lo stesso, ma il primo `desk scan` dal
   tuo computer va guardato.
+- **Desk dei perpetui**: regole, conti, funding, liquidazioni e filtro delle posizioni
+  aperte provati con test automatici su mercati finti. Fatto girare candela per candela
+  sui tre anni veri della ricerca, con la misura piena e la regola C, fa le stesse 256
+  operazioni del replay della ricerca, con lo stesso risultato (+109,3%). Binance non
+  risponde al server di sviluppo: il primo `desk scan --market perps` dal tuo computer
+  va guardato.
 - **Chiamate a Claude e ordini reali**: provati solo contro controfigure che imitano
   l'SDK e l'exchange, mai contro i servizi veri. Il primo giro con una chiave Anthropic
   e i primi ordini live vanno seguiti a vista, con capitale minimo. Se un analista
@@ -465,6 +522,8 @@ desk/
   broker.py           esecuzione simulata e reale (ccxt)
   market.py           dati di mercato (ccxt)
   desk.py             orchestrazione di un ciclo
+  perps.py            regole del desk dei perpetui: long e short, margine, funding
+  perps_desk.py       il desk dei perpetui (solo paper)
   backtest.py         le stesse regole sullo storico
   radar.py            punteggio di rischio per token DEX
   dashboard.py        server locale di sola lettura

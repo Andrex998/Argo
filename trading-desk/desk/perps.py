@@ -30,7 +30,7 @@ def leader(cfg: Settings) -> str:
     return f"BTC/{cfg.quote}:{cfg.quote}"
 
 
-# --- one rule written once for both sides ---------------------------------------------------
+# --- one rule written once for both sides -----------------------------------------------------
 
 
 def reached(sign: int, price: float, level: float) -> bool:
@@ -156,7 +156,7 @@ def open_interest_veto(growth: float | None) -> str:
     return f"posizioni aperte sul mercato {trend} nelle ultime 24 ore ({growth:+.1%})"
 
 
-# --- margin, leverage, liquidation ----------------------------------------------------------
+# --- margin, leverage, liquidation ------------------------------------------------------------
 
 
 def margin_for(notional: float, book: risk.Book, cfg: Settings) -> tuple[float, float]:
@@ -188,7 +188,7 @@ def liquidated(pos: PerpPosition, *, open_: float, high: float, low: float) -> b
     return reached(-s, open_, pos.liquidation) or reached(s, pos.liquidation, pos.stop)
 
 
-# --- exits ----------------------------------------------------------------------------------
+# --- exits ------------------------------------------------------------------------------------
 
 
 def check_exit(
@@ -227,7 +227,7 @@ def check_exit(
     return None
 
 
-# --- funding --------------------------------------------------------------------------------
+# --- funding ----------------------------------------------------------------------------------
 
 
 def funding_times(since: float, until: float) -> list[float]:

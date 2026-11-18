@@ -15,6 +15,7 @@ Set-Location -LiteralPath $PSScriptRoot
 $inherited = @(Get-ChildItem Env: | Where-Object { $_.Name -match '^(ANTHROPIC_|CLAUDE)' } | ForEach-Object { $_.Name })
 foreach ($name in $inherited) { [Environment]::SetEnvironmentVariable($name, $null, 'Process') }
 [Environment]::SetEnvironmentVariable('DESK_MARKET', $null, 'Process')  # --market decides
+if ($Market -eq 'perps') { $env:DESK_MODE = 'paper' }  # the perps desk is paper only
 $env:PYTHONUTF8 = '1'
 $uv = (Get-Command uv.exe -ErrorAction SilentlyContinue).Source
 if (-not $uv) { $uv = Join-Path $env:USERPROFILE '.local\bin\uv.exe' }

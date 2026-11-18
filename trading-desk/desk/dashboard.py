@@ -29,6 +29,7 @@ RECENT_TRADES = 6
 
 def state(db_path: Path, cfg: Settings, now: float, demo: bool = False) -> dict:
     """Everything the page shows except the conversation, read from the database alone."""
+    perps = cfg.market == "perps"
     base = {
         "ready": False,
         "now": now,
@@ -46,6 +47,10 @@ def state(db_path: Path, cfg: Settings, now: float, demo: bool = False) -> dict:
             "max_drawdown_pct": cfg.max_drawdown_pct,
         },
     }
+    if perps:
+        base["market"] = "perps"
+        base["max_leverage"] = cfg.perps_max_leverage
+        base["limits"]["max_exposure_pct"] = cfg.perps_cap_total_pct  # on the whole notional
     if not Path(db_path).exists():
         return base
     try:
@@ -56,33 +61,45 @@ def state(db_path: Path, cfg: Settings, now: float, demo: bool = False) -> dict:
         if not store.get("cash"):
             return base
         prices = store.get_json("prices")
-        positions = []
-        for pos in store.positions():
-            last = prices.get(pos.symbol, pos.entry_price)
-            positions.append(
-                {
-                    "symbol": pos.symbol,
-                    "qty": pos.qty,
-                    "entry": pos.entry_price,
-                    "entry_ts": pos.entry_ts,
-                    "last": last,
-                    "stop": pos.stop,
-                    "initial_stop": pos.initial_stop,
-                    "target": pos.target,
-                    "value": pos.qty * last,
-                    "pnl": pos.qty * last - pos.cost,
-                    "pnl_pct": (pos.qty * last / pos.cost - 1) * 100,
-                }
-            )
         cash = store.get_float("cash")
-        exposure = sum(p["value"] for p in positions)
-        trades = store.trades()
+        extra = {}
+        if perps:
+            positions, open_profit = perps_positions(store, prices)
+            exposure = sum(p["value"] for p in positions)
+            equity = cash + open_profit
+            trades = store.perps_trades()
+            extra = {
+                "margin": sum(p["margin"] for p in positions),
+                "funding": sum(t.funding for t in trades) + sum(p["funding"] for p in positions),
+            }
+        else:
+            positions = []
+            for pos in store.positions():
+                last = prices.get(pos.symbol, pos.entry_price)
+                positions.append(
+                    {
+                        "symbol": pos.symbol,
+                        "qty": pos.qty,
+                        "entry": pos.entry_price,
+                        "entry_ts": pos.entry_ts,
+                        "last": last,
+                        "stop": pos.stop,
+                        "initial_stop": pos.initial_stop,
+                        "target": pos.target,
+                        "value": pos.qty * last,
+                        "pnl": pos.qty * last - pos.cost,
+                        "pnl_pct": (pos.qty * last / pos.cost - 1) * 100,
+                    }
+                )
+            exposure = sum(p["value"] for p in positions)
+            equity = cash + exposure
+            trades = store.trades()
         return base | {
             "ready": True,
             "session": store.get("session"),
             "cash": cash,
             "exposure": exposure,
-            "equity": cash + exposure,
+            "equity": equity,
             "day_start_equity": store.get_float("day_start_equity", cfg.capital),
             "peak_equity": store.get_float("peak_equity", cfg.capital),
             "halted": store.get("halted"),
@@ -103,6 +120,7 @@ def state(db_path: Path, cfg: Settings, now: float, demo: bool = False) -> dict:
                         "r": t.r_multiple,
                         "exit_ts": t.exit_ts,
                     }
+                    | ({"side": t.side} if perps else {})
                     for t in trades[: -RECENT_TRADES - 1 : -1]
                 ],
             },
@@ -111,9 +129,45 @@ def state(db_path: Path, cfg: Settings, now: float, demo: bool = False) -> dict:
                 "searches": store.get_float("llm_searches"),
             },
             "equity_curve": store.equity_curve(),
+            **extra,
         }
     finally:
         store.close()
+
+
+def perps_positions(store: Store, prices: dict[str, float]) -> tuple[list[dict], float]:
+    """The perpetual positions as the page shows them, and their open profit together.
+
+    `value` is the position's whole notional. `pnl` is net of the entry fee and the funding
+    so far, and `pnl_pct` relates it to the margin: what the money tied up has made.
+    """
+    positions, open_profit = [], 0.0
+    for pos in store.perps_positions():
+        last = prices.get(pos.symbol, pos.entry_price)
+        profit = pos.profit(last)
+        open_profit += profit
+        pnl = profit - pos.fees - pos.funding
+        positions.append(
+            {
+                "symbol": pos.symbol,
+                "side": pos.side,
+                "qty": pos.qty,
+                "entry": pos.entry_price,
+                "entry_ts": pos.entry_ts,
+                "last": last,
+                "stop": pos.stop,
+                "initial_stop": pos.initial_stop,
+                "target": pos.target,
+                "value": pos.qty * last,
+                "pnl": pnl,
+                "pnl_pct": pnl / pos.margin * 100,
+                "leverage": pos.leverage,
+                "margin": pos.margin,
+                "liquidation": pos.liquidation,
+                "funding": pos.funding,
+            }
+        )
+    return positions, open_profit
 
 
 def events(db_path: Path, after_id: int) -> dict:

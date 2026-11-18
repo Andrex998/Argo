@@ -44,6 +44,7 @@ _ansi = sys.platform != "win32"
 RETRY_SECONDS = 300  # a scan that failed is tried again within the same candle
 GAP_SECONDS = 15 * 60  # a pause this long between two passes means the PC slept or froze
 
+DASHBOARD_PORT = {"spot": 8787, "perps": 8788}  # tried first, so the two desks never collide
 PERPS_PAPER_ONLY = (
     "Il desk dei perpetui gira solo in paper trading (soldi finti): non apre mai posizioni "
     "vere. Togli DESK_MODE=live e --live per avviarlo."
@@ -193,7 +194,8 @@ def start_dashboard(
     the address is printed and the browser is opened on it either way.
     """
     server, error = None, None
-    for port in dict.fromkeys(p for p in (args.port, args.port + 1000, 0) if p < 65536):
+    wanted = args.port or DASHBOARD_PORT[cfg.market]
+    for port in dict.fromkeys(p for p in (wanted, wanted + 1000, 0) if p < 65536):
         try:
             server = dashboard.serve(cfg, db_path, time.time, args.host, port, demo_mode)
             break
@@ -202,8 +204,8 @@ def start_dashboard(
     if server is None:
         raise SystemExit(f"Nessuna porta disponibile per la dashboard ({error}).")
     port = server.server_address[1]
-    if port != args.port:
-        print(f"La porta {args.port} non è disponibile: la dashboard usa la {port}.", flush=True)
+    if port != wanted:
+        print(f"La porta {wanted} non è disponibile: la dashboard usa la {port}.", flush=True)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     host = "127.0.0.1" if args.host in ("127.0.0.1", "0.0.0.0") else args.host
     url = f"http://{host}:{port}"
@@ -656,7 +658,7 @@ def main(argv: list[str] | None = None) -> None:
     cycle.add_argument("--rules-if-no-key", action="store_true", help=no_key)
 
     def web(p: argparse.ArgumentParser) -> None:
-        p.add_argument("--port", type=int, default=8787, help="porta della dashboard")
+        p.add_argument("--port", type=int, help="porta della dashboard (8787, per i perpetui 8788)")
         p.add_argument("--host", default="127.0.0.1", help="indirizzo su cui ascoltare")
         p.add_argument("--open", action="store_true", help="apre la dashboard nel browser")
 
