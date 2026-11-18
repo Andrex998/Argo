@@ -274,6 +274,32 @@ Si apre al rialzo solo con BTC in salita, e al ribasso solo con BTC in discesa.
 
 Rifallo tu: `uv run python research/perps.py download`, poi `uv run python research/perps.py run`.
 
+**Il posizionamento degli altri trader.** Binance pubblica ogni 5 minuti, per ogni
+perpetuo:
+- le posizioni aperte (open interest);
+- quanti conti sono al rialzo e quanti al ribasso;
+- come sono posizionati i trader più grandi.
+
+Quattro regole, decise prima di guardare i risultati, sono state provate sul modo
+"rialzo e ribasso":
+
+| Regola | Anno 1 | Anno 2 | Anno 3 | 3 anni | Calo massimo |
+|---|---|---|---|---|---|
+| nessun filtro | +8,0% | +2,9% | +36,2% | +51,3% | 8,8% |
+| A, contro la folla | +9,0% | +0,8% | +33,1% | +46,1% | 8,8% |
+| B, con i grandi trader | −1,2% | +1,8% | +29,1% | +29,9% | 8,8% |
+| **C, soldi nuovi: posizioni aperte in crescita da 24 ore** | +9,3% | +6,0% | +38,1% | **+59,8%** | **7,7%** |
+| D, tutte e tre insieme | +0,8% | +2,6% | +18,5% | +22,6% | 6,7% |
+
+Solo la regola C aiuta, e in tutti e tre gli anni. La sua idea è classica: una rottura
+regge quando entrano posizioni nuove, non quando chi era già dentro chiude. Scelta
+guardando solo l'anno 1, avrebbe fatto meglio anche negli anni 2 e 3. Con la misura
+piena e la regola C, nei 3 anni il risultato è +109%, con un calo massimo del 13,5%, ed
+è positivo ogni anno: +11,4%, +15,0% e +63,7%. Le altre tre regole peggiorano: seguire o
+contrastare la folla, in questi dati, non paga.
+
+Rifallo tu: `uv run python research/derivs.py download`, poi `uv run python research/derivs.py run`.
+
 ### Quattro storici brevi (Kraken e BingX)
 
 Prima del test lungo, il 18/11/2026 il desk è stato rigiocato su quattro storici brevi,
