@@ -68,3 +68,13 @@ def test_regime_filter_keeps_the_backtest_out_of_a_falling_market(cfg):
     assert len(backtest.run(histories, cfg).trades) == 1
     cfg.regime_filter = True
     assert backtest.run(histories, cfg).trades == []
+
+
+def test_before_the_start_the_candles_only_warm_up_the_indicators(cfg):
+    histories = {"SOL/USDC": history([0.01] * 12 + [-0.03] * 3)}
+    (first,) = backtest.run(histories, cfg).trades
+    start = int(first.entry_ts * 1000) + 3600_000  # an hour after that entry
+    later = backtest.run(histories, cfg, start=start)
+    assert later.start_ts == start / 1000
+    assert all(t.entry_ts * 1000 >= start for t in later.trades)
+    assert first.entry_ts not in [t.entry_ts for t in later.trades]

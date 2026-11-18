@@ -147,7 +147,7 @@ chiave o la frase di recupero del wallet principale.
 
 - Ogni operazione rischia l'1% del capitale: la size deriva dalla distanza dello stop.
 - Massimo 10% del capitale per posizione, 50% investito in totale, 5 posizioni.
-- Lo stop sta a 2 ATR dall'entrata. A +1R sale a pareggio; raggiunto il target (3R)
+- Lo stop sta a 3 ATR dall'entrata. A +1R sale a pareggio; raggiunto il target (3R)
   segue il prezzo a distanza di 1R, così i vincenti possono correre.
 - Persa il 3% in un giorno: niente nuove entrate fino al giorno dopo.
 - Sceso del 15% dal picco: il desk si ferma finché non lanci `desk resume`.
@@ -160,42 +160,90 @@ chiave o la frase di recupero del wallet principale.
 
 ## Cosa dice il backtest
 
-Solo regole (Scout, Charts, Risk, uscite), senza analisti, su dati reali con commissioni e
-slippage. Il 18/11/2026 il desk è stato rigiocato su quattro storici, con 32 combinazioni
-di regole, e ognuna giudicata separatamente nelle due metà di ogni periodo, per non
-premiare una regola che funziona solo in un tratto di mercato.
+Solo regole (Scout, Charts, Risk, uscite), senza analisti, con commissioni e slittamento.
 
-| Storico | Periodo | BTC tenuto fermo | Regole vecchie | Regole nuove, commissione 0,4% | Regole nuove, commissione 0,1% |
+### Tre anni di candele a 4 ore
+
+È il test che conta di più. Copre novembre 2023 – ottobre 2026 sui dati pubblici di
+Binance. Usa le 40 monete principali di novembre 2023, scelte prima del periodo di prova:
+così il risultato non conta solo le monete che poi sono andate bene.
+
+| Regole | Commissione 0,4% (Kraken) | Commissione 0,1% | Calo massimo | Operazioni |
+|---|---|---|---|---|
+| stop a 3 ATR, predefinite dal 18/11/2026 | +27,6% | +42,1% | 11,4% | 256 |
+| stop a 2 ATR, fino al 18/11/2026 | 0,0% | +37,4% | 15,3% | 374 |
+| regole vecchie | −16,1% | −12,0% | 17,1% | 151 |
+| BTC comprato e tenuto | +124% | +124% | – | – |
+
+Il calo massimo e le operazioni sono quelli con la commissione di Kraken.
+
+Anno per anno, con lo stop a 3 ATR e la commissione di Kraken, il desk ha fatto +3,9%,
++10,6% e +11,1%. Negli stessi anni BTC ha fatto +103%, +56% e −29%.
+
+Come leggerli:
+
+- **Il desk guadagna poco, ma con regolarità**: circa l'8% l'anno con la commissione di
+  Kraken, circa il 12% con quella allo 0,1%, con cali sotto il 12%. Resta positivo anche
+  togliendo le 2 operazioni migliori (+19,6%).
+- **Tenere BTC ha reso molto di più**, ma con un anno a −29% e cali ben più profondi. Il
+  desk rischia l'1% a operazione e investe al massimo metà del capitale: è un'altra cosa.
+- **Lo stop a 3 ATR batte quello a 2 ATR in tutti e quattro i casi provati**: le 40 monete
+  del 2023 e le monete di oggi, ciascune con le due commissioni. Uno stop più largo viene
+  colpito meno dal rumore, e le commissioni pesano meno rispetto al rischio.
+- **Scegliere le regole sul passato e giudicarle sul futuro regge.** La regola migliore
+  sul primo anno, scelta senza guardare gli altri due (filtro su BTC meno severo, stop a
+  3 ATR), ha fatto +7,1% e +6,5% nei due anni dopo, con la commissione di Kraken.
+- **Limiti:**
+  - gli analisti AI non ci sono;
+  - i prezzi sono quelli in USDT di Binance, non in USD di Kraken;
+  - si entra all'apertura della candela successiva con lo 0,1% di slittamento;
+  - su 16 combinazioni provate, quella scelta è anche un po' fortunata.
+
+Rifallo tu, dalla cartella `trading-desk`:
+
+```
+uv run python research/download.py
+uv run python research/walk.py
+uv run python research/full.py
+```
+
+Il primo scarica i dati, il secondo prova ogni anno a parte, il terzo i tre anni di fila.
+
+### Quattro storici brevi (Kraken e BingX)
+
+Prima del test lungo, il 18/11/2026 il desk è stato rigiocato su quattro storici brevi,
+con le regole del 17/11 (stop a 2 ATR).
+
+| Storico | Periodo | BTC tenuto fermo | Regole vecchie | Stop 2 ATR, commissione 0,4% | Stop 2 ATR, commissione 0,1% |
 |---|---|---|---|---|---|
 | Kraken, 1h, 39 mercati | 30 giorni | −20,9% | −8,6% | −5,6% | −4,5% |
 | Kraken, 4h, 39 mercati | 120 giorni | −0,5% | +1,8% | +8,5% | +12,4% |
 | BingX, 1h, 29 mercati | 6 mesi | −17,6% | −5,3% | −2,1% | −0,3% |
 | BingX, 4h, 29 mercati | 1 anno | −22,9% | −9,6% | −0,4% | +1,0% |
 
-Le regole nuove, oggi predefinite:
+Con lo stop a 3 ATR e la commissione di Kraken, sugli stessi storici: −8,1%, +0,9%,
+−3,1% e +4,6%. È peggio in tre casi su quattro, ma sono periodi corti, con 13–51
+operazioni ciascuno: pesano meno dei tre anni.
+
+Le regole predefinite:
 
 - **candele a 4 ore**: meno operazioni, quindi meno commissioni;
 - **filtro di mercato severo**: nuovi acquisti solo con BTC in trend rialzista, non solo
   quando BTC non scende (`DESK_REGIME_STRICT`);
 - **rottura vera**: la candela deve chiudere sopra il massimo delle 20 precedenti
   (`DESK_BREAKOUT_LOOKBACK`);
-- **target a 3R** invece di 2R (`DESK_REWARD_RISK`).
+- **target a 3R** invece di 2R (`DESK_REWARD_RISK`);
+- **stop a 3 ATR** invece di 2 (`DESK_ATR_STOP_MULT`).
 
-Come leggerli:
+In generale:
 
-- Le regole nuove fanno meglio delle vecchie su tutti e quattro gli storici, con cali
-  massimi più bassi (4–6% invece di 7–12%), anche con la commissione di Kraken. Non
-  dimostrano ancora un vantaggio: fanno poche operazioni (13–51 per storico) e, su 32
-  combinazioni provate, la migliore è anche un po' fortunata.
 - **Le commissioni contano quanto le regole.** Kraken costa 0,4% per lato; Bybit EU,
   Binance e BingX circa 0,1%. Il paper trading usa la commissione vera di Kraken.
-- L'universo è quello dei mercati più liquidi **oggi**, quindi contiene già i vincitori
-  del periodo: i numeri sono ottimistici.
 - Gli analisti LLM non sono nel backtest. Possono solo scartare operazioni che le
   regole farebbero: se migliorano o peggiorano il risultato lo dirà il paper trading.
 
-Rifallo tu con `uv run desk backtest --days 120`. Kraken fornisce al massimo 720
-candele di storico per mercato (120 giorni a 4 ore, 30 a 1 ora).
+`uv run desk backtest --days 120` rifà il backtest su Kraken. Kraken fornisce al massimo
+720 candele di storico per mercato: 120 giorni a 4 ore, 30 a 1 ora.
 
 ## Leva simulata
 

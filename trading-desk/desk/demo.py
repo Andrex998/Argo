@@ -58,6 +58,7 @@ def settings() -> Settings:
         reward_risk=2.0,
         breakout_lookback=0,
         regime_strict=False,
+        atr_stop_mult=2.0,
     )
 
 

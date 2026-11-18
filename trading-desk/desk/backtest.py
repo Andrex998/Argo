@@ -54,8 +54,13 @@ class Result:
         return sum(t.pnl for t in self.trades if t.pnl > 0) / losses if losses else None
 
 
-def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
-    """Replay the desk candle by candle: signals on closed candles, entries at the next open."""
+def run(histories: dict[str, list[Candle]], cfg: Settings, start: int | None = None) -> Result:
+    """Replay the desk candle by candle: signals on closed candles, entries at the next open.
+
+    With `start` (a time in ms), the candles before it only warm up the indicators: the
+    desk looks for entries, and the result is measured, from then on. That lets rules
+    chosen on one period be judged on the next one without touching them.
+    """
     histories = {s: c for s, c in histories.items() if len(c) > scout.MIN_CANDLES}
     if not histories:
         raise ValueError("storico insufficiente per il backtest")
@@ -170,6 +175,8 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             book.mark(last_price, close_time)
 
         # 4. Look for new setups on the candles that just closed.
+        if start is not None and close_time * 1000 < start:
+            continue  # still warming up
         book = risk.Book(
             equity, cash, exposure, frozenset(positions), day_start, peak, cooldowns=cooldowns
         )
@@ -199,9 +206,10 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             book.exposure += decision.notional
             book.open_symbols |= {plan.symbol}
 
-    btc = histories.get(leader)
+    first = timeline[0] if start is None else max(timeline[0], start)
+    btc = [c for c in histories.get(leader, []) if c.ts >= first]
     return Result(
-        start_ts=timeline[0] / 1000,
+        start_ts=first / 1000,
         end_ts=timeline[-1] / 1000 + candle_s,
         symbols=len(histories),
         start_equity=cfg.capital,

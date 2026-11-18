@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     max_candidates: int = 2  # setups sent to the (paid) LLM analysts per cycle
 
     # --- Charts: trade plan --------------------------------------------------
-    atr_stop_mult: float = 2.0
+    atr_stop_mult: float = 3.0  # 3 years of 4h candles: 2 ATR broke even after fees, 3 ATR did not
     min_stop_pct: float = 1.5
     max_stop_pct: float = 8.0
     reward_risk: float = 3.0
