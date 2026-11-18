@@ -213,6 +213,8 @@ class Setup:
     crowd_filter: bool = False  # skip longs when funding says longs are crowded, and vice versa
     fee: float = 0.0005
     maintenance: float = 0.01
+    # entry_filter(symbol, side, ts_ms) -> bool: an extra yes/no on each setup (research hooks)
+    entry_filter: object = None
 
 
 def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
@@ -374,6 +376,8 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
                 rate = fmean(recent) if recent else 0.0
                 if (side > 0 and rate > 0.0003) or (side < 0 and rate < -0.0001):
                     continue
+            if setup.entry_filter and not setup.entry_filter(symbol, side, ts + CANDLE_MS):
+                continue
             distance = abs(entry - stop)
             if 2 * (setup.fee + slip) * entry / distance > cfg.max_cost_r:
                 continue
