@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     # --- Loop: a full cycle runs at every candle close ------------------------
     monitor_seconds: int = 60  # how often open positions are checked in between
 
+    # --- Live page: a snapshot of the desk every minute (optional) ----------
+    live_url: str = ""  # https://<progetto>.supabase.co
+    live_key: str = ""  # the project's publishable (anon) key: public by design
+    live_token: str = ""  # the desk's own write token: keep it out of the repository
+
     # --- Live trading credentials (trade-only key, withdrawals disabled) ----
     exchange_api_key: str = ""
     exchange_api_secret: str = ""

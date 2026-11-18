@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from desk import backtest, dashboard, demo, radar, snapshot
+from desk import backtest, dashboard, demo, live, radar, snapshot
 from desk.agents import charts, scout
 from desk.agents.llm import AgentUnavailable, ClaudeLLM
 from desk.broker import BrokerError, LiveBroker, PaperBroker
@@ -214,6 +214,22 @@ def run_once(desk: Desk, schedule: Schedule, now: float) -> None:
         desk.store.set("next_cycle", schedule.next_cycle)
 
 
+def publish(desk: Desk, publisher: live.Publisher, now: float) -> None:
+    """Send the snapshot to the live page. A failure is told once and never stops the desk."""
+    try:
+        error = publisher.publish(now)
+    except Exception as e:  # the snapshot itself failed: the desk carries on all the same
+        error = f"fotografia non riuscita ({e})"
+    try:
+        if error and not publisher.failing:
+            desk.say("DESK", f"pagina live non aggiornata: {error}", kind="error")
+        elif not error and publisher.failing:
+            desk.say("DESK", "pagina live di nuovo aggiornata")
+    except Exception:
+        traceback.print_exc()
+    publisher.failing = error
+
+
 def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
     desk = trading_desk(cfg, args)
     url = start_dashboard(cfg, cfg.db_path, args)[1] if args.dashboard else ""
@@ -224,6 +240,9 @@ def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
             "Chiudere il portatile o scegliere Sospendi lo ferma comunque.",
             flush=True,
         )
+    publisher = live.Publisher(cfg, cfg.db_path) if live.Publisher.configured(cfg) else None
+    if publisher:
+        print("Pagina live: il desk invia i suoi dati ogni minuto.", flush=True)
     schedule = Schedule(period=desk.market.candle_ms / 1000)
     mode = "solo regole" if desk.llm is None else f"analisti {cfg.model}"
     desk.say(
@@ -239,6 +258,8 @@ def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
                     desk.say("DESK", f"errore inatteso, il desk continua: {e}", kind="error")
                 except Exception:  # the journal itself failed (disk full, file locked)
                     traceback.print_exc()
+            if publisher:
+                publish(desk, publisher, time.time())
             time.sleep(cfg.monitor_seconds)
     except KeyboardInterrupt:
         desk.say("DESK", "fermato dall'utente; le posizioni aperte restano senza controllo")
