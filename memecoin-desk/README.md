@@ -49,6 +49,18 @@ Lo storico non è stato riscritto: le correzioni valgono da quel momento in poi.
     Il verdetto resta quello delle originali al 5,5%.
   - Per fermarle, come le altre strategie ferme, metti `params.sizing.pct_of_equity` a
     0: non comprano più e le posizioni aperte escono con le regole di sempre.
+- **18/11/2026, sera, dopo le copie.** Su richiesta del proprietario, un **tetto alle
+  posizioni aperte** sui wallet che non l'avevano. FILTRO v2 era arrivato a 36 posizioni
+  aperte con la cassa a zero.
+  - Il tetto tiene investita al massimo circa metà del wallet: 9 posizioni per FILTRO v2
+    e FILTRO v2 piccoli (5,5% l'una), 5 per le due copie al 10%.
+  - CORTO tardi aveva già il suo: 10 posizioni, e acquisti fermi sotto gli 850 $.
+  - Usa `params.guard.max_open`, che `desk_commit_tick` già rispettava. Sopra il tetto
+    il motore non compra e lo scrive in `desk_decisions` (`MAX_OPEN`). Le posizioni già
+    aperte non si toccano: escono con le regole di sempre, e gli acquisti riprendono
+    quando scendono sotto il tetto.
+  - Per tornare indietro: `update desk_strategies set params = params - 'guard' where id
+    in ('filtro', 'filtro_piccoli', 'filtro_10', 'filtro_piccoli_10');`
 
 ## Cartelle
 
