@@ -8,8 +8,9 @@ from typing import Literal
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# The perpetuals desk (DESK_MARKET=perps) reads Binance USDⓈ-M: public data, no API key.
-PERPS_EXCHANGE = "binanceusdm"
+# The perpetuals desk (DESK_MARKET=perps) reads USDT-margined perpetuals through public
+# data only, no API key. Bybit by default: the owner's PC cannot reach Binance at all.
+PERPS_EXCHANGE = "bybit"  # also tested by its unified API: okx, binanceusdm
 PERPS_QUOTE = "USDT"  # quote and settlement currency of its contracts
 
 # Coins the leverage simulation may shadow, and the only coins the perpetuals desk
@@ -96,7 +97,8 @@ class Settings(BaseSettings):
     # --- Perpetuals desk (DESK_MARKET=perps): paper only, long and short ------
     # research/perps.py's "full size". The risk per trade stays risk_per_trade_pct at the
     # stop; leverage only lets a position reach that size with less margin tied up.
-    perps_fee_rate: float = 0.0005  # Binance USDⓈ-M taker fee, on the whole notional
+    perps_exchange: str = PERPS_EXCHANGE  # ccxt id of the venue whose perpetuals are read
+    perps_fee_rate: float = 0.00055  # taker fee on the whole notional (Bybit 0.055%)
     perps_cap_position_pct: float = 33.0  # notional of one position, % of equity
     perps_cap_total_pct: float = 150.0  # notional of all positions together, % of equity
     perps_max_leverage: float = Field(default=3.0, ge=1.0, le=20.0)
@@ -114,10 +116,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _perps_venue(self) -> Settings:
-        """The perpetuals desk always reads Binance USDⓈ-M in USDT, whatever exchange and
-        currency the spot desk takes from the same .env."""
+        """The perpetuals desk always reads USDT perpetuals on `perps_exchange`, whatever
+        exchange and currency the spot desk takes from the same .env."""
         if self.market == "perps":
-            self.exchange, self.quote = PERPS_EXCHANGE, PERPS_QUOTE
+            self.exchange, self.quote = self.perps_exchange, PERPS_QUOTE
         return self
 
     @property

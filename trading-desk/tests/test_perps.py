@@ -111,11 +111,13 @@ def test_the_spot_desk_keeps_its_defaults_and_the_perps_desk_its_own_venue_and_f
     assert (spot.market, spot.exchange, spot.quote) == ("spot", "kraken", "USD")
     assert spot.db_path.name == "desk-paper.db"
     pcfg = Settings(_env_file=None, market="perps", exchange="kraken", quote="USD")
-    assert (pcfg.exchange, pcfg.quote) == ("binanceusdm", "USDT")  # whatever .env says
+    assert (pcfg.exchange, pcfg.quote) == ("bybit", "USDT")  # whatever .env says
+    okx = Settings(_env_file=None, market="perps", perps_exchange="okx")
+    assert okx.exchange == "okx"
     assert pcfg.db_path.name == "desk-paper-perps.db"
     assert (pcfg.perps_cap_position_pct, pcfg.perps_cap_total_pct) == (33.0, 150.0)
     assert (pcfg.perps_fee_rate, pcfg.perps_max_leverage, pcfg.perps_oi_filter) == (
-        0.0005,
+        0.00055,
         3.0,
         True,
     )
@@ -235,6 +237,7 @@ def test_funding_is_settled_every_eight_hours_utc():
     assert perps.funding_times(midnight - 1, midnight) == [midnight]
     assert perps.funding_times(midnight, midnight + 8 * HOUR - 1) == []  # opened on the hour
     assert len(perps.funding_times(midnight, midnight + 24 * HOUR)) == 3
+    assert len(perps.funding_times(midnight, midnight + 24 * HOUR, 4 * HOUR)) == 6  # Bybit 4h
 
 
 @pytest.mark.parametrize(("side", "said"), [("short", "funding incassato"), ("long", "pagato")])
@@ -255,6 +258,19 @@ def test_the_desk_settles_funding_with_the_right_sign(pcfg, side, said):
     clock.advance(1 / 60)
     desk.monitor()  # nothing more is due until the next settlement
     assert desk.store.perps_positions()[0].funding == pytest.approx(paid)
+
+
+def test_a_contract_that_settles_every_four_hours_is_charged_every_four_hours(pcfg):
+    desk, market, clock = perps_desk(pcfg, {SOL: dump(), BTC: falling()})
+    market.funding_interval = lambda symbol: 4 * HOUR  # as Bybit lists some contracts
+    desk.cycle()
+    market.rates[SOL] = 0.0001
+    clock.advance(
+        8
+    )  # from 15:06 to 23:06 UTC: 16:00 and 20:00 settle, on an 8h contract only 16:00
+    desk.monitor()
+    [pos] = desk.store.perps_positions()
+    assert pos.funding == pytest.approx(2 * pos.sign * pos.qty * market.prices[SOL] * 0.0001)
 
 
 # --- liquidation ------------------------------------------------------------------------------
@@ -569,7 +585,7 @@ def test_the_paper_broker_fills_both_ways():
     broker = PerpsPaperBroker(Settings(_env_file=None, market="perps"))
     sold = broker.open(SOL, "short", 2.0, 100.0)
     assert sold.price == pytest.approx(99.9) and sold.quote_delta == pytest.approx(-sold.fee)
-    assert sold.fee == pytest.approx(2.0 * 99.9 * 0.0005)  # on the notional
+    assert sold.fee == pytest.approx(2.0 * 99.9 * 0.00055)  # on the notional, Bybit's taker fee
     bought_back = broker.close(SOL, "short", 2.0, 99.9, 90.0)
     assert bought_back.price == pytest.approx(90.09)
     assert bought_back.quote_delta == pytest.approx(2.0 * (99.9 - 90.09) - bought_back.fee)
@@ -631,7 +647,7 @@ def test_snapshot_ids_and_fields(pcfg, tmp_path):
     for doc in docs.values():
         json.dumps(doc, allow_nan=False)
     account, book_ = docs["perps_account"], docs["perps_book"]
-    assert account["market"] == "perps" and account["exchange"] == "binanceusdm"
+    assert account["market"] == "perps" and account["exchange"] == "bybit"
     assert account["max_exposure_pct"] == 150.0 and account["max_leverage"] == 3.0
     assert account["margin"] > 0 and account["oi_filter"] is True
     assert account["analysts"] == "solo regole"
@@ -654,7 +670,7 @@ def test_snapshot_before_the_perps_desk_ever_ran(pcfg, tmp_path):
         "at": 1,
         "ready": False,
         "mode": "paper",
-        "exchange": "binanceusdm",
+        "exchange": "bybit",
         "market": "perps",
     }
 

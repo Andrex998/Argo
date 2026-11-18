@@ -8,6 +8,7 @@
 # The environment is cleaned of the variables a Claude Code shell would pass on.
 
 param([ValidateSet('spot', 'perps')][string]$Market = 'spot')
+$Market = $Market.ToLowerInvariant()  # ValidateSet ignores case, the desk's --market does not
 
 $Name = @{ spot = 'ARGO DESK'; perps = 'ARGO DESK PERPETUI' }[$Market]
 $Host.UI.RawUI.WindowTitle = "$Name - NON CHIUDERE"

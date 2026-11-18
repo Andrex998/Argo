@@ -135,7 +135,12 @@ def live(market: Replay, start: int = START, **settings) -> PerpsDesk:
     An entry fills at the close, which is the next candle's open in these histories."""
     # The research has no drawdown halt: the desk's 15% must not stop it where that would.
     cfg = Settings(
-        _env_file=None, market="perps", fear_greed=False, max_drawdown_pct=100.0, **settings
+        _env_file=None,
+        market="perps",
+        fear_greed=False,
+        max_drawdown_pct=100.0,
+        perps_fee_rate=0.0005,  # the research's fee, Binance's
+        **settings,
     )
     clock = Clock()
     desk = PerpsDesk(cfg, market, PerpsPaperBroker(cfg), Store(":memory:"), clock=clock)

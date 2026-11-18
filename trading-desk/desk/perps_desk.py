@@ -1,4 +1,4 @@
-"""The perpetuals desk: long and short on Binance USDⓈ-M perpetual futures, paper only.
+"""The perpetuals desk: long and short on USDT perpetual futures, paper only.
 
 The spot desk's loop (Scout, Charts, Risk, Executor and the journal) on the rules of
 desk/perps.py. It decides by rules alone, as the research did: the analysts' prompts are
@@ -132,8 +132,14 @@ class PerpsDesk(Desk):
         return True
 
     def _fund(self, pos: PerpPosition, price: float, now: float) -> None:
-        """Settle the funding due since the last settlement: every 8 hours, on the notional."""
-        due = perps.funding_times(pos.funded_until, now)
+        """Settle the funding due since the last settlement, on the notional, at the
+        contract's own interval (usually 8 hours; on Bybit some settle every 4 or 1)."""
+        try:
+            interval = getattr(self.market, "funding_interval", None)
+            period = interval(pos.symbol) if interval else perps.FUNDING_PERIOD
+        except MarketError:
+            period = perps.FUNDING_PERIOD
+        due = perps.funding_times(pos.funded_until, now, period)
         if not due:
             return
         try:

@@ -76,8 +76,17 @@ compaiono due icone:
 - **FERMA ARGO DESK** lo spegne e lo tiene spento;
 - **AVVIA ARGO DESK** lo riaccende.
 
-`install-autostart.ps1 -Uninstall` toglie tutto. Ogni avvio e ogni fermata vengono
-scritti in `data/autostart.log`.
+Il desk dei perpetui ha un'attività sua, "ARGO DESK PERPETUI", con le sue icone
+FERMA e AVVIA:
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File install-autostart.ps1 -Market perps
+```
+
+Ciascuna icona ferma o riavvia solo il suo desk. `install-autostart.ps1 -Uninstall`
+toglie l'avvio automatico dello spot, `-Market perps -Uninstall` quello dei perpetui.
+Ogni avvio e ogni fermata vengono scritti in `data/autostart.log` e in
+`data/autostart-perps.log`.
 
 A mano serve [uv](https://docs.astral.sh/uv/).
 
@@ -388,7 +397,7 @@ Il dettaglio per livello lo stampa `desk backtest`.
 ## Il desk dei perpetui (solo soldi finti)
 
 Un secondo desk, separato da quello spot, che opera **al rialzo e al ribasso** sui
-contratti perpetui di Binance (USDⓈ-M, in USDT). Segue le regole della ricerca qui
+contratti perpetui in USDT, letti da Bybit. Segue le regole della ricerca qui
 sopra: rialzo e ribasso, misura piena, regola C delle posizioni aperte. È **solo paper
 trading**: prezzi veri, soldi finti. Non usa chiavi API e si rifiuta di partire con
 `DESK_MODE=live` o `--live`.
@@ -415,20 +424,23 @@ Ogni comando accetta `--market perps`, per esempio `uv run desk status --market 
 - **Funding ogni 8 ore** (00, 08 e 16 UTC): con il tasso positivo i long pagano gli
   short, con il tasso negativo il contrario. Il diario scrive ogni pagamento e incasso.
 - **Soldi nuovi.** Entra solo se nelle ultime 24 ore sono cresciute le posizioni aperte
-  su quella moneta (open interest, contato in monete e non in dollari). Se Binance non
+  su quella moneta (open interest, contato in monete e non in dollari). Se Bybit non
   dà il dato, entra senza filtro e lo scrive. `DESK_PERPS_OI_FILTER=false` lo spegne.
 - **Niente memecoin**, mai: solo le monete della lista della leva (`DESK_LEVERAGE_BASES`).
 - **Solo regole.** Gli analisti Claude non partecipano: le loro istruzioni sono scritte
   per gli acquisti spot.
-- **Commissione** dei perpetui: 0,05% sul valore intero della posizione.
+- **Commissione** dei perpetui: 0,055% sul valore intero della posizione, quella di Bybit.
 - Gli altri limiti sono quelli dello spot: 5 posizioni, perdita giornaliera del 3%,
   12 ore di pausa dopo una perdita, stop del desk al 15% di calo dal picco.
 
 Da sapere:
 - Nella ricerca, con la misura piena e la regola C, il calo massimo è stato del 13,5%,
   vicino al 15% che ferma il desk finché non lanci `desk resume --market perps`.
-- Binance non risponde al server di sviluppo: il primo avvio sul PC va guardato. Se
-  Binance non accetta richieste dall'Italia, il diario lo scrive ("posizione geografica").
+- **Da dove legge.** Dal PC Binance non risponde, quindi il desk legge i perpetui di
+  **Bybit** (`DESK_PERPS_EXCHANGE`; va anche `okx`). La ricerca dei 3 anni è stata
+  fatta sui dati di Binance. I prezzi delle grandi monete sono quasi uguali sui diversi
+  exchange, ma i volumi e le posizioni aperte no: il paper trading dirà se i segnali
+  reggono anche su Bybit.
 - La pagina live riceve i dati dei perpetui come documenti a parte: `perps_account`,
   `perps_feed`, `perps_curve`, `perps_book`.
 
@@ -502,7 +514,7 @@ Limiti da conoscere prima:
 - **Desk dei perpetui**: regole, conti, funding, liquidazioni e filtro delle posizioni
   aperte provati con test automatici su mercati finti. Fatto girare candela per candela
   sui tre anni veri della ricerca, con la misura piena e la regola C, fa le stesse 256
-  operazioni del replay della ricerca, con lo stesso risultato (+109,3%). Binance non
+  operazioni del replay della ricerca, con lo stesso risultato (+109,3%). Bybit non
   risponde al server di sviluppo: il primo `desk scan --market perps` dal tuo computer
   va guardato.
 - **Chiamate a Claude e ordini reali**: provati solo contro controfigure che imitano

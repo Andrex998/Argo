@@ -21,7 +21,7 @@ from desk.config import Settings
 from desk.indicators import atr, ema, rsi
 from desk.models import SIGN, Candidate, Candle, ChartPlan, PerpPosition, Side
 
-FUNDING_PERIOD = 8 * 3600  # Binance settles funding at 00:00, 08:00 and 16:00 UTC
+FUNDING_PERIOD = 8 * 3600  # the usual interval: 00:00, 08:00 and 16:00 UTC
 SIDE_NAME = {"long": "LONG", "short": "SHORT"}
 
 
@@ -230,12 +230,13 @@ def check_exit(
 # --- funding ----------------------------------------------------------------------------------
 
 
-def funding_times(since: float, until: float) -> list[float]:
-    """The funding settlements after `since` and up to `until` (seconds)."""
-    times, t = [], (since // FUNDING_PERIOD + 1) * FUNDING_PERIOD
+def funding_times(since: float, until: float, period: float = FUNDING_PERIOD) -> list[float]:
+    """The funding settlements after `since` and up to `until` (seconds), every `period`
+    seconds from midnight UTC: Bybit settles some contracts every 4 hours or every hour."""
+    times, t = [], (since // period + 1) * period
     while t <= until:
         times.append(t)
-        t += FUNDING_PERIOD
+        t += period
     return times
 
 

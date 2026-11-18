@@ -17,6 +17,7 @@ param(
     [ValidateSet('spot', 'perps')][string]$Market = 'spot',
     [switch]$Start, [switch]$Stop, [switch]$Uninstall
 )
+$Market = $Market.ToLowerInvariant()  # ValidateSet ignores case, the desk's --market does not
 
 $TaskName = @{ spot = 'ARGO DESK'; perps = 'ARGO DESK PERPETUI' }[$Market]
 $Here = $PSScriptRoot
@@ -27,7 +28,9 @@ $Desktop = [Environment]::GetFolderPath('Desktop')
 $StopIcon = Join-Path $Desktop "FERMA $TaskName.bat"
 $StartIcon = Join-Path $Desktop "AVVIA $TaskName.bat"
 $User = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-$Browsers = @('chrome.exe', 'msedge.exe', 'firefox.exe', 'brave.exe', 'opera.exe')
+# The only programs a desk is made of. Nothing else is ever stopped, and the search for
+# what a launcher started never passes through anything else (a browser, Explorer...).
+$DeskImages = @('powershell.exe', 'cmd.exe', 'conhost.exe', 'uv.exe', 'desk.exe', 'python.exe')
 
 function Test-Market([string]$CommandLine) {
     # Which desk a command line belongs to. Older launchers and start.bat name no market:
@@ -43,19 +46,29 @@ function Stop-Desk {
     # except a browser opened by the dashboard; then any of its desk processes left over.
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     $all = @(Get-CimInstance Win32_Process)
+    $byId = @{}
+    foreach ($p in $all) { $byId[[int]$p.ProcessId] = $p }
     $ids = @($all | Where-Object {
-            (($_.Name -eq 'powershell.exe' -and $_.CommandLine -match '\\autostart\.ps1') -or
+            (($_.Name -eq 'powershell.exe' -and $_.CommandLine -match ($HereRx + '\\autostart\.ps1')) -or
             ($_.Name -eq 'cmd.exe' -and $_.CommandLine -match ($HereRx + '\\start(-perps)?\.bat'))) -and
             (Test-Market $_.CommandLine)
-        } | ForEach-Object { $_.ProcessId })
+        } | ForEach-Object { [int]$_.ProcessId })
     do {
         $added = $false
         foreach ($p in $all) {
-            if (($ids -contains $p.ParentProcessId) -and -not ($ids -contains $p.ProcessId)) { $ids += $p.ProcessId; $added = $true }
+            $child = [int]$p.ProcessId
+            $parent = [int]$p.ParentProcessId
+            # Windows reuses the number of a process that has ended: a real child is never
+            # older than its parent, so an older process only looks like one.
+            if (($ids -contains $parent) -and -not ($ids -contains $child) -and ($DeskImages -contains $p.Name) -and
+                $byId.ContainsKey($parent) -and ($p.CreationDate -ge $byId[$parent].CreationDate)) {
+                $ids += $child
+                $added = $true
+            }
         }
     } while ($added)
     $victims = @($all | Where-Object {
-            (($ids -contains $_.ProcessId) -and ($Browsers -notcontains $_.Name)) -or
+            (($ids -contains [int]$_.ProcessId) -and ($DeskImages -contains $_.Name)) -or
             ($_.Name -in @('python.exe', 'desk.exe') -and $_.CommandLine -match ($HereRx + '\\\.venv') -and
             ($_.CommandLine -match '\brun\b') -and (Test-Market $_.CommandLine))
         })

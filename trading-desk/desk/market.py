@@ -1,7 +1,7 @@
 """Market data. `CcxtMarket` reads public exchange endpoints; no API key needed.
 
-`PerpsMarket` reads Binance USDⓈ-M perpetual futures the same way, for the perpetuals
-desk: candles and prices, plus the funding rate and the open interest.
+`PerpsMarket` reads USDT perpetual futures the same way (Bybit by default), for the
+perpetuals desk: candles and prices, plus the funding rate and the open interest.
 """
 
 from __future__ import annotations
@@ -88,6 +88,10 @@ class PerpsData(Market, Protocol):
         """The last funding rate settled: 0.0001 means 0.01% of the notional."""
         ...
 
+    def funding_interval(self, symbol: str) -> float:
+        """Seconds between two funding settlements of this contract."""
+        ...
+
     def open_interest_growth(self, symbol: str) -> float | None:
         """The open interest's change over the last 24 hours, or None if it is not known."""
         ...
@@ -98,8 +102,12 @@ def make_exchange(cfg: Settings, *, authenticated: bool = False) -> ccxt.Exchang
         raise SystemExit(f"Exchange '{cfg.exchange}' non supportato da ccxt.")
     if cfg.market == "perps" and authenticated:
         raise SystemExit("Il desk dei perpetui usa solo dati pubblici: nessuna chiave API.")
-    # binanceusdm keeps its own defaults: perpetual swaps, futures markets only.
-    options = {} if cfg.market == "perps" else {"defaultType": "spot"}
+    if cfg.market != "perps":
+        options = {"defaultType": "spot"}
+    elif cfg.exchange == "binanceusdm":
+        options = {}  # it keeps its own defaults: USDⓈ-M futures markets only
+    else:
+        options = {"defaultType": "swap", "defaultSubType": "linear"}  # Bybit, OKX, ...
     params: dict = {
         "enableRateLimit": True,
         "options": {**options, **SPOT_ONLY.get(cfg.exchange, {})},
@@ -231,8 +239,11 @@ class CcxtMarket:
         ]
 
 
+FUNDING_EVERY = 8 * 3600  # the usual funding interval, in seconds
+
+
 class PerpsMarket(CcxtMarket):
-    """Binance USDⓈ-M perpetuals in USDT, read through public endpoints only.
+    """USDT-margined perpetuals (Bybit by default), read through public endpoints only.
 
     Symbols stay ccxt's unified ones: BTC/USDT:USDT. Only the coins in `leverage_bases`
     are listed: no memecoin and no coin outside that list is ever traded on perpetuals.
@@ -249,8 +260,17 @@ class PerpsMarket(CcxtMarket):
             and leverage.allowed(market.get("symbol") or "", self.cfg)
         )
 
+    def funding_interval(self, symbol: str) -> float:
+        """Seconds between two settlements. Bybit lists each contract's interval in
+        minutes (480, 240, 60); a venue that does not is taken to settle every 8 hours."""
+        try:
+            minutes = (self.ex.market(symbol).get("info") or {}).get("fundingInterval")
+            return float(minutes) * 60 if minutes else FUNDING_EVERY
+        except (ccxt.BaseError, TypeError, ValueError):
+            return FUNDING_EVERY
+
     def funding_rate(self, symbol: str) -> float:
-        """The last funding rate Binance settled; 0 for a contract that has none yet."""
+        """The last funding rate the venue settled; 0 for a contract that has none yet."""
         try:
             rows = self.ex.fetch_funding_rate_history(symbol, limit=1)
         except ccxt.BaseError as e:
@@ -266,7 +286,7 @@ class PerpsMarket(CcxtMarket):
         """How much the open interest grew over the last 24 hours: 0.05 for +5%.
 
         It counts contracts, not dollars, so a price move alone does not change it. The
-        latest hourly reading is compared with the one 24 hours earlier; None when Binance
+        latest hourly reading is compared with the one 24 hours earlier; None when the venue
         has no readings that far back.
         """
         since = self.ex.milliseconds() - self.OI_WINDOW - 3600 * 1000
@@ -289,6 +309,6 @@ class PerpsMarket(CcxtMarket):
 
 
 def open_market(cfg: Settings, exchange: ccxt.Exchange | None = None) -> CcxtMarket:
-    """The desk's market data: spot pairs, or Binance USDⓈ-M perpetuals."""
+    """The desk's market data: spot pairs, or USDT perpetuals."""
     exchange = exchange or make_exchange(cfg)
     return PerpsMarket(exchange, cfg) if cfg.market == "perps" else CcxtMarket(exchange, cfg)
