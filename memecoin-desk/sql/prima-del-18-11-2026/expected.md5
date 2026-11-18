@@ -1,0 +1,9 @@
+938f6fbedbb916e9093604fde8c84206  desk_begin_tick.sql
+10561e34b3246fd6687da551647bac5b  desk_commit_tick.sql
+d7933d1598e6a571bd5e7878f0376584  desk_fast_exits.sql
+60a8ac3e6a20b899dc2b83b27bd74b0f  desk_guard.sql
+8702dfb94dba134c9b3d5f791c6995d1  desk_is_sospetto.sql
+060b22948232d2b776265f35ba01974a  desk_marks_capture.sql
+32ab288283a9c08dc36dec3ce9e83d3c  desk_positions_track_trough.sql
+6f443f34f8a544112c06839a0b064808  desk_record_entry_extra.sql
+2d012ce79e09c5e5fa71cd8111a7b6c2  desk_scout_gecko.sql

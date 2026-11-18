@@ -1,0 +1,11 @@
+Edge function argo-desk as of 2026-11-18 (before changes)
+id: b72b4ef8-fe05-4016-821e-3f4df194e5e8
+slug/name: argo-desk
+status: ACTIVE
+version: 1
+verify_jwt: false
+import_map: false (no import map / no deno.json)
+entrypoint_path: index.ts  (deployed path .../source/index.ts)
+files: index.ts, logic.ts
+ezbr_sha256: f20990dbc698c3908db7c2513ea4779cf807bcd38f0c5d5de3716a2bf27dd37d
+Rollback: deploy_edge_function name=argo-desk entrypoint_path=index.ts verify_jwt=false files=[index.ts, logic.ts from this folder]
