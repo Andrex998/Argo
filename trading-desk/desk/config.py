@@ -84,14 +84,16 @@ class Settings(BaseSettings):
     # subscription, with no API key. "api": the Anthropic API with ANTHROPIC_API_KEY.
     # "off": no analysts on either desk.
     analysts: Literal["api", "claude-code", "off"] = "api"
-    perps_analysts: bool = True  # false: the perpetuals desk decides by its rules alone
+    # The perpetuals desk was tested on its rules alone: the analysts join it only when
+    # this says so, and a value that cannot be read leaves them out.
+    perps_analysts: bool = False
     claude_code_path: str = ""  # empty: claude.exe where npm or the installer put it, or PATH
     claude_code_model: str = "sonnet"  # an alias Claude Code understands
-    claude_code_timeout: float = 180.0  # seconds one analyst may take
+    claude_code_timeout: float = Field(default=180.0, ge=10.0, le=900.0)  # seconds a question
     # The subscription is shared with the owner's own use of Claude: each market discussed
     # costs four calls, so the analysts take at most this many markets, both desks together.
-    analyst_max_per_hour: int = 3
-    analyst_max_per_day: int = 20
+    analyst_max_per_hour: int = Field(default=3, ge=0, le=30)
+    analyst_max_per_day: int = Field(default=20, ge=0, le=300)
 
     # --- Loop: a full cycle runs at every candle close ------------------------
     monitor_seconds: int = 60  # how often open positions are checked in between
@@ -146,8 +148,9 @@ class Settings(BaseSettings):
     )
     @classmethod
     def _or_default(cls, value: object, handler, info: ValidationInfo) -> object:
-        """A typo in the analysts' keys must not stop the desks (they would restart every
-        30 seconds for ever): the default stands in, and the console says so."""
+        """A typo or an absurd value in the analysts' keys must not stop the desks (they
+        would restart every 30 seconds for ever): the default stands in, and the console
+        says so. For the perpetuals' switch the default is off."""
         try:
             return handler(value)
         except ValidationError:

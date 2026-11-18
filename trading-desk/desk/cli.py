@@ -114,7 +114,7 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
         print("Analisti spenti (DESK_ANALYSTS=off): il desk decide con le sole regole.")
         return desk
     if perps_desk and not cfg.perps_analysts:
-        print("Analisti spenti sul desk dei perpetui (DESK_PERPS_ANALYSTS=false): solo regole.")
+        print("Desk dei perpetui senza analisti: per accenderli serve DESK_PERPS_ANALYSTS=true.")
         return desk
     try:
         if cfg.analysts == "claude-code":

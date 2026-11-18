@@ -20,6 +20,7 @@ markets the analysts discuss per hour and per day (`analyst_max_per_hour`, `..._
 from __future__ import annotations
 
 import contextlib
+import ctypes
 import json
 import os
 import re
@@ -47,6 +48,37 @@ SEARCH_TOOL = "WebSearch"
 CONTAINED = json.dumps({"disableAllHooks": True, "syncClaudeAiPlugins": False})
 PIPES_WAIT = 5.0  # seconds to wait for the output once a stopped program is gone
 ERROR_FILE = "analysts-last-error.txt"  # in the data folder: raw output stays on the PC
+KILL_ON_JOB_CLOSE = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+EXTENDED_LIMIT_INFORMATION = 9  # JobObjectExtendedLimitInformation
+
+
+class _BasicLimits(ctypes.Structure):
+    """JOBOBJECT_BASIC_LIMIT_INFORMATION, with sizes fixed so it reads the same anywhere."""
+
+    _fields_ = [
+        ("PerProcessUserTimeLimit", ctypes.c_int64),
+        ("PerJobUserTimeLimit", ctypes.c_int64),
+        ("LimitFlags", ctypes.c_uint32),
+        ("MinimumWorkingSetSize", ctypes.c_size_t),
+        ("MaximumWorkingSetSize", ctypes.c_size_t),
+        ("ActiveProcessLimit", ctypes.c_uint32),
+        ("Affinity", ctypes.c_size_t),
+        ("PriorityClass", ctypes.c_uint32),
+        ("SchedulingClass", ctypes.c_uint32),
+    ]
+
+
+class _JobLimits(ctypes.Structure):
+    """JOBOBJECT_EXTENDED_LIMIT_INFORMATION (144 bytes on 64-bit Windows)."""
+
+    _fields_ = [
+        ("BasicLimitInformation", _BasicLimits),
+        ("IoInfo", ctypes.c_uint64 * 6),  # IO_COUNTERS
+        ("ProcessMemoryLimit", ctypes.c_size_t),
+        ("JobMemoryLimit", ctypes.c_size_t),
+        ("PeakProcessMemoryUsed", ctypes.c_size_t),
+        ("PeakJobMemoryUsed", ctypes.c_size_t),
+    ]
 
 
 def find_claude(cfg: Settings) -> Path:
@@ -66,9 +98,9 @@ def find_claude(cfg: Settings) -> Path:
     if WINDOWS:
         appdata = os.environ.get("APPDATA")
         places = [str(Path(appdata) / WINDOWS_NPM)] if appdata else []
-        places += [str(Path.home() / ".local/bin/claude.exe"), shutil.which("claude.exe") or ""]
+        places += [str(Path.home() / ".local/bin/claude.exe"), _on_path("claude.exe")]
     else:
-        places = [str(Path.home() / ".local/bin/claude"), shutil.which("claude") or ""]
+        places = [str(Path.home() / ".local/bin/claude"), _on_path("claude")]
     for place in places:
         found = Path(place)
         if place and found.is_file() and (not WINDOWS or found.suffix.lower() == ".exe"):
@@ -78,6 +110,18 @@ def find_claude(cfg: Settings) -> Path:
     raise AgentUnavailable(
         f"Claude Code non trovato{only}: installalo o indica DESK_CLAUDE_CODE_PATH"
     )
+
+
+def _on_path(name: str) -> str:
+    """`name` found on PATH, but never in the current folder, the desk's own, which Windows
+    searches first: a program dropped there would be started instead."""
+    found = shutil.which(name)
+    if not found:
+        return ""
+    with contextlib.suppress(OSError):
+        if Path(found).resolve().parent == Path.cwd().resolve():
+            return ""
+    return found
 
 
 def default_workdir() -> Path:
@@ -103,7 +147,7 @@ def run_program(
     stop it together with every process it started, and never wait without limit for
     output that one of them may still hold open."""
     flags = {"creationflags": NO_WINDOW} if WINDOWS else {"start_new_session": True}
-    proc = subprocess.Popen(
+    proc = subprocess.Popen(  # noqa: S603 - a list of arguments, no shell
         command,
         cwd=cwd,
         env=env,
@@ -115,22 +159,30 @@ def run_program(
         errors="replace",
         **flags,
     )
+    job = _job_for(proc)
     try:
         out, err = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        kill_tree(proc)
+        kill_tree(proc, job)
+        job = None
         with contextlib.suppress(subprocess.TimeoutExpired):
             proc.communicate(timeout=PIPES_WAIT)
         raise subprocess.TimeoutExpired(command[:1], timeout) from None
+    finally:
+        _end_job(job, terminate=False)  # what the program left running goes with it
     return subprocess.CompletedProcess(command, proc.returncode, out, err)
 
 
-def kill_tree(proc: subprocess.Popen) -> None:
-    """Stop `proc` and everything it started."""
-    if WINDOWS:
+def kill_tree(proc: subprocess.Popen, job: int | None = None) -> None:
+    """Stop `proc` and everything it started. On Windows the job object holds exactly
+    those processes; without one, taskkill follows the parent of each process."""
+    if _end_job(job, terminate=True):
+        pass
+    elif WINDOWS:
+        system = Path(os.environ.get("SYSTEMROOT") or r"C:\Windows") / "System32"
         with contextlib.suppress(OSError, subprocess.SubprocessError):
-            subprocess.run(
-                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+            subprocess.run(  # noqa: S603 - Windows' own taskkill, by its full path
+                [str(system / "taskkill.exe"), "/PID", str(proc.pid), "/T", "/F"],
                 capture_output=True,
                 timeout=15,
                 creationflags=NO_WINDOW,
@@ -140,6 +192,58 @@ def kill_tree(proc: subprocess.Popen) -> None:
             os.killpg(proc.pid, signal.SIGKILL)  # its own session: the whole group
     with contextlib.suppress(OSError):
         proc.kill()
+
+
+def _kernel32():
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+    handle = ctypes.c_void_p
+    for name, args in (
+        ("CreateJobObjectW", [handle, ctypes.c_wchar_p]),
+        ("SetInformationJobObject", [handle, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint32]),
+        ("AssignProcessToJobObject", [handle, handle]),
+        ("TerminateJobObject", [handle, ctypes.c_uint32]),
+        ("CloseHandle", [handle]),
+    ):
+        getattr(kernel32, name).argtypes = args
+        getattr(kernel32, name).restype = handle if name == "CreateJobObjectW" else ctypes.c_int
+    return kernel32
+
+
+def _job_for(proc: subprocess.Popen) -> int | None:
+    """A Windows job object holding the program: stopping or closing the job stops every
+    process it started, and only those. None elsewhere, or if Windows refuses one."""
+    if not WINDOWS:
+        return None
+    try:
+        kernel32 = _kernel32()
+        job = kernel32.CreateJobObjectW(None, None)
+        if not job:
+            return None
+        limits = _JobLimits()
+        limits.BasicLimitInformation.LimitFlags = KILL_ON_JOB_CLOSE
+        size = ctypes.sizeof(limits)
+        if kernel32.SetInformationJobObject(
+            job, EXTENDED_LIMIT_INFORMATION, ctypes.byref(limits), size
+        ) and kernel32.AssignProcessToJobObject(job, int(proc._handle)):  # type: ignore[attr-defined]
+            return job
+        kernel32.CloseHandle(job)
+    except (OSError, AttributeError, TypeError, ValueError):
+        pass
+    return None
+
+
+def _end_job(job: int | None, *, terminate: bool) -> bool:
+    """Close the job, which stops whatever is still in it; with `terminate`, stop it all
+    first and say whether Windows did."""
+    if job is None:
+        return False
+    try:
+        kernel32 = _kernel32()
+        stopped = bool(kernel32.TerminateJobObject(job, 1)) if terminate else True
+        kernel32.CloseHandle(job)
+        return stopped
+    except (OSError, AttributeError):
+        return False
 
 
 def _no_constant(name: str) -> float:
@@ -162,10 +266,13 @@ def _json_object(text: str) -> dict:
 
 def scrub(text: str, limit: int = 160) -> str:
     """An error as it may appear in the journal and on the live page: short, with no
-    e-mail address and no path under the user's home."""
+    e-mail address and no user's folder, however it is written."""
     text = re.sub(r"[\w.+-]+@[\w-]+(\.[\w-]+)+", "<e-mail>", str(text))
     home = str(Path.home())
-    text = text.replace(home, "~") if len(home) > 1 else text
+    if len(home) > 3:
+        for form in {home, home.replace("\\", "/"), home.replace("/", "\\")}:
+            text = re.sub(re.escape(form), "~", text, flags=re.IGNORECASE)
+    text = re.sub(r"(?i)(?<![\w.])(?:[a-z]:)?[\\/](?:users|home)[\\/][^\\/\s]+", "~", text)
     text = " ".join(text.split())
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
@@ -183,11 +290,22 @@ class ClaudeCodeLLM:
         self.run = run
         self.program = find_claude(cfg)
         self.workdir = workdir or default_workdir()
-        self.workdir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.workdir.mkdir(parents=True, exist_ok=True)
+            found = sorted(entry.name for entry in self.workdir.iterdir())
+        except OSError as e:
+            raise AgentUnavailable(f"cartella degli analisti non utilizzabile: {scrub(e)}") from e
+        if found:  # a CLAUDE.md or a .claude there would be read as instructions
+            raise AgentUnavailable(
+                f"la cartella degli analisti ({scrub(str(self.workdir), 120)}) deve restare "
+                f"vuota, invece contiene: {', '.join(found[:5])}"
+            )
 
     def command(self, system: str, prompt: str, schema: type[BaseModel], web_search: bool):
         if web_search:
             system += f"\n\nUse at most {self.cfg.max_searches} web searches."
+        # A NUL in text from the web would stop the program from starting at all.
+        prompt, system = prompt.replace("\x00", ""), system.replace("\x00", "")
         # A researching analyst needs a turn per search, one for the report, one to end.
         turns = self.cfg.max_searches + 3 if web_search else 3
         command = [
@@ -210,7 +328,7 @@ class ClaudeCodeLLM:
             "--disable-slash-commands",
             "--no-session-persistence",
             "--setting-sources",
-            "project",  # the empty working folder: none of the owner's settings
+            "",  # no settings file at all: not the owner's, not a folder's
             "--max-turns",
             str(turns),
         ]
@@ -236,7 +354,7 @@ class ClaudeCodeLLM:
             raise AgentUnavailable(
                 f"Claude Code non ha risposto in {self.cfg.claude_code_timeout:.0f} s"
             ) from e
-        except OSError as e:  # not there, not a program (WinError 193), not allowed
+        except (OSError, ValueError) as e:  # not there, not a program (WinError 193), a NUL
             raise AgentUnavailable(f"Claude Code non avviabile: {scrub(e)}") from e
         answer = self._answer(done)
         self._record(answer, web_search)
@@ -278,15 +396,20 @@ class ClaudeCodeLLM:
             path.write_text(f"stdout:\n{stdout or ''}\n\nstderr:\n{stderr or ''}\n", "utf-8")
 
     def _record(self, answer: dict, web_search: bool) -> None:
+        """Count the run's tokens and searches. Figures it cannot read are left out: the
+        report itself is what matters."""
         if not self.on_usage:
             return
-        usage = answer.get("usage") or {}
-        tool_use = usage.get("server_tool_use") or {}
-        self.on_usage(
-            Usage(
+        try:
+            usage = answer.get("usage") or {}
+            tool_use = usage.get("server_tool_use") or {}
+            searches = int(tool_use.get("web_search_requests") or 0) if web_search else 0
+            spent = Usage(
                 input_tokens=int(usage.get("input_tokens") or 0),
                 output_tokens=int(usage.get("output_tokens") or 0),
-                searches=int(tool_use.get("web_search_requests") or 0) if web_search else 0,
+                searches=searches,
                 cost=float(answer.get("total_cost_usd") or 0.0),  # what the run would cost
             )
-        )
+        except (AttributeError, TypeError, ValueError):
+            return
+        self.on_usage(spent)

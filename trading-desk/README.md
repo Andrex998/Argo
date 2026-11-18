@@ -109,10 +109,12 @@ Per accendere gli analisti ci sono due strade:
   accesso, metti `DESK_ANALYSTS=claude-code` in `.env`. Ogni analista è una domanda a
   Claude Code in modalità silenziosa:
   - una sessione nuova ogni volta, che non viene salvata, in una cartella vuota fuori da
-    quella del desk (su Windows `%LOCALAPPDATA%\argo-desk\analysts`);
+    quella del desk (su Windows `%LOCALAPPDATA%\argo-desk\analysts`). Se dentro compare
+    qualcosa, per esempio un CLAUDE.md, gli analisti non partono;
   - la ricerca web solo per News e Sentiment;
   - nessun altro strumento, nessun server MCP, nessuno slash command e nessun hook;
-  - nessun plugin, compresi quelli sincronizzati da claude.ai.
+  - nessun plugin, compresi quelli sincronizzati da claude.ai, e nessun file di
+    impostazioni: né i tuoi né quelli di una cartella.
 
   L'abbonamento è lo stesso che usi tu, quindi gli analisti discutono al massimo
   `DESK_ANALYST_MAX_PER_HOUR` mercati all'ora (3) e `DESK_ANALYST_MAX_PER_DAY` al giorno
@@ -137,20 +139,24 @@ Per accendere gli analisti ci sono due strade:
   Mentre gli analisti pensano, il desk resta di guardia:
   - prima di ogni domanda controlla gli stop delle posizioni aperte;
   - una domanda che supera `DESK_CLAUDE_CODE_TIMEOUT` secondi (180) viene fermata, insieme
-    a ogni processo che aveva avviato.
+    a ogni processo che aveva avviato. Su Windows ogni domanda sta in un "job" di sistema,
+    che li contiene tutti e solo loro.
 
   Quando una domanda fallisce, il diario e la pagina live mostrano un messaggio breve,
   senza percorsi né indirizzi e-mail. L'uscita completa resta solo sul PC, in
   `data/analysts-last-error.txt`.
 - **Con una chiave API**: metti `ANTHROPIC_API_KEY` in `.env`.
 
-Per spegnerli: `DESK_ANALYSTS=off` li spegne su tutti e due i desk,
-`DESK_PERPS_ANALYSTS=false` solo su quello dei perpetui. Un errore di battitura in queste
-chiavi non ferma i desk: la console lo segnala e il desk usa il valore di default. Se il
-modo degli analisti non si capisce, li spegne.
+Sul desk dei perpetui gli analisti si accendono solo con `DESK_PERPS_ANALYSTS=true`: quel
+desk è stato provato con le sole regole. `DESK_ANALYSTS=off` li spegne su tutti e due i
+desk. Un errore di battitura in queste chiavi non ferma i desk: la console lo segnala e
+il desk usa il valore di default (per i perpetui: spenti). Lo stesso vale per un valore
+fuori misura: timeout tra 10 e 900 secondi, al massimo 30 analisi all'ora e 300 al
+giorno. Se il modo degli analisti non si capisce, li spegne.
 
-Poi lancia `uv run desk run`. Gli analisti lavorano su tutti e due i desk; su quello dei
-perpetui discutono anche gli short, con istruzioni scritte per il ribasso (vedi
+Poi lancia `uv run desk run`. Gli analisti lavorano sul desk spot e, con
+`DESK_PERPS_ANALYSTS=true`, anche su quello dei perpetui, dove discutono anche gli short
+con istruzioni scritte per il ribasso (vedi
 [Il desk dei perpetui](#il-desk-dei-perpetui-solo-soldi-finti)).
 
 Accanto al desk spot può girare un secondo desk, solo con soldi finti, che opera al
@@ -453,8 +459,8 @@ trading**: prezzi veri, soldi finti. Non usa chiavi API e si rifiuta di partire 
 `DESK_MODE=live` o `--live`.
 
 **Come si avvia.** Doppio clic su `start-perps.bat` (Windows) oppure `./start-perps.sh`
-(Mac, Linux): usa gli analisti se sono disponibili, altrimenti le sole regole. Si apre
-una seconda finestra, "ARGO DESK PERPETUI", con la sua dashboard
+(Mac, Linux): usa gli analisti se sono accesi e disponibili, altrimenti le sole regole.
+Si apre una seconda finestra, "ARGO DESK PERPETUI", con la sua dashboard
 su `http://127.0.0.1:8788`; se la porta è occupata ne prende un'altra e la scrive. Il
 desk spot continua a girare come prima. I due desk hanno ciascuno il suo database
 (`data/desk-paper-perps.db` per i perpetui), il suo capitale finto e il suo diario.
@@ -478,9 +484,9 @@ Ogni comando accetta `--market perps`, per esempio `uv run desk status --market 
   su quella moneta (open interest, contato in monete e non in dollari). Se Bybit non
   dà il dato, entra senza filtro e lo scrive. `DESK_PERPS_OI_FILTER=false` lo spegne.
 - **Niente memecoin**, mai: solo le monete della lista della leva (`DESK_LEVERAGE_BASES`).
-- **Gli analisti, anche al ribasso.** Se sono accesi (vedi sopra), ogni setup che passa
-  le regole viene discusso prima di aprire, nello stesso ordine dello spot: News,
-  Sentiment, Skeptic e Chief.
+- **Gli analisti, anche al ribasso.** Se sono accesi (`DESK_ANALYSTS` e in più
+  `DESK_PERPS_ANALYSTS=true`, vedi sopra), ogni setup che passa le regole viene discusso
+  prima di aprire, nello stesso ordine dello spot: News, Sentiment, Skeptic e Chief.
   - Le istruzioni seguono la direzione del trade. Su uno short le notizie negative sono
     a favore, e il pericolo è un rimbalzo violento (short squeeze), che diventa
     probabile quando ormai tutti vendono.

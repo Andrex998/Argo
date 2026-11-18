@@ -272,7 +272,9 @@ class PerpsDesk(Desk):
             self.say("RISK", f"nessuna nuova entrata: {reason}", kind="blocked")
             return True
         for candidate in scan.candidates:
-            if self._consider(candidate, scan.candles[candidate.symbol], side, book):
+            debated = self.debates
+            opened = self._consider(candidate, scan.candles[candidate.symbol], side, book)
+            if opened or self.debates != debated:  # a debate also checked the stops meanwhile
                 book = self.book()
         return True
 

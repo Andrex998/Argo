@@ -413,13 +413,14 @@ class Desk:
                 target=plan.target,
             )
 
+            debated = self.debates
             size_factor = self._verdict(candidate, plan)
+            if self.debates != debated:  # minutes went by, and the stops were checked meanwhile
+                book, now = self.book(), self.clock()
             if size_factor is None:
                 continue
-            if self.llm:  # minutes went by, and the stops were checked meanwhile
-                if (plan := self._repriced(plan)) is None:
-                    continue
-                book, now = self.book(), self.clock()
+            if self.llm and (plan := self._repriced(plan)) is None:
+                continue
 
             decision = risk.evaluate(plan, book, self.cfg, now, size_factor)
             if not decision.approved:

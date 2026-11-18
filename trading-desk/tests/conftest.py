@@ -60,6 +60,14 @@ class Clock:
 
 
 @pytest.fixture(autouse=True)
+def _analysts_folder(tmp_path_factory, monkeypatch):
+    """The analysts' working folder in a temporary place: no test touches the real one."""
+    base = tmp_path_factory.mktemp("analysts")
+    monkeypatch.setenv("XDG_CACHE_HOME", str(base))
+    monkeypatch.setenv("LOCALAPPDATA", str(base))
+
+
+@pytest.fixture(autouse=True)
 def _no_retry_pause(monkeypatch):
     """The scan's second try at a failed market waits a second; the tests need not."""
     from desk.agents import scout

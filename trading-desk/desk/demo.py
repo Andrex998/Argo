@@ -54,8 +54,8 @@ def settings() -> Settings:
         reanalyze_hours=0.0,
         cooldown_hours=0.0,
         # The staged analysts cost nothing: the hourly cap would cut the script short.
-        analyst_max_per_hour=100,
-        analyst_max_per_day=1000,
+        analyst_max_per_hour=30,
+        analyst_max_per_day=300,
         # The script was staged for these rules: a 1h desk, 2R targets, no breakout check.
         timeframe="1h",
         reward_risk=2.0,

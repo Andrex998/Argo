@@ -250,6 +250,7 @@ def test_the_perps_desk_starts_with_the_analysts_and_the_shared_budget(tmp_path,
         data_dir=tmp_path,
         market="perps",
         analysts="claude-code",
+        perps_analysts=True,
         claude_code_path=str(program),
     )
     args = argparse.Namespace(live=False, rules_only=False, rules_if_no_key=True)
@@ -316,3 +317,19 @@ def test_a_failing_analyst_is_on_record_until_one_answers(pcfg, tmp_path):
     desk.cycle()
     assert desk.store.get("analysts_error") == ""
     assert snapshot.build(db, pcfg, now=clock())["perps_account"]["analysts_error"] == ""
+
+
+def test_the_perps_analysts_are_off_unless_switched_on(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    program = tmp_path / "claude.exe"
+    program.write_text("")
+    cfg = Settings(
+        _env_file=None,
+        data_dir=tmp_path,
+        market="perps",
+        analysts="claude-code",  # the spot desk's analysts are on...
+        claude_code_path=str(program),
+    )
+    desk = cli.trading_desk(cfg, argparse.Namespace(live=False, rules_if_no_key=True))
+    assert desk.llm is None and desk.store.get("analysts") == "solo regole"  # ...not these
+    assert "DESK_PERPS_ANALYSTS=true" in capsys.readouterr().out
