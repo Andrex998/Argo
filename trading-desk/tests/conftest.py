@@ -59,6 +59,14 @@ class Clock:
         self.now += hours * 3600
 
 
+@pytest.fixture(autouse=True)
+def _no_retry_pause(monkeypatch):
+    """The scan's second try at a failed market waits a second; the tests need not."""
+    from desk.agents import scout
+
+    monkeypatch.setattr(scout, "RETRY_PAUSE", 0.0)
+
+
 @pytest.fixture
 def cfg() -> Settings:
     # The market-regime filter needs a BTC series; tests that use it switch it on.

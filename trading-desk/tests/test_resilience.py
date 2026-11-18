@@ -142,6 +142,41 @@ def test_no_new_entries_while_a_held_market_has_no_price(cfg):
     assert "limiti di perdita non verificabili" in journal(desk)
 
 
+def test_a_market_that_fails_once_is_read_on_the_second_try(cfg):
+    other = "ETH/USDC"
+
+    class Flaky(FakeMarket):
+        def __init__(self, data):
+            super().__init__(data)
+            self.failures = {other: 1}
+
+        def candles(self, symbol, limit=200):
+            if self.failures.get(symbol):
+                self.failures[symbol] -= 1
+                raise MarketUnavailable(f"{symbol}: timeout")
+            return super().candles(symbol, limit)
+
+    pauses = []
+    result = scout.scan(Flaky({SYMBOL: quiet(), other: quiet()}), cfg, pause=pauses.append)
+    assert (result.scanned, result.failed, result.errors) == (2, 0, {})
+    assert pauses == [scout.RETRY_PAUSE]  # one pause for the whole second round
+
+
+def test_the_journal_names_the_markets_it_could_not_read(cfg):
+    other = "ETH/USDC"
+
+    class Broken(FakeMarket):
+        def candles(self, symbol, limit=200):
+            if symbol == other:
+                raise MarketError(f"{symbol}: contratto sospeso")
+            return super().candles(symbol, limit)
+
+    desk, _, _ = make_desk(cfg, {SYMBOL: quiet(), other: quiet()})
+    desk.market = Broken({SYMBOL: quiet(), other: quiet()})
+    desk.cycle()
+    assert "1 non leggibili anche al secondo tentativo: ETH/USDC" in journal(desk)
+
+
 # --- the loop -------------------------------------------------------------------------
 
 

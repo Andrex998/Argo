@@ -458,7 +458,12 @@ class Desk:
             )
             return None
         flagged = [self._flagged(c) for c in scan.candidates]
-        skipped = f" ({scan.failed} non leggibili)" if scan.failed else ""
+        skipped = (
+            f" ({scan.failed} non leggibili anche al secondo tentativo: "
+            f"{', '.join(list(scan.errors)[:6])}{' e altri' if scan.failed > 6 else ''})"
+            if scan.failed
+            else ""
+        )
         self.say(
             "SCOUT",
             f"{scan.scanned} mercati analizzati{skipped}, {len(scan.candidates)} con volume "
@@ -466,6 +471,7 @@ class Desk:
             kind="scan",
             scanned=scan.scanned,
             failed=scan.failed,
+            unread=[{"symbol": s, "error": e} for s, e in scan.errors.items()],
             flagged=[facts for _, facts in flagged],
         )
         return scan
