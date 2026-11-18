@@ -68,11 +68,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File install-autostart.ps1
 
 Crea l'attività pianificata "ARGO DESK":
 - parte 30 secondi dopo l'accesso, senza diritti di amministratore;
-- controlla ogni minuto che il desk sia acceso;
-- se la finestra viene chiusa o il programma si blocca, lo riaccende entro un minuto.
+- **gira in background, senza finestre**, così nessuno la chiude per sbaglio su un PC
+  condiviso;
+- controlla ogni minuto che il desk sia acceso e, se il programma si blocca, lo
+  riaccende entro un minuto.
 
-La finestra resta ridotta a icona con il titolo "ARGO DESK - NON CHIUDERE". Sul desktop
-compaiono due icone:
+Per vedere il desk apri la dashboard: `http://127.0.0.1:9787` per lo spot, di solito
+`http://127.0.0.1:9788` per i perpetui. Sul desktop compaiono due icone:
 - **FERMA ARGO DESK** lo spegne e lo tiene spento;
 - **AVVIA ARGO DESK** lo riaccende.
 

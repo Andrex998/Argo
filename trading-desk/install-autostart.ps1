@@ -8,10 +8,10 @@
 #   install-autostart.ps1 [-Market spot|perps] -Uninstall  stop it, remove task and icons
 #
 # spot (the default) is the task "ARGO DESK", perps is "ARGO DESK PERPETUI". Each one
-# starts and stops only its own desk. The task runs only while the user is logged on,
-# without administrator rights. It starts autostart.ps1 at logon and checks every
-# minute that it is still running: a closed window or a crash brings the desk back
-# within about a minute.
+# starts and stops only its own desk, in the background, with no window. The task runs
+# only while the user is logged on, without administrator rights. It starts
+# autostart.ps1 at logon and checks every minute that it is still running: a crash
+# brings the desk back within about a minute.
 
 param(
     [ValidateSet('spot', 'perps')][string]$Market = 'spot',
@@ -42,8 +42,8 @@ function Test-Market([string]$CommandLine) {
 }
 
 function Stop-Desk {
-    # This desk's launcher (autostart.ps1) or manual start, with everything they started,
-    # except a browser opened by the dashboard; then any of its desk processes left over.
+    # This desk's launcher (autostart.ps1) or manual start, with the desk programs they
+    # started (nothing else: see $DeskImages); then any of its desk processes left over.
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     $all = @(Get-CimInstance Win32_Process)
     $byId = @{}
@@ -94,14 +94,19 @@ if ($Stop -or $Uninstall) {
 if ($Start) {
     Enable-ScheduledTask -TaskName $TaskName | Out-Null
     Start-ScheduledTask -TaskName $TaskName
-    Write-Host "$TaskName riparte in una finestra ridotta a icona: $TaskName - NON CHIUDERE."
-    Write-Host "La porta della sua dashboard e' scritta in quella finestra."
+    Write-Host "$TaskName riparte in background, senza finestre."
+    Write-Host "Dashboard: spot su http://127.0.0.1:9787, perpetui su http://127.0.0.1:9788 (di solito)."
     return
 }
 
 # --- install or update -------------------------------------------------------------
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -WorkingDirectory $Here `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File `"$Launcher`" -Market $Market"
+# The launcher runs hidden, in a classic console (conhost), never in Windows Terminal.
+# The PC is shared at the office and a visible window gets closed; and Terminal hosts
+# every console of the session in one window, so closing it took both desks and the
+# user's other console windows with it. A hidden conhost console stands alone.
+$conhost = Join-Path $env:WINDIR 'System32\conhost.exe'
+$action = New-ScheduledTaskAction -Execute $conhost -WorkingDirectory $Here `
+    -Argument "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Launcher`" -Market $Market"
 $atLogon = New-ScheduledTaskTrigger -AtLogOn -User $User
 $atLogon.Delay = 'PT30S'  # let the network come up first
 $everyMinute = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)

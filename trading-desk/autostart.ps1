@@ -3,8 +3,9 @@
 #   autostart.ps1 [-Market spot|perps]
 #
 # Keeps one desk running in paper trading: it starts `desk run --market <market>`, and
-# starts it again 30 seconds after it stops for any reason. The window is minimized and
-# titled "<name> - NON CHIUDERE"; to stop the desk on purpose use the FERMA icon.
+# starts it again 30 seconds after it stops for any reason. The scheduled task runs it
+# hidden; its console is titled "<name> - NON CHIUDERE" in case it is ever shown. To stop
+# the desk on purpose use the FERMA icon.
 # The environment is cleaned of the variables a Claude Code shell would pass on.
 
 param([ValidateSet('spot', 'perps')][string]$Market = 'spot')
