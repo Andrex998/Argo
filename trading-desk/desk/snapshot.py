@@ -80,7 +80,8 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
             "ORDER BY id DESC LIMIT 1"
         ).fetchone()
         curve = store.equity_curve(limit=100_000)
-        trades = store.trades()[-TRADES_SHOWN:]
+        every_trade = store.trades()
+        trades = every_trade[-TRADES_SHOWN:]
         shadows = store.leverage_books(cfg.leverage_levels, cfg.capital)
         prices = store.get_json("prices")
         try:
@@ -119,6 +120,8 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
         "win_rate": _num(st["trades"]["wins"] / count * 100 if count else None, 0),
         "avg_r": _num(st["trades"]["avg_r"]) if count else None,
         "realized_pnl": _num(st["trades"]["pnl"]),
+        "realized_won": _num(sum(t.pnl for t in every_trade if t.pnl > 0)),
+        "realized_lost": _num(sum(t.pnl for t in every_trade if t.pnl < 0)),
         "halted": st["halted"] or "",
         "heartbeat": _num(st["heartbeat"], 0),
         "next_cycle": _num(st["next_cycle"], 0) or None,

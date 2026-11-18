@@ -1,6 +1,8 @@
 import json
 import threading
 
+import pytest
+
 from desk import demo, snapshot
 from desk.config import Settings
 
@@ -20,6 +22,9 @@ def test_snapshot_of_a_session_fits_the_page(tmp_path):
     account, feed = docs["account"], docs["feed"]
     assert account["ready"] and account["trades"] > 0 and account["capital"] == cfg.capital
     assert account["analysts"] == "solo regole"
+    assert account["realized_won"] + account["realized_lost"] == pytest.approx(
+        account["realized_pnl"], abs=0.02
+    )
     ids = [item["id"] for item in feed["items"]]
     assert ids == sorted(ids) and len(ids) <= snapshot.FEED_SIZE
     assert {"SCOUT", "RISK", "EXECUTOR"} <= {a["agent"] for a in feed["agents"]}
