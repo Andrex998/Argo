@@ -65,6 +65,14 @@ class Settings(BaseSettings):
     # --- Loop: a full cycle runs at every candle close ------------------------
     monitor_seconds: int = 60  # how often open positions are checked in between
 
+    # --- Simulated leverage: shadow books on perpetuals, never real orders ----
+    leverage_levels: list[float] = Field(default_factory=lambda: [3.0, 5.0, 10.0, 15.0, 20.0])
+    futures_fee_rate: float = 0.0005  # taker fee on the whole notional (Kraken Futures, Bybit)
+    funding_rate_8h: float = 0.0001  # a long pays 0.01% of the notional every 8 hours
+    maintenance_margin: float = (
+        0.01  # 1%: typical for altcoins; liquidation comes before 1/leverage
+    )
+
     # --- Live page: a snapshot of the desk every minute (optional) ----------
     live_url: str = ""  # https://<progetto>.supabase.co
     live_key: str = ""  # the project's publishable (anon) key: public by design

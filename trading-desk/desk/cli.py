@@ -358,10 +358,46 @@ def cmd_backtest(cfg: Settings, args: argparse.Namespace) -> None:
         reasons[trade.reason] = reasons.get(trade.reason, 0) + 1
     if reasons:
         print("  Uscite: " + ", ".join(f"{k} {v}" for k, v in sorted(reasons.items())))
+    if result.leverage:
+        print_leverage(result, cfg)
     print(
         "\nLimiti: nessun analista LLM (non si possono rigiocare le notizie del passato); "
         "l'universo è quello dei mercati più liquidi oggi, quindi i risultati sono "
         "ottimistici; un periodo breve non dice nulla sul futuro."
+    )
+
+
+def print_leverage(result: backtest.Result, cfg: Settings) -> None:
+    """The same trades on a simulated perpetual, one line per leverage level."""
+    q = cfg.quote
+    print(
+        f"\nLeva simulata sulle stesse operazioni (perpetual a margine isolato: commissione "
+        f"{cfg.futures_fee_rate:.2%} sul valore intero, finanziamento {cfg.funding_rate_8h:.2%} "
+        f"ogni 8 ore, margine di mantenimento {cfg.maintenance_margin:.1%})"
+    )
+    print(
+        f"  {'leva':<6}{'capitale finale':>16}{'rendimento':>12}{'drawdown':>10}"
+        f"{'liquidate':>11}{'commissioni':>13}{'finanziamento':>15}"
+    )
+    print(
+        f"  {'x1':<6}{result.end_equity:>16.2f}{result.return_pct:>+11.1f}%"
+        f"{result.max_drawdown_pct:>9.1f}%{'-':>11}{result.fees:>13.2f}{'-':>15}   (spot, il desk)"
+    )
+    for book in result.leverage:
+        closed = len(book.results) + len(book.legs)
+        note = (
+            f"   AZZERATO il {datetime.fromtimestamp(book.wiped_at):%d/%m %H:%M}"
+            if book.wiped_at is not None
+            else ""
+        )
+        print(
+            f"  {f'x{book.level:g}':<6}{book.last_equity:>16.2f}"
+            f"{(book.last_equity / book.start - 1) * 100:>+11.1f}%{book.max_drawdown_pct:>9.1f}%"
+            f"{f'{book.liquidations}/{closed}':>11}{book.fees:>13.2f}{book.funding:>15.2f}{note}"
+        )
+    print(
+        f"  Valori in {q}. 'liquidate' = posizioni perse per liquidazione / posizioni aperte. "
+        "Con la leva il desk non cambia le sue regole: cambia solo quanto pesa ogni operazione."
     )
 
 

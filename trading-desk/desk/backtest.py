@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from desk import risk
+from desk import leverage, risk
 from desk.agents import charts, scout
 from desk.broker import PaperBroker
 from desk.config import Settings
@@ -33,6 +33,7 @@ class Result:
     open_positions: int
     benchmark_pct: float | None  # buy-and-hold of BTC over the same period
     trades: list[Trade] = field(default_factory=list)
+    leverage: list[leverage.Book] = field(default_factory=list)  # the same trades, leveraged
 
     @property
     def return_pct(self) -> float:
@@ -71,6 +72,7 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
     cooldowns: dict[str, float] = {}
     pending: list[tuple[ChartPlan, float]] = []  # (plan, notional) to fill at the next open
     trades: list[Trade] = []
+    shadows = leverage.books(cfg)
 
     for ts in timeline:
         close_time = ts / 1000 + candle_s
@@ -82,10 +84,16 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             if not bar or plan.symbol in positions:
                 continue
             notional = min(notional, risk.affordable(cash, cfg))
+            spot_equity = cash + sum(
+                p.qty * last_price.get(s, p.entry_price) for s, p in positions.items()
+            )
             fill = broker.buy(plan.symbol, notional / bar.open, bar.open)
             shift = fill.price - plan.entry
             cash += fill.quote_delta
             fees += fill.fee
+            share = fill.qty * fill.price / spot_equity  # of the book, as the desk sized it
+            for book in shadows:
+                book.open(plan.symbol, share, fill.price, ts / 1000, cfg, last_price)
             positions[plan.symbol] = Position(
                 plan.symbol,
                 fill.qty,
@@ -105,6 +113,11 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             if not bar:
                 continue
             last_price[symbol] = bar.close
+            for book in shadows:  # before the desk's own exit: liquidation can come first
+                if leg := book.legs.get(symbol):
+                    book.accrue(symbol, bar.close, close_time, cfg)
+                    if leverage.liquidated_first(leg, open_=bar.open, low=bar.low, stop=pos.stop):
+                        book.liquidate(symbol, close_time)
             exit_ = risk.check_exit(
                 pos,
                 open_=bar.open,
@@ -121,6 +134,8 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             cash += fill.quote_delta
             fees += fill.fee
             del positions[symbol]
+            for book in shadows:
+                book.close(symbol, fill.price, close_time, cfg)
             trades.append(
                 Trade(
                     symbol,
@@ -145,6 +160,8 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             day, day_start = today, equity
         peak = max(peak, equity)
         max_drawdown = max(max_drawdown, (1 - equity / peak) * 100)
+        for book in shadows:
+            book.mark(last_price, close_time)
 
         # 4. Look for new setups on the candles that just closed.
         book = risk.Book(
@@ -188,4 +205,5 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
         open_positions=len(positions),
         benchmark_pct=(btc[-1].close / btc[0].open - 1) * 100 if btc else None,
         trades=trades,
+        leverage=shadows,
     )
