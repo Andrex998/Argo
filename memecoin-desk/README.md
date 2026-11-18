@@ -36,7 +36,19 @@ Lo storico non è stato riscritto: le correzioni valgono da quel momento in poi.
   al **5,5% del wallet**, circa 55 $ su un wallet da 1.000 $. La misura segue il wallet:
   cresce se il wallet cresce e cala se cala. Le strategie ferme restano a 0. Per tornare
   indietro, in `desk_strategies`, rimetti `params.sizing.pct_of_equity` a 2 (1 per
-  `corto_tardi`).
+  `corto_tardi`). Le descrizioni di FILTRO v2 e CORTO tardi riportano il cambio.
+- **18/11/2026, sera.** Su richiesta del proprietario, due **copie al 10% del wallet**:
+  `filtro_10` (FILTRO v2 · size 10%) e `filtro_piccoli_10` (FILTRO v2 piccoli · size
+  10%).
+  - Hanno gli stessi parametri delle originali, tranne `params.sizing.pct_of_equity = 10`.
+  - Ognuna parte con 1.000 $ finti: il totale della pagina live sale di 2.000 $, e non è
+    un guadagno.
+  - Comprano circa 100 $ alla volta invece di circa 50 $, quindi pagano un po' più di
+    impatto nei costi simulati.
+  - Sono bracci di misura, come CORTO largo: mostrano l'effetto di una size più grande.
+    Il verdetto resta quello delle originali al 5,5%.
+  - Per fermarle, come le altre strategie ferme, metti `params.sizing.pct_of_equity` a
+    0: non comprano più e le posizioni aperte escono con le regole di sempre.
 
 ## Cartelle
 
