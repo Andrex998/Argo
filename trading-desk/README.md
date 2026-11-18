@@ -57,6 +57,28 @@ Sul PC, mentre il desk è acceso:
 - **Antivirus che analizzano le connessioni HTTPS** (Avast, Kaspersky, Bitdefender...):
   il desk usa i certificati di Windows, come il browser, quindi funziona anche con loro.
 
+### Avvio automatico su Windows
+
+Per un desk che resta acceso da solo, usa l'avvio automatico invece di `start.bat`.
+Una volta sola, dalla cartella `trading-desk`, in PowerShell:
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File install-autostart.ps1
+```
+
+Crea l'attività pianificata "ARGO DESK":
+- parte 30 secondi dopo l'accesso, senza diritti di amministratore;
+- controlla ogni minuto che il desk sia acceso;
+- se la finestra viene chiusa o il programma si blocca, lo riaccende entro un minuto.
+
+La finestra resta ridotta a icona con il titolo "ARGO DESK - NON CHIUDERE". Sul desktop
+compaiono due icone:
+- **FERMA ARGO DESK** lo spegne e lo tiene spento;
+- **AVVIA ARGO DESK** lo riaccende.
+
+`install-autostart.ps1 -Uninstall` toglie tutto. Ogni avvio e ogni fermata vengono
+scritti in `data/autostart.log`.
+
 A mano serve [uv](https://docs.astral.sh/uv/).
 
 ```bash
