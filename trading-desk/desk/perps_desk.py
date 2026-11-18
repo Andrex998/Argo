@@ -329,6 +329,7 @@ class PerpsDesk(Desk):
         if self.llm:  # sized again: at the price after the debate, at the Chief's conviction
             if (plan := self._repriced(plan)) is None:
                 return False
+            book = self.book()  # the stops were checked during the debate
             decision = perps.evaluate(plan, book, self.cfg, self.clock(), size_factor)
             if not decision.approved:
                 self.say("RISK", f"respinto: {decision.reasons[0]}", symbol, "risk_rejected")

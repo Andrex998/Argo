@@ -416,8 +416,10 @@ class Desk:
             size_factor = self._verdict(candidate, plan)
             if size_factor is None:
                 continue
-            if self.llm and (plan := self._repriced(plan)) is None:
-                continue
+            if self.llm:  # minutes went by, and the stops were checked meanwhile
+                if (plan := self._repriced(plan)) is None:
+                    continue
+                book, now = self.book(), self.clock()
 
             decision = risk.evaluate(plan, book, self.cfg, now, size_factor)
             if not decision.approved:
@@ -657,12 +659,20 @@ class Desk:
         return analysts.SIZE_FACTOR[verdict.conviction]
 
     def _ask(self, agent: str, task: str, symbol: str, call: Callable[[], BaseModel]):
+        """One analyst's question. A question can take minutes, so the open positions are
+        checked first: a debate never leaves the stops unwatched for long. The last
+        failure stays on record until an analyst answers, for the dashboard and the page."""
+        self.monitor()
         try:
             with self._working(agent, task, symbol):
-                return call()
+                report = call()
         except AgentUnavailable as e:
             self.say(agent, f"non disponibile: {e}", symbol, "unavailable")
+            failure = {"ts": self.clock(), "agent": agent, "error": str(e)}
+            self.store.set_json("analysts_error", failure)
             return None
+        self.store.set("analysts_error", "")
+        return report
 
     def _open(self, plan: ChartPlan, decision: risk.RiskDecision, equity: float) -> None:
         try:

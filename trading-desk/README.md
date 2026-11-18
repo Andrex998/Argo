@@ -108,9 +108,11 @@ Per accendere gli analisti ci sono due strade:
 - **Con l'abbonamento Claude, senza chiave.** Se sul PC c'è Claude Code con il tuo
   accesso, metti `DESK_ANALYSTS=claude-code` in `.env`. Ogni analista è una domanda a
   Claude Code in modalità silenziosa:
-  - una sessione nuova ogni volta, che non viene salvata;
+  - una sessione nuova ogni volta, che non viene salvata, in una cartella vuota fuori da
+    quella del desk (su Windows `%LOCALAPPDATA%\argo-desk\analysts`);
   - la ricerca web solo per News e Sentiment;
-  - nessun altro strumento, nessun plugin e nessun hook.
+  - nessun altro strumento, nessun server MCP, nessuno slash command e nessun hook;
+  - nessun plugin, compresi quelli sincronizzati da claude.ai.
 
   L'abbonamento è lo stesso che usi tu, quindi gli analisti discutono al massimo
   `DESK_ANALYST_MAX_PER_HOUR` mercati all'ora (3) e `DESK_ANALYST_MAX_PER_DAY` al giorno
@@ -118,7 +120,34 @@ Per accendere gli analisti ci sono due strade:
   Ogni mercato discusso costa quattro domande. Il modello è `DESK_CLAUDE_CODE_MODEL`
   (sonnet). Se Claude Code manca o risponde con un errore, per esempio un limite d'uso
   raggiunto, su quel mercato non si apre niente.
+
+  Su Windows il desk avvia **solo il programma vero, `claude.exe`**, mai `claude.cmd` o
+  `claude.ps1`, gli script che npm mette nel PATH. Quegli script passano da cmd.exe o da
+  PowerShell: cmd.exe taglia le istruzioni al primo a capo, e con loro i flag che
+  chiudono Claude Code nella sua cartella, e legge come comandi i simboli `&`, `|`, `<`
+  e `>` del testo preso dal web. Il desk cerca `claude.exe`, in quest'ordine:
+  1. `DESK_CLAUDE_CODE_PATH`, che deve finire in `.exe`;
+  2. la cartella del pacchetto npm (`%APPDATA%\npm\node_modules\@anthropic-ai\claude-code\bin`);
+  3. `~\.local\bin`, dove lo mette l'installatore;
+  4. il PATH.
+
+  Se trova solo gli script, gli analisti restano spenti e la console spiega perché. Il
+  diario scrive quale `claude.exe` è stato avviato.
+
+  Mentre gli analisti pensano, il desk resta di guardia:
+  - prima di ogni domanda controlla gli stop delle posizioni aperte;
+  - una domanda che supera `DESK_CLAUDE_CODE_TIMEOUT` secondi (180) viene fermata, insieme
+    a ogni processo che aveva avviato.
+
+  Quando una domanda fallisce, il diario e la pagina live mostrano un messaggio breve,
+  senza percorsi né indirizzi e-mail. L'uscita completa resta solo sul PC, in
+  `data/analysts-last-error.txt`.
 - **Con una chiave API**: metti `ANTHROPIC_API_KEY` in `.env`.
+
+Per spegnerli: `DESK_ANALYSTS=off` li spegne su tutti e due i desk,
+`DESK_PERPS_ANALYSTS=false` solo su quello dei perpetui. Un errore di battitura in queste
+chiavi non ferma i desk: la console lo segnala e il desk usa il valore di default. Se il
+modo degli analisti non si capisce, li spegne.
 
 Poi lancia `uv run desk run`. Gli analisti lavorano su tutti e due i desk; su quello dei
 perpetui discutono anche gli short, con istruzioni scritte per il ribasso (vedi

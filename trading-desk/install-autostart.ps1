@@ -28,9 +28,10 @@ $Desktop = [Environment]::GetFolderPath('Desktop')
 $StopIcon = Join-Path $Desktop "FERMA $TaskName.bat"
 $StartIcon = Join-Path $Desktop "AVVIA $TaskName.bat"
 $User = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-# The only programs a desk is made of. Nothing else is ever stopped, and the search for
-# what a launcher started never passes through anything else (a browser, Explorer...).
-$DeskImages = @('powershell.exe', 'cmd.exe', 'conhost.exe', 'uv.exe', 'desk.exe', 'python.exe')
+# The only programs a desk is made of (claude.exe: the analysts' questions it started).
+# Nothing else is ever stopped, and the search for what a launcher started never passes
+# through anything else (a browser, Explorer, the owner's own Claude...).
+$DeskImages = @('powershell.exe', 'cmd.exe', 'conhost.exe', 'uv.exe', 'desk.exe', 'python.exe', 'claude.exe')
 
 function Test-Market([string]$CommandLine) {
     # Which desk a command line belongs to. Older launchers and start.bat name no market:

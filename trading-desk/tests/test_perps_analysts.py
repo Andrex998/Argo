@@ -273,3 +273,46 @@ def test_a_locked_budget_means_no_debate_not_a_stopped_desk(pcfg, tmp_path):
         other.execute("ROLLBACK")
     assert desk.store.perps_positions() == [] and fake.calls == []
     assert "il conteggio delle analisi non è leggibile" in journal(desk)
+
+
+# --- while the analysts think -----------------------------------------------------------------
+
+
+def test_the_stops_are_watched_while_the_analysts_think(pcfg):
+    fake = llm()
+    desk, market, _ = perps_desk(pcfg, {SOL: dump(), ETH: dump(), BTC: falling()}, fake)
+    asked = []
+
+    def ask(system, prompt, schema, **kwargs):
+        asked.append(schema.__name__)
+        if schema.__name__ == "NewsReport" and asked.count("NewsReport") == 2:
+            [first] = desk.store.perps_positions()  # the first short, opened a debate ago
+            market.prices[first.symbol] = first.stop * 1.01  # the market turns meanwhile
+        return Recording.ask(fake, system, prompt, schema, **kwargs)
+
+    fake.ask = ask
+    desk.cycle()
+    [trade] = desk.store.perps_trades()
+    assert trade.reason == "stop-loss"  # closed during the second debate, not after it
+    said = [f"{e.agent} {e.message}" for e in desk.store.events(500)]
+    closed = next(i for i, line in enumerate(said) if "SHORT chiusa" in line)
+    last_verdict = max(i for i, line in enumerate(said) if line.startswith("CHIEF SHORT"))
+    assert closed < last_verdict
+    [still_open] = desk.store.perps_positions()
+    assert still_open.symbol != trade.symbol
+
+
+def test_a_failing_analyst_is_on_record_until_one_answers(pcfg, tmp_path):
+    db = tmp_path / "desk-paper-perps.db"
+    fake = llm(SkepticReport=AgentUnavailable("Claude Code: Usage limit reached"))
+    desk, _, clock = shorting(pcfg, fake, Store(db))
+    desk.cycle()
+    assert desk.store.get_json("analysts_error")["agent"] == "SKEPTIC"
+    account = snapshot.build(db, pcfg, now=clock())["perps_account"]
+    assert account["analysts_error"] == "Claude Code: Usage limit reached"
+
+    fake.answers["SkepticReport"] = OBJECTIONS
+    clock.advance(pcfg.reanalyze_hours + 1)
+    desk.cycle()
+    assert desk.store.get("analysts_error") == ""
+    assert snapshot.build(db, pcfg, now=clock())["perps_account"]["analysts_error"] == ""

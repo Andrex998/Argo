@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, ValidationError, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # The perpetuals desk (DESK_MARKET=perps) reads USDT-margined perpetuals through public
@@ -82,12 +82,14 @@ class Settings(BaseSettings):
     anthropic_api_key: str = Field(default="", validation_alias="ANTHROPIC_API_KEY")
     # "claude-code": the analysts run through Claude Code on this PC, on the owner's Claude
     # subscription, with no API key. "api": the Anthropic API with ANTHROPIC_API_KEY.
-    analysts: Literal["api", "claude-code"] = "api"
-    claude_code_path: str = ""  # empty: found on PATH or in npm's global folder
+    # "off": no analysts on either desk.
+    analysts: Literal["api", "claude-code", "off"] = "api"
+    perps_analysts: bool = True  # false: the perpetuals desk decides by its rules alone
+    claude_code_path: str = ""  # empty: claude.exe where npm or the installer put it, or PATH
     claude_code_model: str = "sonnet"  # an alias Claude Code understands
     claude_code_timeout: float = 180.0  # seconds one analyst may take
     # The subscription is shared with the owner's own use of Claude: each market discussed
-    # costs four calls, so the analysts take at most this many markets.
+    # costs four calls, so the analysts take at most this many markets, both desks together.
     analyst_max_per_hour: int = 3
     analyst_max_per_day: int = 20
 
@@ -123,6 +125,35 @@ class Settings(BaseSettings):
     exchange_api_key: str = ""
     exchange_api_secret: str = ""
     exchange_api_password: str = ""  # passphrase, only for exchanges that use one
+
+    @field_validator("analysts", mode="before")
+    @classmethod
+    def _analysts(cls, value: object) -> str:
+        """`DESK_ANALYSTS` as written in .env: case, spaces and an underscore do not matter,
+        and anything unknown switches the analysts off instead of stopping the desks."""
+        name = str(value).strip().lower().replace("_", "-")
+        if name in ("api", "claude-code", "off"):
+            return name
+        print(f"DESK_ANALYSTS={value!r} non riconosciuto (claude-code, api, off): analisti spenti.")
+        return "off"
+
+    @field_validator(
+        "perps_analysts",
+        "claude_code_timeout",
+        "analyst_max_per_hour",
+        "analyst_max_per_day",
+        mode="wrap",
+    )
+    @classmethod
+    def _or_default(cls, value: object, handler, info: ValidationInfo) -> object:
+        """A typo in the analysts' keys must not stop the desks (they would restart every
+        30 seconds for ever): the default stands in, and the console says so."""
+        try:
+            return handler(value)
+        except ValidationError:
+            default = cls.model_fields[info.field_name].default
+            print(f"DESK_{info.field_name.upper()}={value!r} non valido: uso {default!r}.")
+            return default
 
     @model_validator(mode="after")
     def _perps_venue(self) -> Settings:

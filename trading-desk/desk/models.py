@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Side = Literal["long", "short"]
 SIGN = {"long": 1, "short": -1}  # a long gains when the price rises, a short when it falls
@@ -149,14 +149,14 @@ class NewsReport(BaseModel):
     red_flags: list[str]
     headlines: list[Headline]
     summary: str
-    confidence: float
+    confidence: float = Field(ge=0.0, le=1.0)  # NaN, 75 or -1 are refused
 
 
 class SentimentReport(BaseModel):
     mood: Literal["bullish", "bearish", "mixed", "euphoric", "quiet"]
     hype_risk: Literal["low", "medium", "high"]
     summary: str
-    confidence: float
+    confidence: float = Field(ge=0.0, le=1.0)  # NaN, 75 or -1 are refused
 
 
 class Objection(BaseModel):
@@ -179,7 +179,7 @@ class Rebuttal(BaseModel):
 class Verdict(BaseModel):
     decision: Literal["BUY", "WAIT", "SKIP"]
     conviction: Literal["low", "medium", "high"]
-    confidence: float
+    confidence: float = Field(ge=0.0, le=1.0)  # NaN, 75 or -1 are refused
     rebuttals: list[Rebuttal]
     summary: str
 
@@ -190,6 +190,6 @@ class ShortVerdict(BaseModel):
 
     decision: Literal["SHORT", "WAIT", "SKIP"]
     conviction: Literal["low", "medium", "high"]
-    confidence: float
+    confidence: float = Field(ge=0.0, le=1.0)  # NaN, 75 or -1 are refused
     rebuttals: list[Rebuttal]
     summary: str

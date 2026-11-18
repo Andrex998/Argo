@@ -17,7 +17,7 @@ from pathlib import Path
 from desk import backtest, dashboard, demo, live, perps, radar, snapshot
 from desk.agents import charts, scout
 from desk.agents.budget import AnalystBudget
-from desk.agents.claude_code import ClaudeCodeLLM
+from desk.agents.claude_code import ClaudeCodeLLM, scrub
 from desk.agents.llm import AgentUnavailable, ClaudeLLM
 from desk.broker import BrokerError, LiveBroker, PaperBroker, PerpsPaperBroker
 from desk.config import Settings
@@ -110,10 +110,17 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
     desk.store.set("analysts", "solo regole")
     if getattr(args, "rules_only", False):
         return desk
+    if cfg.analysts == "off":
+        print("Analisti spenti (DESK_ANALYSTS=off): il desk decide con le sole regole.")
+        return desk
+    if perps_desk and not cfg.perps_analysts:
+        print("Analisti spenti sul desk dei perpetui (DESK_PERPS_ANALYSTS=false): solo regole.")
+        return desk
     try:
         if cfg.analysts == "claude-code":
             desk.llm = ClaudeCodeLLM(cfg, on_usage=desk.record_usage)
             label = f"Claude Code ({cfg.claude_code_model}, abbonamento)"
+            desk.say("DESK", f"analisti: Claude Code da {scrub(str(desk.llm.program), 200)}")
         else:
             desk.llm = ClaudeLLM(cfg, on_usage=desk.record_usage)
             label = cfg.model
@@ -399,6 +406,8 @@ def cmd_status(cfg: Settings, args: argparse.Namespace) -> None:
         f"{store.get_float('llm_output_tokens'):,.0f} out, "
         f"{store.get_float('llm_searches'):.0f} ricerche web"
     )
+    if failure := store.get_json("analysts_error"):
+        print(f"Ultimo errore degli analisti ({failure['agent']}): {failure['error']}")
 
 
 def status_perps(cfg: Settings) -> None:

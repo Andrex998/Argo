@@ -104,6 +104,7 @@ def _documents(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
         # analysts when there was a key, the perpetuals desk never had them.
         with_key = cfg.anthropic_api_key and not perps
         analysts = store.get("analysts") or (cfg.model if with_key else "solo regole")
+        analysts_error = store.get_json("analysts_error").get("error", "")
         every_trade = store.perps_trades() if perps else store.trades()
         trades = every_trade[-TRADES_SHOWN:]
         prices = store.get_json("prices")
@@ -129,6 +130,7 @@ def _documents(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
         "quote": st["quote"],
         "timeframe": st["timeframe"],
         "analysts": analysts,
+        "analysts_error": analysts_error,  # the last analyst's failure, until one answers
         "capital": _num(capital),
         "equity": _num(equity),
         "cash": _num(st["cash"]),

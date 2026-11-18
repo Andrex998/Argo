@@ -255,7 +255,7 @@ def chief(
 
 def enforce(verdict: Verdict | ShortVerdict, objections: SkepticReport, cfg: Settings) -> str:
     """Why the Chief's BUY or SHORT does not stand under the desk's rules, or '' if it does."""
-    if verdict.confidence < cfg.min_confidence:
+    if not verdict.confidence >= cfg.min_confidence:  # written so a NaN fails too
         return f"fiducia {verdict.confidence:.2f} sotto la soglia {cfg.min_confidence:.2f}"
     rebutted = {r.objection_number for r in verdict.rebuttals if r.rebutted}
     for number, objection in enumerate(objections.objections, start=1):
