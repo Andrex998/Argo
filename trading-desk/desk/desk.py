@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel
 
-from desk import risk
+from desk import leverage, risk
 from desk.agents import analysts, charts, scout
 from desk.agents.llm import LLM, AgentUnavailable, Usage
 from desk.broker import Broker, BrokerError
@@ -50,6 +50,8 @@ class Desk:
         self.echo = echo
         self.equity_interval = equity_interval
         init_book(store, cfg)
+        # Simulated leverage: shadows of the desk's own trades, never real orders.
+        self.shadows = store.leverage_books(cfg.leverage_levels, cfg.capital)
 
     def say(self, agent: str, message: str, symbol: str = "", kind: str = "note", **facts) -> None:
         """Write one journal entry. `facts` are the numbers behind the sentence."""
@@ -87,6 +89,10 @@ class Desk:
         book = self.book()
         if book.fresh:  # a stale price would draw a step that never happened
             self.store.add_equity(now, book.equity, self.equity_interval)
+            prices = self.store.get_json("prices")
+            for shadow in self.shadows:
+                shadow.mark(prices, now)
+                self.store.save_leverage(shadow)
 
     # --- exits ----------------------------------------------------------------
 
@@ -98,6 +104,7 @@ class Desk:
             except MarketError as e:
                 self.say("EXECUTOR", f"prezzo non disponibile, riprovo: {e}", pos.symbol, "error")
                 continue
+            self._shadow_tick(pos, price)
             stop_before, trailing_before = pos.stop, pos.highest >= pos.target
             exit_ = risk.check_exit(
                 pos, open_=price, high=price, low=price, close=price, now=self.clock(), cfg=self.cfg
@@ -157,6 +164,7 @@ class Desk:
         )
         if pnl < 0:
             self.store.set_cooldown(pos.symbol, now + self.cfg.cooldown_hours * 3600)
+        self._shadow_close(pos.symbol, fill.price)
         self.say(
             "EXECUTOR",
             f"venduto a {fill.price:g} ({reason}): {pnl:+.2f} {self.cfg.quote}, {r_multiple:+.1f}R",
@@ -175,6 +183,79 @@ class Desk:
             except MarketError as e:
                 self.say("EXECUTOR", f"chiusura non riuscita: {e}", pos.symbol, "error")
         self._pulse()
+
+    # --- simulated leverage ----------------------------------------------------
+
+    def _shadow_open(self, symbol: str, share: float, price: float, stop: float) -> None:
+        """Open the same long on every shadow book, at its own leverage."""
+        prices = self.store.get_json("prices")
+        opened = []
+        for shadow in self.shadows:
+            leg = shadow.open(symbol, share, price, self.clock(), self.cfg, prices)
+            if leg:
+                self.store.save_leverage(shadow)
+                opened.append((shadow.level, leg))
+        if not opened:
+            return
+        risky = [
+            f"x{level:g} a {leg.liquidation:g}" for level, leg in opened if leg.liquidation > stop
+        ]
+        note = (
+            f"; si liquiderebbero prima dello stop ({stop:g}): {', '.join(risky)}"
+            if risky
+            else "; lo stop del desk arriva prima di ogni liquidazione"
+        )
+        self.say(
+            "LEVA",
+            f"stessa posizione simulata a {', '.join(f'x{level:g}' for level, _ in opened)}{note}",
+            symbol,
+            "leverage",
+            levels=[level for level, _ in opened],
+            liquidation={f"{level:g}": leg.liquidation for level, leg in opened},
+        )
+
+    def _shadow_tick(self, pos: Position, price: float) -> None:
+        """Charge funding and liquidate any shadow the price has reached."""
+        now = self.clock()
+        for shadow in self.shadows:
+            leg = shadow.legs.get(pos.symbol)
+            if not leg:
+                continue
+            shadow.accrue(pos.symbol, price, now, self.cfg)
+            if leverage.liquidated_first(leg, open_=price, low=price, stop=pos.stop):
+                result = shadow.liquidate(pos.symbol, now)
+                self.store.add_leverage_result(result)
+                self.say(
+                    "LEVA",
+                    f"x{shadow.level:g} liquidata a {leg.liquidation:g}: persi "
+                    f"{result.margin:.2f} {self.cfg.quote} di margine (simulazione)",
+                    pos.symbol,
+                    "liquidation",
+                    level=shadow.level,
+                    pnl=result.pnl,
+                )
+            self.store.save_leverage(shadow)
+
+    def _shadow_close(self, symbol: str, price: float) -> None:
+        """The desk sold: close the shadows still open, at the same price."""
+        now = self.clock()
+        closed = []
+        for shadow in self.shadows:
+            result = shadow.close(symbol, price, now, self.cfg)
+            if result:
+                self.store.add_leverage_result(result)
+                self.store.save_leverage(shadow)
+                closed.append(result)
+        if closed:
+            self.say(
+                "LEVA",
+                "con la leva: "
+                + ", ".join(f"x{r.level:g} {r.pnl:+.2f}" for r in closed)
+                + f" {self.cfg.quote} (simulazione)",
+                symbol,
+                "leverage",
+                results={f"{r.level:g}": r.pnl for r in closed},
+            )
 
     # --- entries --------------------------------------------------------------
 
@@ -281,7 +362,7 @@ class Desk:
                 notional=decision.notional,
                 share=decision.notional / book.equity,
             )
-            self._open(plan, decision)
+            self._open(plan, decision, book.equity)
             book = self.book()
 
     def _market_falling(self) -> str:
@@ -384,7 +465,7 @@ class Desk:
             self.say(agent, f"non disponibile: {e}", symbol, "unavailable")
             return None
 
-    def _open(self, plan: ChartPlan, decision: risk.RiskDecision) -> None:
+    def _open(self, plan: ChartPlan, decision: risk.RiskDecision, equity: float) -> None:
         try:
             fill = self.broker.buy(plan.symbol, decision.qty, plan.entry)
         except BrokerError as e:
@@ -416,6 +497,7 @@ class Desk:
             stop=position.stop,
             target=position.target,
         )
+        self._shadow_open(plan.symbol, fill.qty * fill.price / equity, fill.price, position.stop)
 
 
 def init_book(store: Store, cfg: Settings) -> None:

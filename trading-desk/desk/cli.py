@@ -376,11 +376,11 @@ def print_leverage(result: backtest.Result, cfg: Settings) -> None:
         f"ogni 8 ore, margine di mantenimento {cfg.maintenance_margin:.1%})"
     )
     print(
-        f"  {'leva':<6}{'capitale finale':>16}{'rendimento':>12}{'drawdown':>10}"
+        f"  {'leva':<8}{'capitale finale':>14}{'rendimento':>12}{'drawdown':>10}"
         f"{'liquidate':>11}{'commissioni':>13}{'finanziamento':>15}"
     )
     print(
-        f"  {'x1':<6}{result.end_equity:>16.2f}{result.return_pct:>+11.1f}%"
+        f"  {'x1 spot':<8}{result.end_equity:>14.2f}{result.return_pct:>+11.1f}%"
         f"{result.max_drawdown_pct:>9.1f}%{'-':>11}{result.fees:>13.2f}{'-':>15}   (spot, il desk)"
     )
     for book in result.leverage:
@@ -390,14 +390,17 @@ def print_leverage(result: backtest.Result, cfg: Settings) -> None:
             if book.wiped_at is not None
             else ""
         )
+        label = "x1 perp" if book.level == 1 else f"x{book.level:g}"
         print(
-            f"  {f'x{book.level:g}':<6}{book.last_equity:>16.2f}"
+            f"  {label:<8}{book.last_equity:>14.2f}"
             f"{(book.last_equity / book.start - 1) * 100:>+11.1f}%{book.max_drawdown_pct:>9.1f}%"
             f"{f'{book.liquidations}/{closed}':>11}{book.fees:>13.2f}{book.funding:>15.2f}{note}"
         )
     print(
         f"  Valori in {q}. 'liquidate' = posizioni perse per liquidazione / posizioni aperte. "
-        "Con la leva il desk non cambia le sue regole: cambia solo quanto pesa ogni operazione."
+        "x1 perp è lo stesso contratto senza leva: la differenza con x1 spot sono solo "
+        "commissioni e finanziamento. Con la leva il desk non cambia le sue regole: cambia "
+        "solo quanto pesa ogni operazione."
     )
 
 

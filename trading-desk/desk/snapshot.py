@@ -81,6 +81,12 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
         ).fetchone()
         curve = store.equity_curve(limit=100_000)
         trades = store.trades()[-TRADES_SHOWN:]
+        shadows = store.leverage_books(cfg.leverage_levels, cfg.capital)
+        prices = store.get_json("prices")
+        try:
+            shadow_results = store.leverage_results(TRADES_SHOWN)
+        except sqlite3.OperationalError:  # a database from before simulated leverage
+            shadow_results = []
     finally:
         store.close()
 
@@ -187,6 +193,51 @@ def build(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
                 "reason": t.reason,
             }
             for t in reversed(trades)
+        ],
+    }
+    book["leverage"] = {
+        "fee": cfg.futures_fee_rate,
+        "funding_8h": cfg.funding_rate_8h,
+        "maintenance": cfg.maintenance_margin,
+        "books": [
+            {
+                "level": shadow.level,
+                "start": _num(shadow.start),
+                "equity": _num(shadow.equity(prices)),
+                "ret": _num((shadow.equity(prices) / shadow.start - 1) * 100),
+                "liquidations": shadow.liquidations,
+                "fees": _num(shadow.fees),
+                "funding": _num(shadow.funding),
+                "open": len(shadow.legs),
+                "max_dd": _num(shadow.max_drawdown_pct, 1),
+                "wiped": shadow.wiped_at is not None,
+            }
+            for shadow in shadows
+        ],
+        "legs": [
+            {
+                "level": shadow.level,
+                "symbol": symbol,
+                "margin": _num(leg.margin),
+                "entry": _price(leg.entry),
+                "liquidation": _price(leg.liquidation),
+                "value": _num(leg.value(prices.get(symbol, leg.entry))),
+                "pnl_pct": _num((leg.value(prices.get(symbol, leg.entry)) / leg.margin - 1) * 100)
+                if leg.margin
+                else None,
+            }
+            for shadow in shadows
+            for symbol, leg in shadow.legs.items()
+        ],
+        "results": [
+            {
+                "level": r.level,
+                "symbol": r.symbol,
+                "pnl": _num(r.pnl),
+                "liquidated": r.liquidated,
+                "closed": _num(r.closed, 0),
+            }
+            for r in shadow_results
         ],
     }
     return {

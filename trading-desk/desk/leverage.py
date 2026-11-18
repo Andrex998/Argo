@@ -200,6 +200,54 @@ def liquidated_first(leg: Leg, *, open_: float, low: float, stop: float) -> bool
     return open_ <= leg.liquidation or leg.liquidation >= stop
 
 
+def book_state(book: Book) -> dict:
+    """Everything needed to carry a book across restarts, closed results excluded."""
+    return {
+        "level": book.level,
+        "start": book.start,
+        "cash": book.cash,
+        "fees": book.fees,
+        "funding": book.funding,
+        "liquidations": book.liquidations,
+        "peak": book.peak,
+        "max_drawdown_pct": book.max_drawdown_pct,
+        "wiped_at": book.wiped_at,
+        "last_equity": book.last_equity,
+        "entry_fees": book.entry_fees,
+        "legs": {
+            symbol: {
+                "margin": leg.margin,
+                "qty": leg.qty,
+                "entry": leg.entry,
+                "liquidation": leg.liquidation,
+                "opened": leg.opened,
+                "funding": leg.funding,
+                "funded_until": leg.funded_until,
+            }
+            for symbol, leg in book.legs.items()
+        },
+    }
+
+
+def book_from_state(state: dict) -> Book:
+    book = Book(
+        level=state["level"],
+        start=state["start"],
+        cash=state["cash"],
+        fees=state["fees"],
+        funding=state["funding"],
+        liquidations=state["liquidations"],
+        peak=state["peak"],
+        max_drawdown_pct=state["max_drawdown_pct"],
+        wiped_at=state["wiped_at"],
+        last_equity=state["last_equity"],
+        entry_fees=dict(state["entry_fees"]),
+    )
+    for symbol, leg in state["legs"].items():
+        book.legs[symbol] = Leg(symbol=symbol, **leg)
+    return book
+
+
 def books(cfg: Settings) -> list[Book]:
     return [
         Book(level=float(level), start=cfg.capital, cash=cfg.capital, peak=cfg.capital)

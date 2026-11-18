@@ -26,6 +26,9 @@ def test_snapshot_of_a_session_fits_the_page(tmp_path):
     assert feed["scan"]["scanned"] > 0
     assert 0 < len(docs["curve"]["points"]) <= snapshot.CURVE_POINTS
     assert docs["book"]["trades"][0]["closed"] >= docs["book"]["trades"][-1]["closed"]
+    leverage = docs["book"]["leverage"]
+    assert [b["level"] for b in leverage["books"]] == cfg.leverage_levels
+    assert all(b["start"] == cfg.capital for b in leverage["books"])
 
 
 def test_snapshot_before_the_desk_ever_ran(tmp_path):

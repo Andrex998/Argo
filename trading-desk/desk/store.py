@@ -11,6 +11,7 @@ import sqlite3
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from desk.leverage import Book, LegResult, book_from_state, book_state
 from desk.models import Position
 
 SCHEMA = """
@@ -27,8 +28,20 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS cooldowns (symbol TEXT PRIMARY KEY, until REAL);
 CREATE TABLE IF NOT EXISTS reviews (symbol TEXT PRIMARY KEY, ts REAL);
 CREATE TABLE IF NOT EXISTS equity (ts REAL PRIMARY KEY, equity REAL);
+CREATE TABLE IF NOT EXISTS leverage_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, level REAL, symbol TEXT, margin REAL, entry REAL,
+    exit REAL, opened REAL, closed REAL, pnl REAL, fees REAL, funding REAL, liquidated INTEGER);
 """
-TABLES = ("kv", "positions", "trades", "events", "cooldowns", "reviews", "equity")
+TABLES = (
+    "kv",
+    "positions",
+    "trades",
+    "events",
+    "cooldowns",
+    "reviews",
+    "equity",
+    "leverage_results",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,3 +214,55 @@ class Store:
             }
             for id_, ts, agent, symbol, message, data in rows
         ]
+
+    # --- simulated leverage ----------------------------------------------------
+
+    def leverage_books(self, levels: list[float], capital: float) -> list[Book]:
+        """The shadow book of each level, new ones starting from `capital`."""
+        found = []
+        for level in levels:
+            state = self.get_json(f"leverage:{level:g}")
+            if state:
+                found.append(book_from_state(state))
+            else:
+                found.append(
+                    Book(
+                        level=float(level),
+                        start=capital,
+                        cash=capital,
+                        peak=capital,
+                        last_equity=capital,
+                    )
+                )
+        return found
+
+    def save_leverage(self, book: Book) -> None:
+        self.set_json(f"leverage:{book.level:g}", book_state(book))
+
+    def add_leverage_result(self, result: LegResult) -> None:
+        self.db.execute(
+            "INSERT INTO leverage_results (level, symbol, margin, entry, exit, opened, closed, "
+            "pnl, fees, funding, liquidated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                result.level,
+                result.symbol,
+                result.margin,
+                result.entry,
+                result.exit,
+                result.opened,
+                result.closed,
+                result.pnl,
+                result.fees,
+                result.funding,
+                int(result.liquidated),
+            ),
+        )
+
+    def leverage_results(self, limit: int = 50) -> list[LegResult]:
+        """The latest closed leveraged positions, newest first."""
+        rows = self.db.execute(
+            "SELECT symbol, level, margin, entry, exit, opened, closed, pnl, fees, funding, "
+            "liquidated FROM leverage_results ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [LegResult(*row[:-1], bool(row[-1])) for row in rows]

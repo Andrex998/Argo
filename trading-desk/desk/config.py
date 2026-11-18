@@ -66,7 +66,8 @@ class Settings(BaseSettings):
     monitor_seconds: int = 60  # how often open positions are checked in between
 
     # --- Simulated leverage: shadow books on perpetuals, never real orders ----
-    leverage_levels: list[float] = Field(default_factory=lambda: [3.0, 5.0, 10.0, 15.0, 20.0])
+    # x1 is the same contract without leverage: it separates the fee saving from leverage itself.
+    leverage_levels: list[float] = Field(default_factory=lambda: [1.0, 3.0, 5.0, 10.0, 15.0, 20.0])
     futures_fee_rate: float = 0.0005  # taker fee on the whole notional (Kraken Futures, Bybit)
     funding_rate_8h: float = 0.0001  # a long pays 0.01% of the notional every 8 hours
     maintenance_margin: float = (

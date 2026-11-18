@@ -148,3 +148,66 @@ def test_books_start_from_the_desk_capital(cfg):
     cfg.leverage_levels = [5.0]
     (b,) = leverage.books(cfg)
     assert b.cash == b.start == b.peak == cfg.capital
+
+
+# --- live: the desk's own trades, shadowed ------------------------------------------------
+
+
+def live_desk(cfg, levels=(3.0, 20.0)):
+    from tests.conftest import breakout
+    from tests.test_desk import SYMBOL, make_desk
+
+    cfg.leverage_levels = list(levels)
+    desk, market, clock = make_desk(cfg, {SYMBOL: breakout()})
+    return desk, market, clock, SYMBOL
+
+
+def test_a_buy_opens_a_shadow_per_level_and_says_where_each_liquidates(cfg):
+    desk, _, _, symbol = live_desk(cfg)
+    desk.cycle()
+    [pos] = desk.store.positions()
+    x3, x20 = desk.shadows
+    assert x3.legs[symbol].entry == x20.legs[symbol].entry == pos.entry_price
+    assert x20.legs[symbol].qty == pytest.approx(x3.legs[symbol].qty * 20 / 3)
+    events = [e.message for e in desk.store.events(50) if e.agent == "LEVA"]
+    assert events and "x3" in events[0] and "x20" in events[0]
+
+
+def test_a_crash_liquidates_twenty_x_and_the_desk_sells_at_its_stop(cfg):
+    desk, market, _, symbol = live_desk(cfg)
+    desk.cycle()
+    [pos] = desk.store.positions()
+    x3, x20 = desk.shadows
+    liquidation = x20.legs[symbol].liquidation
+    market.prices[symbol] = min(liquidation, pos.stop) * 0.99  # below both
+    desk.monitor()
+    assert desk.store.positions() == []  # the desk took its stop
+    assert symbol not in x20.legs and x20.liquidations == 1
+    assert symbol not in x3.legs and x3.liquidations == 0  # closed with the desk
+    results = desk.store.leverage_results()
+    assert {(r.level, r.liquidated) for r in results} == {(3.0, False), (20.0, True)}
+    text = "\n".join(e.message for e in desk.store.events(50))
+    assert "x20 liquidata" in text and "con la leva: x3" in text
+
+
+def test_shadow_books_survive_a_restart(cfg):
+    from desk.broker import PaperBroker
+    from desk.desk import Desk
+
+    desk, market, clock, symbol = live_desk(cfg)
+    desk.cycle()
+    again = Desk(cfg, market, PaperBroker(cfg), desk.store, clock=clock)
+    assert [b.level for b in again.shadows] == [3.0, 20.0]
+    assert again.shadows[1].legs[symbol].liquidation == desk.shadows[1].legs[symbol].liquidation
+    assert again.shadows[1].cash == pytest.approx(desk.shadows[1].cash)
+
+
+def test_funding_is_charged_while_the_position_is_open(cfg):
+    desk, market, clock, symbol = live_desk(cfg, levels=(10.0,))
+    cfg.funding_rate_8h = 0.0001
+    desk.cycle()
+    (x10,) = desk.shadows
+    clock.advance(8)
+    desk.monitor()
+    leg = x10.legs[symbol]
+    assert leg.funding == pytest.approx(leg.qty * market.prices[symbol] * 0.0001, rel=1e-6)
