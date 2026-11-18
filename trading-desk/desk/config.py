@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     data_dir: Path = Path("data")
 
     # --- Scout: what counts as "unusual movement" ---------------------------
-    timeframe: str = "1h"
+    timeframe: str = "4h"  # fewer, larger moves: fees weigh less than on 1h
     universe_size: int = 40  # most liquid pairs scanned each cycle
     min_quote_volume: float = 1_000_000  # 24h volume floor, in quote currency
     rvol_min: float = 2.0  # recent volume vs. its own baseline
@@ -32,9 +32,9 @@ class Settings(BaseSettings):
     atr_stop_mult: float = 2.0
     min_stop_pct: float = 1.5
     max_stop_pct: float = 8.0
-    reward_risk: float = 2.0
+    reward_risk: float = 3.0
     rsi_max: float = 80.0
-    breakout_lookback: int = 0  # >0: the close must clear the high of that many candles
+    breakout_lookback: int = 20  # the close must clear the high of that many candles (0: off)
 
     # --- Risk gate: hard limits no agent can override -----------------------
     risk_per_trade_pct: float = 1.0  # equity lost if the stop is hit
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     min_notional: float = 10.0
     max_cost_r: float = 0.33  # round-trip fees and slippage as a share of the amount at risk
     regime_filter: bool = True  # no new longs while BTC itself is in a downtrend
-    regime_strict: bool = False  # stricter: no new longs unless BTC is in an uptrend
+    regime_strict: bool = True  # no new longs unless BTC is in an uptrend (False: unless falling)
     cooldown_hours: float = 12.0  # no re-entry on a symbol after a losing exit
     max_hold_hours: float = 72.0  # stale positions are closed
 

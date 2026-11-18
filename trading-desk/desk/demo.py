@@ -53,6 +53,11 @@ def settings() -> Settings:
         fear_greed=False,  # the demo never touches the network
         reanalyze_hours=0.0,
         cooldown_hours=0.0,
+        # The script was staged for these rules: a 1h desk, 2R targets, no breakout check.
+        timeframe="1h",
+        reward_risk=2.0,
+        breakout_lookback=0,
+        regime_strict=False,
     )
 
 

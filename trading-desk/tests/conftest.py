@@ -65,4 +65,9 @@ def cfg() -> Settings:
         fee_rate=0.001,
         regime_filter=False,
         fear_greed=False,  # tests never touch the network
+        # The mechanics tests were written for these rules; the defaults may move on.
+        timeframe="1h",
+        reward_risk=2.0,
+        breakout_lookback=0,
+        regime_strict=False,
     )

@@ -158,32 +158,56 @@ chiave o la frase di recupero del wallet principale.
 
 ## Cosa dice il backtest
 
-Solo regole (Scout, Charts, Risk, uscite), senza analisti, su dati reali. Kraken: 40
-mercati in USD, commissione 0,4%. BingX: 27 mercati in USDT, commissione ipotizzata
-0,1%. Slippage 0,1% per lato. Misurato il 16/11/2026.
+Solo regole (Scout, Charts, Risk, uscite), senza analisti, su dati reali con commissioni e
+slippage. Il 18/11/2026 il desk è stato rigiocato su quattro storici, con 32 combinazioni
+di regole, e ognuna giudicata separatamente nelle due metà di ogni periodo, per non
+premiare una regola che funziona solo in un tratto di mercato.
 
-| Exchange, candele | Periodo | Desk | BTC tenuto fermo | Operazioni | Vincenti | Drawdown max |
-|---|---|---|---|---|---|---|
-| Kraken, 1h | 30 giorni | −6,8% | −19,9% | 33 | 12% | 7,4% |
-| Kraken, 4h | 120 giorni | +13,5% | +0,8% | 85 | 38% | 8,7% |
-| BingX, 1h | 120 giorni | +1,2% | +2,1% | 200 | 27% | 11,5% |
+| Storico | Periodo | BTC tenuto fermo | Regole vecchie | Regole nuove, commissione 0,4% | Regole nuove, commissione 0,1% |
+|---|---|---|---|---|---|
+| Kraken, 1h, 39 mercati | 30 giorni | −20,9% | −8,6% | −5,6% | −4,5% |
+| Kraken, 4h, 39 mercati | 120 giorni | −0,5% | +1,8% | +8,5% | +12,4% |
+| BingX, 1h, 29 mercati | 6 mesi | −17,6% | −5,3% | −2,1% | −0,3% |
+| BingX, 4h, 29 mercati | 1 anno | −22,9% | −9,6% | −0,4% | +1,0% |
+
+Le regole nuove, oggi predefinite:
+
+- **candele a 4 ore**: meno operazioni, quindi meno commissioni;
+- **filtro di mercato severo**: nuovi acquisti solo con BTC in trend rialzista, non solo
+  quando BTC non scende (`DESK_REGIME_STRICT`);
+- **rottura vera**: la candela deve chiudere sopra il massimo delle 20 precedenti
+  (`DESK_BREAKOUT_LOOKBACK`);
+- **target a 3R** invece di 2R (`DESK_REWARD_RISK`).
 
 Come leggerli:
 
-- Il campione più grande, 200 operazioni su BingX, chiude in pari: guadagno medio per
-  operazione zero. È la lettura più onesta delle regole da sole: non perdono e non
-  hanno un vantaggio. I due campioni Kraken sono piccoli e si contraddicono.
+- Le regole nuove fanno meglio delle vecchie su tutti e quattro gli storici, con cali
+  massimi più bassi (4–6% invece di 7–12%), anche con la commissione di Kraken. Non
+  dimostrano ancora un vantaggio: fanno poche operazioni (13–51 per storico) e, su 32
+  combinazioni provate, la migliore è anche un po' fortunata.
+- **Le commissioni contano quanto le regole.** Kraken costa 0,4% per lato; Bybit EU,
+  Binance e BingX circa 0,1%. Il paper trading usa la commissione vera di Kraken.
 - L'universo è quello dei mercati più liquidi **oggi**, quindi contiene già i vincitori
-  del periodo. I numeri sono ottimistici.
-- La prima versione, senza i due filtri su costi e trend di mercato, sullo stesso mese
-  a 1h perdeva il 10,4%, più di metà in commissioni. I filtri sono stati aggiunti dopo
-  aver visto quel risultato: riducono il danno, non creano un vantaggio.
+  del periodo: i numeri sono ottimistici.
 - Gli analisti LLM non sono nel backtest. Possono solo scartare operazioni che le
   regole farebbero: se migliorano o peggiorano il risultato lo dirà il paper trading.
 
-Rifallo tu con `uv run desk backtest --days 30` (per le candele a 4 ore:
-`DESK_TIMEFRAME=4h uv run desk backtest --days 120`). Kraken fornisce al massimo 720
-candele di storico per mercato.
+Rifallo tu con `uv run desk backtest --days 120`. Kraken fornisce al massimo 720
+candele di storico per mercato (120 giorni a 4 ore, 30 a 1 ora).
+
+## Leva simulata
+
+Il backtest e il desk in diretta tengono anche dei **conti ombra con la leva** (x1, x3,
+x5, x10, x15, x20): le stesse operazioni del desk su un contratto perpetuo a margine
+isolato, con la commissione sul valore intero della posizione (0,05%), il finanziamento
+pagato ogni 8 ore (0,01%) e la liquidazione quando il prezzo scende sotto
+entrata × (1 − 1/leva + 1%). Una posizione liquidata perde tutto il suo margine. È solo
+una simulazione: il desk non apre mai posizioni con leva e la leva non cambia le sue
+decisioni. Le memecoin restano senza leva.
+
+Sullo storico la leva moltiplica soprattutto i giorni cattivi: con le regole vecchie,
+nel mese di Kraken a 1 ora x20 perdeva l'83% e nei 120 giorni a 4 ore 32 posizioni su 91
+finivano liquidate. Il dettaglio per livello lo stampa `desk backtest`.
 
 ## Radar: il filtro per le memecoin
 
