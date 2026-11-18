@@ -2,17 +2,21 @@
 
 The desk keeps its own book instead of reading exchange balances, so it only
 ever manages what it bought with the capital it was given.
+
+The perpetuals desk keeps its own database file, with the same tables plus its
+positions and trades in `perps_positions` and `perps_trades`. Those are new tables, so
+a database from an older version only gains them, empty, the first time it is opened.
 """
 
 from __future__ import annotations
 
 import json
 import sqlite3
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 from desk.leverage import Book, LegResult, book_from_state, book_state
-from desk.models import Position
+from desk.models import PerpPosition, Position
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -31,6 +35,14 @@ CREATE TABLE IF NOT EXISTS equity (ts REAL PRIMARY KEY, equity REAL);
 CREATE TABLE IF NOT EXISTS leverage_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT, level REAL, symbol TEXT, margin REAL, entry REAL,
     exit REAL, opened REAL, closed REAL, pnl REAL, fees REAL, funding REAL, liquidated INTEGER);
+CREATE TABLE IF NOT EXISTS perps_positions (
+    symbol TEXT PRIMARY KEY, side TEXT, qty REAL, entry_price REAL, entry_ts REAL, stop REAL,
+    initial_stop REAL, target REAL, best REAL, margin REAL, leverage REAL, liquidation REAL,
+    fees REAL, funding REAL, funded_until REAL, checked REAL);
+CREATE TABLE IF NOT EXISTS perps_trades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, symbol TEXT, side TEXT, qty REAL, entry_price REAL,
+    exit_price REAL, entry_ts REAL, exit_ts REAL, pnl REAL, r_multiple REAL, reason TEXT,
+    leverage REAL, margin REAL, fees REAL, funding REAL);
 """
 TABLES = (
     "kv",
@@ -41,6 +53,8 @@ TABLES = (
     "reviews",
     "equity",
     "leverage_results",
+    "perps_positions",
+    "perps_trades",
 )
 
 
@@ -55,6 +69,30 @@ class Trade:
     pnl: float
     r_multiple: float
     reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class PerpTrade:
+    """A closed position on a perpetual contract."""
+
+    symbol: str
+    side: str
+    qty: float
+    entry_price: float
+    exit_price: float
+    entry_ts: float
+    exit_ts: float
+    pnl: float  # net: after both fees and the funding
+    r_multiple: float
+    reason: str
+    leverage: float
+    margin: float
+    fees: float  # entry and exit
+    funding: float  # paid; negative when received
+
+
+PERP_POSITION = ", ".join(f.name for f in fields(PerpPosition))
+PERP_TRADE = ", ".join(f.name for f in fields(PerpTrade))
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,6 +183,34 @@ class Store:
             "reason FROM trades ORDER BY exit_ts"
         ).fetchall()
         return [Trade(*row) for row in rows]
+
+    # --- perpetuals ------------------------------------------------------------
+
+    def perps_positions(self) -> list[PerpPosition]:
+        rows = self.db.execute(
+            f"SELECT {PERP_POSITION} FROM perps_positions ORDER BY entry_ts"
+        ).fetchall()
+        return [PerpPosition(*row) for row in rows]
+
+    def save_perps_position(self, pos: PerpPosition) -> None:
+        marks = ", ".join("?" * len(fields(PerpPosition)))
+        self.db.execute(
+            f"INSERT OR REPLACE INTO perps_positions ({PERP_POSITION}) VALUES ({marks})",
+            tuple(asdict(pos).values()),
+        )
+
+    def delete_perps_position(self, symbol: str) -> None:
+        self.db.execute("DELETE FROM perps_positions WHERE symbol = ?", (symbol,))
+
+    def add_perps_trade(self, trade: PerpTrade) -> None:
+        marks = ", ".join("?" * len(fields(PerpTrade)))
+        self.db.execute(
+            f"INSERT INTO perps_trades ({PERP_TRADE}) VALUES ({marks})", tuple(asdict(trade).values())
+        )
+
+    def perps_trades(self) -> list[PerpTrade]:
+        rows = self.db.execute(f"SELECT {PERP_TRADE} FROM perps_trades ORDER BY exit_ts").fetchall()
+        return [PerpTrade(*row) for row in rows]
 
     # --- cooldowns and analysis memory ---------------------------------------
 

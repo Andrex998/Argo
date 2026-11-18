@@ -5,12 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Coins the leverage simulation may shadow: large, established, with deep perpetual
-# markets. Memecoins (DOGE, PEPE, TRUMP, PENGU, ...) are left out on purpose, and so is
-# any coin not named here, since new memecoins keep entering the most traded pairs.
+# The perpetuals desk (DESK_MARKET=perps) reads Binance USDⓈ-M: public data, no API key.
+PERPS_EXCHANGE = "binanceusdm"
+PERPS_QUOTE = "USDT"  # quote and settlement currency of its contracts
+
+# Coins the leverage simulation may shadow, and the only coins the perpetuals desk
+# trades: large, established, with deep perpetual markets. Memecoins (DOGE, PEPE, TRUMP,
+# PENGU, ...) are left out on purpose, and so is any coin not named here, since new
+# memecoins keep entering the most traded pairs.
 LEVERAGE_BASES = (
     "BTC", "ETH", "SOL", "XRP", "BNB", "ADA", "AVAX", "LINK", "LTC", "BCH", "DOT", "TRX",
     "TON", "XLM", "XMR", "ZEC", "ETC", "ATOM", "NEAR", "SUI", "APT", "ARB", "OP", "AAVE",
@@ -25,6 +30,8 @@ class Settings(BaseSettings):
 
     # --- Where and how much -------------------------------------------------
     mode: Literal["paper", "live"] = "paper"
+    # spot: buys and sells coins. perps: long and short on perpetual futures, paper only.
+    market: Literal["spot", "perps"] = "spot"
     exchange: str = "kraken"  # any ccxt exchange id: kraken, binance, bybit, okx, ...
     quote: str = "USD"  # quote currency of the pairs to trade
     capital: float = 1000.0  # the only money the desk may deploy, in quote currency
@@ -86,6 +93,15 @@ class Settings(BaseSettings):
         0.01  # 1%: typical for altcoins; liquidation comes before 1/leverage
     )
 
+    # --- Perpetuals desk (DESK_MARKET=perps): paper only, long and short ------
+    # research/perps.py's "full size". The risk per trade stays risk_per_trade_pct at the
+    # stop; leverage only lets a position reach that size with less margin tied up.
+    perps_fee_rate: float = 0.0005  # Binance USDⓈ-M taker fee, on the whole notional
+    perps_cap_position_pct: float = 33.0  # notional of one position, % of equity
+    perps_cap_total_pct: float = 150.0  # notional of all positions together, % of equity
+    perps_max_leverage: float = Field(default=3.0, ge=1.0, le=20.0)
+    perps_oi_filter: bool = True  # enter only while the coin's open interest grew over 24h
+
     # --- Live page: a snapshot of the desk every minute (optional) ----------
     live_url: str = ""  # https://<progetto>.supabase.co
     live_key: str = ""  # the project's publishable (anon) key: public by design
@@ -96,9 +112,19 @@ class Settings(BaseSettings):
     exchange_api_secret: str = ""
     exchange_api_password: str = ""  # passphrase, only for exchanges that use one
 
+    @model_validator(mode="after")
+    def _perps_venue(self) -> Settings:
+        """The perpetuals desk always reads Binance USDⓈ-M in USDT, whatever exchange and
+        currency the spot desk takes from the same .env."""
+        if self.market == "perps":
+            self.exchange, self.quote = PERPS_EXCHANGE, PERPS_QUOTE
+        return self
+
     @property
     def db_path(self) -> Path:
-        return self.data_dir / f"desk-{self.mode}.db"
+        """One database per desk: the perpetuals desk keeps its own, so both run at once."""
+        suffix = "-perps" if self.market == "perps" else ""
+        return self.data_dir / f"desk-{self.mode}{suffix}.db"
 
     @property
     def slippage(self) -> float:

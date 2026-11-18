@@ -19,13 +19,14 @@ class Book:
 
     equity: float
     cash: float
-    exposure: float  # value of all open positions
+    exposure: float  # value of all open positions (on perpetuals, their whole notional)
     open_symbols: frozenset[str]
     day_start_equity: float
     peak_equity: float
     halted: str = ""  # reason trading is stopped; empty when allowed
     cooldowns: dict[str, float] = field(default_factory=dict)  # symbol -> barred until
     fresh: bool = True  # False when a price came from the last valuation, not the exchange
+    margin: float = 0.0  # margin tied up by open perpetual positions; 0 on spot
 
 
 @dataclass(slots=True)
@@ -71,46 +72,58 @@ def evaluate(
     plan: ChartPlan, book: Book, cfg: Settings, now: float, size_factor: float = 1.0
 ) -> RiskDecision:
     """Approve, shrink or reject a trade. The stop distance sets the size."""
-
-    def reject(reason: str) -> RiskDecision:
+    if reason := refusal(plan, book, cfg, now, cfg.fee_rate):
         return RiskDecision("REJECT", reasons=[reason])
-
-    if reason := blocked(book, cfg):
-        return reject(reason)
-    if plan.symbol in book.open_symbols:
-        return reject("posizione già aperta su questo mercato")
-    if book.cooldowns.get(plan.symbol, 0) > now:
-        return reject("mercato in pausa dopo un'uscita in perdita")
-    if not plan.valid:
-        return reject(plan.reasons[0])
-    if plan.risk_per_unit <= 0:
-        return reject("stop non valido")
-    # A tight stop on an expensive venue loses to fees even when the idea is right.
-    cost_r = 2 * (cfg.fee_rate + cfg.slippage) * plan.entry / plan.risk_per_unit
-    if cost_r > cfg.max_cost_r:
-        return reject(
-            f"commissioni e slippage al {cost_r:.0%} del rischio (massimo {cfg.max_cost_r:.0%})"
-        )
-
-    # Lose at most risk_per_trade_pct of equity if the stop is hit.
-    risk_budget = book.equity * cfg.risk_per_trade_pct / 100 * size_factor
-    notional = risk_budget / plan.risk_per_unit * plan.entry
-
     caps = [
         (book.equity * cfg.max_position_pct / 100 * size_factor, "limite per posizione"),
         (book.equity * cfg.max_exposure_pct / 100 - book.exposure, "limite di esposizione"),
         (affordable(book.cash, cfg), "liquidità disponibile"),
     ]
+    return sized(at_risk(plan, book, cfg, size_factor), caps, plan.entry, cfg)
+
+
+def refusal(plan: ChartPlan, book: Book, cfg: Settings, now: float, fee_rate: float) -> str:
+    """Why the gate refuses the plan before sizing it, or '' if it may be sized.
+    `fee_rate` is the venue's taker fee: spot and perpetuals charge differently."""
+    if reason := blocked(book, cfg):
+        return reason
+    if plan.symbol in book.open_symbols:
+        return "posizione già aperta su questo mercato"
+    if book.cooldowns.get(plan.symbol, 0) > now:
+        return "mercato in pausa dopo un'uscita in perdita"
+    if not plan.valid:
+        return plan.reasons[0]
+    if plan.risk_per_unit <= 0:
+        return "stop non valido"
+    # A tight stop on an expensive venue loses to fees even when the idea is right.
+    cost_r = 2 * (fee_rate + cfg.slippage) * plan.entry / plan.risk_per_unit
+    if cost_r > cfg.max_cost_r:
+        return f"commissioni e slippage al {cost_r:.0%} del rischio (massimo {cfg.max_cost_r:.0%})"
+    return ""
+
+
+def at_risk(plan: ChartPlan, book: Book, cfg: Settings, size_factor: float = 1.0) -> float:
+    """The notional that loses risk_per_trade_pct of equity if the stop is hit."""
+    risk_budget = book.equity * cfg.risk_per_trade_pct / 100 * size_factor
+    return risk_budget / plan.risk_per_unit * plan.entry
+
+
+def sized(
+    notional: float, caps: list[tuple[float, str]], price: float, cfg: Settings
+) -> RiskDecision:
+    """Shrink `notional` to every cap it exceeds, saying which, and buy it at `price`.
+    A size under the exchange's minimum is rejected."""
     reasons = []
     for cap, label in caps:
         if notional > cap:
             notional = cap
             reasons.append(f"ridotta al {label}")
     if notional < cfg.min_notional:
-        return reject(f"size {max(notional, 0):.2f} sotto il minimo {cfg.min_notional:.2f}")
-    return RiskDecision(
-        "REDUCE" if reasons else "APPROVE", notional / plan.entry, notional, reasons
-    )
+        return RiskDecision(
+            "REJECT",
+            reasons=[f"size {max(notional, 0):.2f} sotto il minimo {cfg.min_notional:.2f}"],
+        )
+    return RiskDecision("REDUCE" if reasons else "APPROVE", notional / price, notional, reasons)
 
 
 @dataclass(frozen=True, slots=True)

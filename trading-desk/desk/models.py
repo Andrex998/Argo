@@ -11,6 +11,9 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+Side = Literal["long", "short"]
+SIGN = {"long": 1, "short": -1}  # a long gains when the price rises, a short when it falls
+
 
 @dataclass(frozen=True, slots=True)
 class Candle:
@@ -32,6 +35,7 @@ class Candidate:
     change_recent: float  # price change over the surge window
     change_24: float  # price change over the last 24 candles
     quote_volume: float  # 24h traded volume in quote currency
+    side: Side = "long"  # short: a surge on a falling price (perpetuals only)
 
 
 @dataclass(slots=True)
@@ -50,6 +54,7 @@ class ChartPlan:
     support: float
     resistance: float
     reasons: list[str] = field(default_factory=list)  # why the setup is rejected
+    side: Side = "long"  # a short has its stop above the entry and its target below
 
     @property
     def valid(self) -> bool:
@@ -57,7 +62,7 @@ class ChartPlan:
 
     @property
     def risk_per_unit(self) -> float:
-        return self.entry - self.stop
+        return self.entry - self.stop if self.side == "long" else self.stop - self.entry
 
     @property
     def stop_pct(self) -> float:
@@ -65,7 +70,8 @@ class ChartPlan:
 
     @property
     def reward_risk(self) -> float:
-        return (self.target - self.entry) / self.risk_per_unit
+        reward = self.target - self.entry if self.side == "long" else self.entry - self.target
+        return reward / self.risk_per_unit
 
 
 @dataclass(slots=True)
@@ -83,6 +89,40 @@ class Position:
     @property
     def risk_per_unit(self) -> float:
         return self.entry_price - self.initial_stop
+
+
+@dataclass(slots=True)
+class PerpPosition:
+    """A long or a short on a perpetual contract, with isolated margin (paper only)."""
+
+    symbol: str
+    side: Side
+    qty: float
+    entry_price: float
+    entry_ts: float
+    stop: float
+    initial_stop: float
+    target: float
+    best: float  # the best price reached: the highest for a long, the lowest for a short
+    margin: float  # what the position puts up, and all it can lose if liquidated
+    leverage: float  # notional at entry / margin
+    liquidation: float
+    fees: float  # the entry fee
+    funding: float = 0.0  # funding paid so far; negative when received
+    funded_until: float = 0.0  # the last funding settlement charged
+    checked: float = 0.0  # the last time the price was checked
+
+    @property
+    def sign(self) -> int:
+        return SIGN[self.side]
+
+    @property
+    def risk_per_unit(self) -> float:
+        return abs(self.entry_price - self.initial_stop)
+
+    def profit(self, price: float) -> float:
+        """The open profit or loss at `price`, before fees and funding."""
+        return self.sign * self.qty * (price - self.entry_price)
 
 
 @dataclass(slots=True)

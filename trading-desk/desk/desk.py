@@ -21,7 +21,7 @@ from desk.agents.llm import LLM, AgentUnavailable, Usage
 from desk.broker import Broker, BrokerError
 from desk.config import Settings
 from desk.market import Market, MarketError, MarketUnavailable
-from desk.models import Candidate, ChartPlan, Position
+from desk.models import Candidate, ChartPlan, PerpPosition, Position
 from desk.store import Store, Trade
 
 Echo = Callable[[float, str, str, str], None]
@@ -52,8 +52,7 @@ class Desk:
         self.echo = echo
         self.equity_interval = equity_interval
         init_book(store, cfg)
-        # Simulated leverage: shadows of the desk's own trades, never real orders.
-        self.shadows = store.leverage_books(cfg.leverage_levels, cfg.capital)
+        self.shadows = self._shadow_books()
         self._settle_orphans()
 
     def say(self, agent: str, message: str, symbol: str = "", kind: str = "note", **facts) -> None:
@@ -192,6 +191,10 @@ class Desk:
         self._pulse()
 
     # --- simulated leverage ----------------------------------------------------
+
+    def _shadow_books(self) -> list[leverage.Book]:
+        """Simulated leverage: shadows of the desk's own trades, never real orders."""
+        return self.store.leverage_books(self.cfg.leverage_levels, self.cfg.capital)
 
     def _simulate(self, step: Callable[..., None], *args) -> None:
         """Run one step of the leverage simulation. It may fail; the desk's stops may not."""
@@ -364,30 +367,9 @@ class Desk:
         return scanned
 
     def _look_for_entries(self) -> bool:
-        try:
-            with self._working("SCOUT", "scansiona i mercati"):
-                scan = scout.scan(self.market, self.cfg)
-        except MarketError as e:
-            self.say("SCOUT", f"scansione non riuscita, riprovo tra poco: {e}", kind="error")
+        scan = self._scan()
+        if scan is None:
             return False
-        if scan.failed and not scan.scanned:
-            self.say(
-                "SCOUT",
-                f"scansione non riuscita, riprovo tra poco: {scan.failed} mercati non leggibili",
-                kind="error",
-            )
-            return False
-        flagged = ", ".join(f"{c.symbol} {c.rvol:.1f}x" for c in scan.candidates) or "nessuno"
-        skipped = f" ({scan.failed} non leggibili)" if scan.failed else ""
-        self.say(
-            "SCOUT",
-            f"{scan.scanned} mercati analizzati{skipped}, {len(scan.candidates)} con volume "
-            f"anomalo: {flagged}",
-            kind="scan",
-            scanned=scan.scanned,
-            failed=scan.failed,
-            flagged=[{"symbol": c.symbol, "rvol": c.rvol} for c in scan.candidates],
-        )
         if not scan.candidates:
             return True
 
@@ -458,6 +440,42 @@ class Desk:
             self._open(plan, decision, book.equity)
             book = self.book()
         return True
+
+    def _scan(self, judge: scout.Judge | None = None) -> scout.Scan | None:
+        """Scan the markets and tell the journal what stood out. None when they could not
+        be read, so the loop tries again within the same candle."""
+        try:
+            with self._working("SCOUT", "scansiona i mercati"):
+                scan = scout.scan(self.market, self.cfg, judge)
+        except MarketError as e:
+            self.say("SCOUT", f"scansione non riuscita, riprovo tra poco: {e}", kind="error")
+            return None
+        if scan.failed and not scan.scanned:
+            self.say(
+                "SCOUT",
+                f"scansione non riuscita, riprovo tra poco: {scan.failed} mercati non leggibili",
+                kind="error",
+            )
+            return None
+        flagged = [self._flagged(c) for c in scan.candidates]
+        skipped = f" ({scan.failed} non leggibili)" if scan.failed else ""
+        self.say(
+            "SCOUT",
+            f"{scan.scanned} mercati analizzati{skipped}, {len(scan.candidates)} con volume "
+            f"anomalo: {', '.join(text for text, _ in flagged) or 'nessuno'}",
+            kind="scan",
+            scanned=scan.scanned,
+            failed=scan.failed,
+            flagged=[facts for _, facts in flagged],
+        )
+        return scan
+
+    def _flagged(self, candidate: Candidate) -> tuple[str, dict]:
+        """How the Scout names a flagged market in the journal, and the facts behind it."""
+        return f"{candidate.symbol} {candidate.rvol:.1f}x", {
+            "symbol": candidate.symbol,
+            "rvol": candidate.rvol,
+        }
 
     def _market_falling(self) -> str:
         """Why the wider market rules out new longs right now, or '' if it does not."""
@@ -617,6 +635,17 @@ def value_book(store: Store, market: Market, now: float) -> risk.Book:
     would then rest on a stale figure.
     """
     positions = store.positions()
+    prices, fresh = mark_prices(store, market, positions)
+    exposure = sum(p.qty * prices[p.symbol] for p in positions)
+    cash = store.get_float("cash")
+    return roll_book(store, now, cash, cash + exposure, exposure, positions, fresh)
+
+
+def mark_prices(
+    store: Store, market: Market, positions: list[Position] | list[PerpPosition]
+) -> tuple[dict[str, float], bool]:
+    """The price of every open position, and whether all of them came from the exchange.
+    A price it cannot give right now is taken from the last valuation."""
     known = store.get_json("prices") if positions else {}
     prices, fresh = {}, True
     for p in positions:
@@ -626,10 +655,21 @@ def value_book(store: Store, market: Market, now: float) -> risk.Book:
             prices[p.symbol] = known.get(p.symbol, p.entry_price)
             fresh = False
     store.set_json("prices", prices)  # the dashboard values positions without the exchange
-    exposure = sum(p.qty * prices[p.symbol] for p in positions)
-    cash = store.get_float("cash")
-    equity = cash + exposure
+    return prices, fresh
 
+
+def roll_book(
+    store: Store,
+    now: float,
+    cash: float,
+    equity: float,
+    exposure: float,
+    positions: list[Position] | list[PerpPosition],
+    fresh: bool,
+    margin: float = 0.0,
+) -> risk.Book:
+    """The account as the gate sees it. A fresh valuation opens a new trading day and
+    raises the equity peak; a stale one moves neither."""
     peak = store.get_float("peak_equity")
     if fresh:
         today = datetime.fromtimestamp(now, UTC).date().isoformat()
@@ -649,6 +689,7 @@ def value_book(store: Store, market: Market, now: float) -> risk.Book:
         halted=store.get("halted"),
         cooldowns=store.cooldowns(now),
         fresh=fresh,
+        margin=margin,
     )
 
 

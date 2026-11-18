@@ -1,17 +1,19 @@
 """Scout: scans the most liquid markets for unusual volume with price moving up.
 
 Pure arithmetic, no LLM: it runs on every market every cycle, so it has to be
-free, fast and repeatable (the backtest calls the same `evaluate`).
+free, fast and repeatable (the backtest calls the same `evaluate`). The perpetuals
+desk also asks for the mirror image: unusual volume with the price moving down.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from statistics import fmean
 
 from desk.config import Settings
 from desk.market import Market, MarketError, MarketUnavailable
-from desk.models import Candidate, Candle
+from desk.models import SIGN, Candidate, Candle, Side
 
 SURGE = 3  # candles that make up "right now"
 BASELINE = 48  # candles the surge is measured against
@@ -28,9 +30,10 @@ class Scan:
 
 
 def evaluate(
-    symbol: str, candles: list[Candle], quote_volume: float, cfg: Settings
+    symbol: str, candles: list[Candle], quote_volume: float, cfg: Settings, side: Side = "long"
 ) -> Candidate | None:
-    """Flag the market if recent volume is a multiple of its baseline and price is rising."""
+    """Flag the market if recent volume is a multiple of its baseline and price is rising,
+    or, for a short (perpetuals only), falling."""
     if len(candles) < MIN_CANDLES:
         return None
     baseline = fmean(c.volume for c in candles[-(SURGE + BASELINE) : -SURGE])
@@ -39,7 +42,7 @@ def evaluate(
     rvol = fmean(c.volume for c in candles[-SURGE:]) / baseline
     price = candles[-1].close
     change_recent = price / candles[-SURGE - 1].close - 1
-    if rvol < cfg.rvol_min or change_recent <= 0:
+    if rvol < cfg.rvol_min or SIGN[side] * change_recent <= 0:
         return None
     return Candidate(
         symbol=symbol,
@@ -48,15 +51,21 @@ def evaluate(
         change_recent=change_recent,
         change_24=price / candles[-25].close - 1,
         quote_volume=quote_volume,
+        side=side,
     )
 
 
-def scan(market: Market, cfg: Settings) -> Scan:
-    """Every liquid market, judged on its closed candles.
+Judge = Callable[[str, list[Candle], float, Settings], Candidate | None]
+
+
+def scan(market: Market, cfg: Settings, judge: Judge | None = None) -> Scan:
+    """Every liquid market, judged on its closed candles by `judge` (`evaluate` unless
+    told otherwise).
 
     A few markets that fail to load are skipped. Several unreachable in a row mean the
     connection is gone, not the markets, so the scan stops and says so.
     """
+    judge = judge or evaluate
     result = Scan()
     unreachable = 0
     for symbol, quote_volume in market.universe():
@@ -75,7 +84,7 @@ def scan(market: Market, cfg: Settings) -> Scan:
             continue
         unreachable = 0
         result.scanned += 1
-        candidate = evaluate(symbol, candles, quote_volume, cfg)
+        candidate = judge(symbol, candles, quote_volume, cfg)
         if candidate:
             result.candidates.append(candidate)
             result.candles[symbol] = candles

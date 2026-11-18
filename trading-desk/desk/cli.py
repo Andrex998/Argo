@@ -13,14 +13,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from desk import backtest, dashboard, demo, live, radar, snapshot
+from desk import backtest, dashboard, demo, live, perps, radar, snapshot
 from desk.agents import charts, scout
 from desk.agents.llm import AgentUnavailable, ClaudeLLM
-from desk.broker import BrokerError, LiveBroker, PaperBroker
+from desk.broker import BrokerError, LiveBroker, PaperBroker, PerpsPaperBroker
 from desk.config import Settings
 from desk.desk import Desk, init_book, value_book
 from desk.instance import AlreadyRunning, claim
-from desk.market import CcxtMarket, MarketError, make_exchange
+from desk.market import MarketError, make_exchange, open_market
+from desk.perps_desk import PerpsDesk, value_perps_book
 from desk.store import Store
 
 # One colour per desk member, readable on dark and light terminals.
@@ -43,6 +44,11 @@ _ansi = sys.platform != "win32"
 RETRY_SECONDS = 300  # a scan that failed is tried again within the same candle
 GAP_SECONDS = 15 * 60  # a pause this long between two passes means the PC slept or froze
 
+PERPS_PAPER_ONLY = (
+    "Il desk dei perpetui gira solo in paper trading (soldi finti): non apre mai posizioni "
+    "vere. Togli DESK_MODE=live e --live per avviarlo."
+)
+
 
 def print_event(ts: float, agent: str, symbol: str, message: str) -> None:
     tag = f"{agent:<9}"
@@ -53,8 +59,12 @@ def print_event(ts: float, agent: str, symbol: str, message: str) -> None:
 
 
 def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
-    """Build a desk that can place orders. Real money needs both DESK_MODE=live and --live."""
+    """Build a desk that can place orders. Real money needs both DESK_MODE=live and --live,
+    and is never possible on perpetuals."""
     live = getattr(args, "live", False)
+    perps_desk = cfg.market == "perps"
+    if perps_desk and (live or cfg.mode == "live"):
+        raise SystemExit(PERPS_PAPER_ONLY)
     if cfg.mode == "live" and not live:
         raise SystemExit(
             "DESK_MODE=live: aggiungi --live per confermare che vuoi operare con soldi veri."
@@ -69,8 +79,9 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
         if url and getattr(args, "open", False):
             webbrowser.open(url)
         where = f" La sua dashboard: {url}" if url else ""
+        name = "Il desk dei perpetui" if perps_desk else "Il desk"
         raise SystemExit(
-            f"Il desk è già acceso in un'altra finestra.{where}\n"
+            f"{name} è già acceso in un'altra finestra.{where}\n"
             "Ne può girare uno solo alla volta: chiudi l'altra finestra prima di riavviarlo."
         ) from None
 
@@ -84,10 +95,17 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
         )
         if free < cfg.capital:
             print("Attenzione: il saldo libero è inferiore al capitale assegnato al desk.")
+    elif perps_desk:
+        broker = PerpsPaperBroker(cfg)
     else:
         broker = PaperBroker(cfg)
 
-    desk = Desk(cfg, CcxtMarket(exchange, cfg), broker, Store(cfg.db_path), echo=print_event)
+    market = open_market(cfg, exchange)
+    if perps_desk:
+        # As in the research: the analysts' prompts are written for spot longs.
+        print("Desk dei perpetui: decide con le sole regole (Scout, Charts, Risk).")
+        return PerpsDesk(cfg, market, broker, Store(cfg.db_path), echo=print_event)
+    desk = Desk(cfg, market, broker, Store(cfg.db_path), echo=print_event)
     if not getattr(args, "rules_only", False):
         try:
             desk.llm = ClaudeLLM(cfg, on_usage=desk.record_usage)
@@ -103,7 +121,10 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
 
 
 def cmd_scan(cfg: Settings, args: argparse.Namespace) -> None:
-    market = CcxtMarket(make_exchange(cfg), cfg)
+    market = open_market(cfg)
+    if cfg.market == "perps":
+        scan_perps(cfg, market)
+        return
     result = scout.scan(market, cfg)
     print(
         f"{result.scanned} mercati {cfg.quote} analizzati su {cfg.exchange} "
@@ -128,6 +149,33 @@ def cmd_scan(cfg: Settings, args: argparse.Namespace) -> None:
         print(
             f"  {candidate.symbol:<14} volume {candidate.rvol:4.1f}x · "
             f"{candidate.change_recent:+.1%} nelle ultime 3 candele · {verdict}"
+        )
+
+
+def scan_perps(cfg: Settings, market) -> None:
+    """What the perpetuals desk sees now: both directions, and the side BTC allows."""
+    result = scout.scan(market, cfg, perps.signal)
+    side = perps.regime(market.candles(perps.leader(cfg)))
+    allowed = {1: "si aprirebbe solo long", -1: "si aprirebbe solo short"}.get(
+        side, "nessuna entrata: BTC non ha una direzione"
+    )
+    print(
+        f"{result.scanned} perpetui {cfg.quote} analizzati su {cfg.exchange} ({cfg.timeframe}), "
+        f"{len(result.candidates)} con volume anomalo. Con il trend di BTC {allowed}."
+    )
+    for candidate in result.candidates:
+        plan = perps.plan(candidate, result.candles[candidate.symbol], cfg)
+        sign = "-" if plan.side == "long" else "+"
+        verdict = (
+            f"setup valido · entrata {plan.entry:g} · stop {plan.stop:g} "
+            f"({sign}{plan.stop_pct:.1f}%) · target {plan.target:g}"
+            if plan.valid
+            else f"scartato: {'; '.join(plan.reasons)}"
+        )
+        print(
+            f"  {candidate.symbol:<16} {perps.SIDE_NAME[candidate.side]:<5} volume "
+            f"{candidate.rvol:4.1f}x · {candidate.change_recent:+.1%} nelle ultime 3 candele · "
+            f"{verdict}"
         )
 
 
@@ -249,6 +297,8 @@ def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
             print(f"Pagina live spenta: {e}", flush=True)
     schedule = Schedule(period=desk.market.candle_ms / 1000)
     mode = "solo regole" if desk.llm is None else f"analisti {cfg.model}"
+    if cfg.market == "perps":
+        mode = f"perpetui long e short su {cfg.exchange}, {mode}"
     desk.say(
         "DESK", f"avviato in modalità {cfg.mode} ({mode}), un ciclo a ogni candela {cfg.timeframe}"
     )
@@ -275,9 +325,12 @@ def cmd_snapshot(cfg: Settings, args: argparse.Namespace) -> None:
 
 
 def cmd_status(cfg: Settings, args: argparse.Namespace) -> None:
+    if cfg.market == "perps":
+        status_perps(cfg)
+        return
     store = Store(cfg.db_path)
     init_book(store, cfg)
-    market = CcxtMarket(make_exchange(cfg), cfg)
+    market = open_market(cfg)
     book = value_book(store, market, time.time())
     q = cfg.quote
     print(f"Modalità {cfg.mode} · {cfg.exchange} · {cfg.timeframe}")
@@ -319,13 +372,60 @@ def cmd_status(cfg: Settings, args: argparse.Namespace) -> None:
     )
 
 
+def status_perps(cfg: Settings) -> None:
+    store = Store(cfg.db_path)
+    init_book(store, cfg)
+    market = open_market(cfg)
+    book = value_perps_book(store, market, time.time())
+    q = cfg.quote
+    print(f"Perpetui, modalità {cfg.mode} · {cfg.exchange} · {cfg.timeframe}")
+    print(
+        f"Equity {book.equity:.2f} {q} ({book.equity / cfg.capital - 1:+.2%} dal capitale "
+        f"iniziale {cfg.capital:.2f}) · cash {book.cash:.2f} · valore delle posizioni "
+        f"{book.exposure:.2f} · margine impegnato {book.margin:.2f}"
+    )
+    print(
+        f"Oggi {book.equity / book.day_start_equity - 1:+.2%} · "
+        f"drawdown dal picco {1 - book.equity / book.peak_equity:.2%}"
+    )
+    print(f"Stato: {'FERMO, ' + book.halted if book.halted else 'operativo'}")
+
+    positions = store.perps_positions()
+    prices = store.get_json("prices")
+    print(f"\nPosizioni aperte: {len(positions)}")
+    for pos in positions:
+        last = prices.get(pos.symbol, pos.entry_price)
+        print(
+            f"  {pos.symbol:<16} {perps.SIDE_NAME[pos.side]:<5} {pos.qty:g} @ {pos.entry_price:g} "
+            f"· ora {last:g} ({pos.profit(last) - pos.fees - pos.funding:+.2f} {q}) · stop "
+            f"{pos.stop:g} · target {pos.target:g} · leva x{pos.leverage:.1f} · margine "
+            f"{pos.margin:.2f} · liquidazione {pos.liquidation:g}"
+        )
+
+    trades = store.perps_trades()
+    if trades:
+        wins = sum(t.pnl > 0 for t in trades)
+        print(
+            f"\nTrade chiusi: {len(trades)} ({sum(t.side == 'short' for t in trades)} short) · "
+            f"vinti {wins / len(trades):.0%} · "
+            f"R medio {sum(t.r_multiple for t in trades) / len(trades):+.2f} · "
+            f"P&L {sum(t.pnl for t in trades):+.2f} {q} · funding "
+            f"{sum(t.funding for t in trades):+.2f}"
+        )
+
+
 def cmd_journal(cfg: Settings, args: argparse.Namespace) -> None:
     for event in Store(cfg.db_path).events(args.n):
         print_event(event.ts, event.agent, event.symbol, event.message)
 
 
 def cmd_backtest(cfg: Settings, args: argparse.Namespace) -> None:
-    market = CcxtMarket(make_exchange(cfg), cfg)
+    if cfg.market == "perps":
+        raise SystemExit(
+            "Il backtest dei perpetui è la ricerca: uv run python research/perps.py download, "
+            "poi uv run python research/perps.py run."
+        )
+    market = open_market(cfg)
     bars = int(args.days * 86_400_000 / market.candle_ms) + backtest.WINDOW
     histories = {}
     universe = market.universe()
@@ -459,7 +559,8 @@ def cmd_halt(cfg: Settings, args: argparse.Namespace) -> None:
 def cmd_resume(cfg: Settings, args: argparse.Namespace) -> None:
     store = Store(cfg.db_path)
     init_book(store, cfg)
-    book = value_book(store, CcxtMarket(make_exchange(cfg), cfg), time.time())
+    value = value_perps_book if cfg.market == "perps" else value_book
+    book = value(store, open_market(cfg), time.time())
     store.set("halted", "")
     store.set("peak_equity", book.equity)  # drawdown is measured from here again
     print(f"Desk riattivato. Nuovo riferimento per il drawdown: {book.equity:.2f} {cfg.quote}.")
@@ -533,9 +634,16 @@ def main(argv: list[str] | None = None) -> None:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    def command(name: str, handler, help_: str, *, trades: bool = False):
+    def command(name: str, handler, help_: str, *, trades: bool = False, desk: bool = True):
         p = sub.add_parser(name, help=help_)
         p.set_defaults(handler=handler)
+        if desk:
+            # Also tells the two desks' processes apart by their command line.
+            p.add_argument(
+                "--market",
+                choices=("spot", "perps"),
+                help="spot o perps (perpetui, solo paper): prevale su DESK_MARKET",
+            )
         if trades:
             p.add_argument("--live", action="store_true", help="opera con soldi veri")
         return p
@@ -570,9 +678,9 @@ def main(argv: list[str] | None = None) -> None:
     command("backtest", cmd_backtest, "le regole del desk rigiocate sullo storico").add_argument(
         "--days", type=int, default=30, help="giorni di storico"
     )
-    command("radar", cmd_radar, "punteggio di rischio di un token DEX (memecoin)").add_argument(
-        "address", help="contract address Solana o EVM"
-    )
+    command(
+        "radar", cmd_radar, "punteggio di rischio di un token DEX (memecoin)", desk=False
+    ).add_argument("address", help="contract address Solana o EVM")
     command("halt", cmd_halt, "blocca le nuove entrate")
     command("resume", cmd_resume, "riattiva il desk dopo un blocco")
     command("close-all", cmd_close_all, "vende tutte le posizioni del desk", trades=True)
@@ -581,8 +689,9 @@ def main(argv: list[str] | None = None) -> None:
     _use_system_certificates()
     _never_crash_on_print()
     _keep_console_responsive()
+    market = getattr(args, "market", None)
     try:
-        args.handler(Settings(), args)
+        args.handler(Settings(market=market) if market else Settings(), args)
     except MarketError as e:
         raise SystemExit(f"Dati di mercato non disponibili: {e}") from e
     except BrokerError as e:

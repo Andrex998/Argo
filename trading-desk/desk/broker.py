@@ -1,4 +1,8 @@
-"""Order execution: simulated fills for paper trading, real market orders for live."""
+"""Order execution: simulated fills for paper trading, real market orders for live.
+
+Perpetual futures are paper only: `PerpsPaperBroker` simulates them, and `LiveBroker`
+refuses to start on them.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +12,7 @@ from typing import Protocol
 import ccxt
 
 from desk.config import Settings
-from desk.models import Fill
+from desk.models import SIGN, Fill, Side
 
 
 class BrokerError(Exception):
@@ -19,6 +23,12 @@ class Broker(Protocol):
     def buy(self, symbol: str, qty: float, ref_price: float) -> Fill: ...
 
     def sell(self, symbol: str, qty: float, ref_price: float) -> Fill: ...
+
+
+class PerpsBroker(Protocol):
+    def open(self, symbol: str, side: Side, qty: float, ref_price: float) -> Fill: ...
+
+    def close(self, symbol: str, side: Side, qty: float, entry: float, ref_price: float) -> Fill: ...
 
 
 class PaperBroker:
@@ -39,6 +49,30 @@ class PaperBroker:
         return Fill(qty, price, fee, qty * price - fee)
 
 
+class PerpsPaperBroker:
+    """Simulated fills on a perpetual contract: the reference price made worse by slippage,
+    the taker fee on the whole notional.
+
+    The account is margin-based: opening moves only the fee out of cash, and the profit or
+    loss is settled when the position closes.
+    """
+
+    def __init__(self, cfg: Settings):
+        self.fee_rate = cfg.perps_fee_rate
+        self.slippage = cfg.slippage
+
+    def open(self, symbol: str, side: Side, qty: float, ref_price: float) -> Fill:
+        price = ref_price * (1 + SIGN[side] * self.slippage)
+        fee = qty * price * self.fee_rate
+        return Fill(qty, price, fee, -fee)
+
+    def close(self, symbol: str, side: Side, qty: float, entry: float, ref_price: float) -> Fill:
+        s = SIGN[side]
+        price = ref_price * (1 - s * self.slippage)
+        fee = qty * price * self.fee_rate
+        return Fill(qty, price, fee, s * qty * (price - entry) - fee)
+
+
 class LiveBroker:
     """Market orders on a real exchange through ccxt.
 
@@ -49,6 +83,8 @@ class LiveBroker:
     SETTLE_ATTEMPTS = 10
 
     def __init__(self, exchange: ccxt.Exchange, cfg: Settings):
+        if cfg.market != "spot":
+            raise BrokerError("i perpetui sono solo in paper trading: nessun ordine vero")
         self.ex = exchange
         self.quote = cfg.quote
         try:
