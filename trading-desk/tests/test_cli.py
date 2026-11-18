@@ -60,7 +60,7 @@ def test_the_dashboard_moves_when_its_port_is_taken(tmp_path, capsys):
     port = taken.getsockname()[1]
     args = argparse.Namespace(host="127.0.0.1", port=port, open=False)
     try:
-        server, url = cli.start_dashboard(Settings(), tmp_path / "desk.db", args)
+        server, url = cli.start_dashboard(Settings(_env_file=None), tmp_path / "desk.db", args)
     finally:
         taken.close()
     try:

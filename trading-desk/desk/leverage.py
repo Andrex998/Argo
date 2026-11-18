@@ -258,6 +258,7 @@ def book_from_state(state: dict) -> Book:
         entry_fees=dict(state["entry_fees"]),
     )
     for symbol, leg in state["legs"].items():
+        leg = {"funded_until": leg["opened"], **leg}  # never from 1970 if the field is missing
         book.legs[symbol] = Leg(symbol=symbol, **leg)
     return book
 

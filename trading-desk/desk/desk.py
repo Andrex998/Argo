@@ -107,7 +107,7 @@ class Desk:
             except MarketError as e:
                 self.say("EXECUTOR", f"prezzo non disponibile, riprovo: {e}", pos.symbol, "error")
                 continue
-            self._shadow_tick(pos, price)
+            self._simulate(self._shadow_tick, pos, price)
             stop_before, trailing_before = pos.stop, pos.highest >= pos.target
             exit_ = risk.check_exit(
                 pos, open_=price, high=price, low=price, close=price, now=self.clock(), cfg=self.cfg
@@ -177,7 +177,7 @@ class Desk:
             pnl=pnl,
             r=r_multiple,
         )
-        self._shadow_close(pos.symbol, fill.price)
+        self._simulate(self._shadow_close, pos.symbol, fill.price)
 
     def close_all(self, reason: str = "chiusura manuale") -> None:
         for pos in self.store.positions():
@@ -187,11 +187,18 @@ class Desk:
                 self.say("EXECUTOR", f"chiusura non riuscita: {e}", pos.symbol, "error")
                 continue
             # close-all runs while `desk run` is stopped: settle the shadows for that time first.
-            self._shadow_tick(pos, price)
+            self._simulate(self._shadow_tick, pos, price)
             self.close(pos, price, reason)
         self._pulse()
 
     # --- simulated leverage ----------------------------------------------------
+
+    def _simulate(self, step: Callable[..., None], *args) -> None:
+        """Run one step of the leverage simulation. It may fail; the desk's stops may not."""
+        try:
+            step(*args)
+        except Exception as e:  # noqa: BLE001 - a simulation must never skip a real stop-loss
+            self.say("LEVA", f"simulazione della leva saltata per un errore: {e}", kind="error")
 
     def _shadow_open(self, symbol: str, share: float, price: float, stop: float) -> None:
         """Open the same long on every shadow book, at its own leverage."""
@@ -248,7 +255,7 @@ class Desk:
             if not leg:
                 continue
             if leg.liquidation > 0 and now - leg.funded_until > self._gap_seconds():
-                since = leg.funded_until
+                since = leg.funded_until or leg.opened
                 if since not in gap_lows:
                     gap_lows[since] = self._lowest_since(pos.symbol, since)
                 low = gap_lows[since]
@@ -590,7 +597,8 @@ class Desk:
             stop=position.stop,
             target=position.target,
         )
-        self._shadow_open(plan.symbol, fill.qty * fill.price / equity, fill.price, position.stop)
+        share = fill.qty * fill.price / equity
+        self._simulate(self._shadow_open, plan.symbol, share, fill.price, position.stop)
 
 
 def init_book(store: Store, cfg: Settings) -> None:

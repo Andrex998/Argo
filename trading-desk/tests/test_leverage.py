@@ -378,3 +378,33 @@ def test_the_journal_tells_the_sale_before_its_leveraged_results(cfg):
     sold = next(i for i, m in enumerate(order) if m.startswith("venduto"))
     leveraged = next(i for i, m in enumerate(order) if m.startswith("con la leva"))
     assert sold < leveraged
+
+
+def test_a_failing_simulation_never_stops_the_desk_from_taking_its_stop(cfg):
+    desk, market, clock, symbol = live_desk(cfg)
+    desk.cycle()
+    [pos] = desk.store.positions()
+
+    def broken(*args):
+        raise RuntimeError("dato strano dall'exchange")
+
+    desk._shadow_tick = broken
+    desk._shadow_close = broken
+    market.prices[symbol] = pos.stop * 0.999
+    clock.advance(1 / 60)
+    desk.monitor()
+    assert desk.store.positions() == []  # the real stop was taken
+    said = "\n".join(e.message for e in desk.store.events(50))
+    assert "venduto" in said and "simulazione della leva saltata" in said
+
+
+def test_a_leg_saved_without_its_funding_time_counts_from_its_opening():
+    state = {
+        "level": 3.0, "start": 1000.0, "cash": 900.0, "fees": 0.0, "funding": 0.0,
+        "liquidations": 0, "peak": 1000.0, "max_drawdown_pct": 0.0, "wiped_at": None,
+        "last_equity": 1000.0, "entry_fees": {},
+        "legs": {"SOL/USD": {"margin": 100.0, "qty": 3.0, "entry": 100.0, "liquidation": 67.67,
+                             "opened": 1_750_000_000.0, "funding": 0.0}},
+    }  # fmt: skip
+    book = leverage.book_from_state(state)
+    assert book.legs["SOL/USD"].funded_until == 1_750_000_000.0

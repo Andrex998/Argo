@@ -11,7 +11,7 @@ import pytest
 
 from desk import radar
 
-REFERENCE = json.loads((Path(__file__).parent / "radar_reference.json").read_text())
+REFERENCE = json.loads((Path(__file__).parent / "radar_reference.json").read_text(encoding="utf-8"))
 NOW_MS = REFERENCE["now_ms"]
 PAIR = REFERENCE["cases"]["demo_full"]["input"]["pair"]
 RUG = REFERENCE["cases"]["demo_full"]["input"]["rug"]
