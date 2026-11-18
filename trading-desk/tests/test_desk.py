@@ -12,6 +12,7 @@ from desk.models import (
     Verdict,
 )
 from desk.store import Store
+from desk.synthetic import bounce
 from tests.conftest import Clock, FakeLLM, FakeMarket, breakout, dump, quiet
 
 SYMBOL = "SOL/USDC"
@@ -258,3 +259,17 @@ def test_regime_filter_is_skipped_when_btc_is_not_listed(cfg):
     desk.cycle()
     assert len(desk.store.positions()) == 1
     assert "filtro di mercato saltato" in journal(desk)
+
+
+def test_strict_regime_also_waits_out_a_sideways_btc(cfg):
+    cfg.regime_filter = True
+    cfg.regime_strict = True
+    desk, _, _ = make_desk(cfg, {SYMBOL: breakout(), "BTC/USDC": bounce()})  # sideways
+    desk.cycle()
+    assert desk.store.positions() == []
+    assert "BTC/USDC non in trend rialzista" in journal(desk)
+
+    cfg.regime_strict = False  # the default rule only waits out a falling BTC
+    desk, _, _ = make_desk(cfg, {SYMBOL: breakout(), "BTC/USDC": bounce()})
+    desk.cycle()
+    assert len(desk.store.positions()) == 1

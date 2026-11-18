@@ -371,14 +371,20 @@ class Desk:
             return ""
         leader = f"BTC/{self.cfg.quote}"
         try:
-            falling = charts.market_falling(self.market.candles(leader))
+            falling = charts.market_falling(self.market.candles(leader), self.cfg.regime_strict)
         except MarketUnavailable as e:
             # Unreachable is not "not falling": without the answer, no new longs.
             return f"trend di {leader} non verificabile in questo momento ({e})"
         except MarketError as e:
             self.say("RISK", f"trend di {leader} non valutabile, filtro di mercato saltato: {e}")
             return ""
-        return f"{leader} in trend ribassista" if falling else ""
+        if not falling:
+            return ""
+        return (
+            f"{leader} non in trend rialzista"
+            if self.cfg.regime_strict
+            else f"{leader} in trend ribassista"
+        )
 
     def _debate(self, candidate: Candidate, plan: ChartPlan, now: float) -> float | None:
         """Run the analysts on one setup. Returns the size factor for a BUY, else None."""

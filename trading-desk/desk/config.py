@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     max_stop_pct: float = 8.0
     reward_risk: float = 2.0
     rsi_max: float = 80.0
+    breakout_lookback: int = 0  # >0: the close must clear the high of that many candles
 
     # --- Risk gate: hard limits no agent can override -----------------------
     risk_per_trade_pct: float = 1.0  # equity lost if the stop is hit
@@ -45,6 +46,7 @@ class Settings(BaseSettings):
     min_notional: float = 10.0
     max_cost_r: float = 0.33  # round-trip fees and slippage as a share of the amount at risk
     regime_filter: bool = True  # no new longs while BTC itself is in a downtrend
+    regime_strict: bool = False  # stricter: no new longs unless BTC is in an uptrend
     cooldown_hours: float = 12.0  # no re-entry on a symbol after a losing exit
     max_hold_hours: float = 72.0  # stale positions are closed
 

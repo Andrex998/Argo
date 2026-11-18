@@ -172,7 +172,7 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
         if cfg.regime_filter and leader in bars:
             i = index[leader][ts]
             if i >= scout.MIN_CANDLES and charts.market_falling(
-                histories[leader][max(0, i - WINDOW + 1) : i + 1]
+                histories[leader][max(0, i - WINDOW + 1) : i + 1], cfg.regime_strict
             ):
                 continue
         candidates = []

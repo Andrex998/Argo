@@ -112,3 +112,24 @@ def test_quote_currencies_are_listed_most_used_first(cfg):
     }
     exchange = SimpleNamespace(load_markets=lambda: markets, parse_timeframe=lambda tf: 3600)
     assert CcxtMarket(exchange, cfg).quotes() == [("USDC", 2), ("EUR", 1)]
+
+
+def test_breakout_confirmation_needs_a_close_above_the_recent_highs(cfg):
+    from desk.agents import charts
+    from desk.synthetic import series, zigzag
+
+    rising = zigzag(117, 100.0, 0.005, -0.003)
+    rising += [rising[-1] * 1.01, rising[-1] * 1.0201, rising[-1] * 1.0303]
+    cfg.breakout_lookback = 20
+    new_high = charts.plan("SOL/USDC", series(rising, [1000.0] * 120), cfg)
+    assert not any("nessuna rottura" in r for r in new_high.reasons)
+
+    pullback = rising + [rising[-1] * 0.995]  # closes just under the candle before
+    below = charts.plan("SOL/USDC", series(pullback, [1000.0] * 121), cfg)
+    assert any("nessuna rottura" in r for r in below.reasons)
+
+    cfg.breakout_lookback = 0  # off by default: the same close is not rejected for this
+    assert not any(
+        "nessuna rottura" in r
+        for r in charts.plan("SOL/USDC", series(pullback, [1000.0] * 121), cfg).reasons
+    )
