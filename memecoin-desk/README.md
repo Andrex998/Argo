@@ -29,6 +29,15 @@ Il sistema memecoin in paper trading che gira nel cloud, nel progetto Supabase
 
 Lo storico non è stato riscritto: le correzioni valgono da quel momento in poi.
 
+## Cambi successivi
+
+- **18/11/2026, pomeriggio.** Su richiesta del proprietario, ogni acquisto dei wallet
+  attivi (FILTRO v2, FILTRO v2 piccoli, CORTO tardi) passa dal 2% (CORTO tardi: 1%)
+  al **5,5% del wallet**, circa 55 $ su un wallet da 1.000 $. La misura segue il wallet:
+  cresce se il wallet cresce e cala se cala. Le strategie ferme restano a 0. Per tornare
+  indietro, in `desk_strategies`, rimetti `params.sizing.pct_of_equity` a 2 (1 per
+  `corto_tardi`).
+
 ## Cartelle
 
 - `edge-function/v1`: la funzione prima del 18/11.
