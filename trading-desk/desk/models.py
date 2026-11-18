@@ -182,3 +182,14 @@ class Verdict(BaseModel):
     confidence: float
     rebuttals: list[Rebuttal]
     summary: str
+
+
+class ShortVerdict(BaseModel):
+    """The Chief's answer on a short (perpetuals only): SHORT opens it. A schema of its own,
+    so the Chief can only answer in the trade's own direction."""
+
+    decision: Literal["SHORT", "WAIT", "SKIP"]
+    conviction: Literal["low", "medium", "high"]
+    confidence: float
+    rebuttals: list[Rebuttal]
+    summary: str

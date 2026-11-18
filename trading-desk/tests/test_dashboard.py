@@ -28,6 +28,7 @@ def test_demo_session_shows_every_outcome(demo_db):
     for kind in ("scan", "plan", "plan_rejected", "news", "sentiment", "objection", "verdict",
                  "buy_cancelled", "sized", "buy", "stop_moved", "sell"):  # fmt: skip
         assert kind in seen, kind
+    assert "skipped" not in seen  # every staged market reaches the analysts
     state = dashboard.state(demo_db, demo.settings(), now=0.0, demo=True)
     reasons = {t["reason"] for t in state["trades"]["recent"]}
     assert reasons == {"trailing-stop", "stop-loss"}  # the demo shows a win and a loss

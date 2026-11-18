@@ -22,21 +22,6 @@ SOL, ETH, BTC, PEPE = "SOL/USDT:USDT", "ETH/USDT:USDT", "BTC/USDT:USDT", "PEPE/U
 HOUR = 3600.0
 
 
-@pytest.fixture
-def pcfg() -> Settings:
-    """The perpetuals desk on the rules the mechanics tests were written for."""
-    return Settings(
-        _env_file=None,
-        market="perps",
-        capital=1000.0,
-        fear_greed=False,
-        timeframe="1h",
-        reward_risk=2.0,
-        breakout_lookback=0,
-        atr_stop_mult=2.0,
-    )
-
-
 def rising():
     return quiet()  # an uptrend without a volume surge
 
@@ -612,7 +597,7 @@ def test_both_desks_start_side_by_side(tmp_path, monkeypatch):
     spot = cli.trading_desk(Settings(_env_file=None, data_dir=tmp_path), args)
     both = cli.trading_desk(Settings(_env_file=None, data_dir=tmp_path, market="perps"), args)
     assert type(spot).__name__ == "Desk" and isinstance(both, PerpsDesk)
-    assert both.llm is None  # rules only, as in the research
+    assert both.llm is None  # --rules-only
     assert type(both.market).__name__ == "PerpsMarket"
     assert spot.store.db is not both.store.db
 

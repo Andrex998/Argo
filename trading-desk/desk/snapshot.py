@@ -100,8 +100,10 @@ def _documents(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
             "ORDER BY id DESC LIMIT 1"
         ).fetchone()
         curve = store.equity_curve(limit=100_000)
-        # What the desk started with; an older desk did not say, so judge by the settings.
-        analysts = store.get("analysts") or (cfg.model if cfg.anthropic_api_key else "solo regole")
+        # What `desk run` started with. An older desk did not say: the spot desk had
+        # analysts when there was a key, the perpetuals desk never had them.
+        with_key = cfg.anthropic_api_key and not perps
+        analysts = store.get("analysts") or (cfg.model if with_key else "solo regole")
         every_trade = store.perps_trades() if perps else store.trades()
         trades = every_trade[-TRADES_SHOWN:]
         prices = store.get_json("prices")
@@ -159,7 +161,6 @@ def _documents(db_path: Path, cfg: Settings, now: float) -> dict[str, dict]:
     if perps:
         account |= {
             "market": "perps",
-            "analysts": "solo regole",
             "margin": _num(st["margin"]),
             "margin_pct": _num(st["margin"] / equity * 100 if equity else 0, 1),
             "funding": _num(st["funding"]),

@@ -126,10 +126,13 @@ def short_plan(symbol: str, candles: list[Candle], cfg: Settings) -> ChartPlan:
     )
 
 
-def evaluate(plan: ChartPlan, book: risk.Book, cfg: Settings, now: float) -> risk.RiskDecision:
+def evaluate(
+    plan: ChartPlan, book: risk.Book, cfg: Settings, now: float, size_factor: float = 1.0
+) -> risk.RiskDecision:
     """The risk gate on perpetuals: the spot desk's refusals, with the perpetuals' fee, and
     the same risk at the stop. The caps are on the notional: one position, all of them
-    together, and what the free margin can carry at the highest leverage."""
+    together, and what the free margin can carry at the highest leverage. `size_factor`
+    is the Chief's conviction: low conviction halves the risk and the position cap."""
     if not leverage.allowed(plan.symbol, cfg):
         coin = leverage.base(plan.symbol)
         reason = f"{coin} non è tra le monete ammesse: niente perpetui sulle memecoin"
@@ -137,13 +140,13 @@ def evaluate(plan: ChartPlan, book: risk.Book, cfg: Settings, now: float) -> ris
     if reason := risk.refusal(plan, book, cfg, now, cfg.perps_fee_rate):
         return risk.RiskDecision("REJECT", reasons=[reason])
     caps = [
-        (book.equity * cfg.perps_cap_position_pct / 100, "limite per posizione"),
+        (book.equity * cfg.perps_cap_position_pct / 100 * size_factor, "limite per posizione"),
         (book.equity * cfg.perps_cap_total_pct / 100 - book.exposure, "limite di esposizione"),
         ((book.equity - book.margin) * cfg.perps_max_leverage, "margine disponibile"),
     ]
     # Sized at the price it will fill at, slippage included, as the research does.
     fill = plan.entry * (1 + SIGN[plan.side] * cfg.slippage)
-    return risk.sized(risk.at_risk(plan, book, cfg), caps, fill, cfg)
+    return risk.sized(risk.at_risk(plan, book, cfg, size_factor), caps, fill, cfg)
 
 
 def open_interest_veto(growth: float | None) -> str:

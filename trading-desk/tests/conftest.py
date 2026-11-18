@@ -68,6 +68,21 @@ def _no_retry_pause(monkeypatch):
 
 
 @pytest.fixture
+def pcfg() -> Settings:
+    """The perpetuals desk on the rules the mechanics tests were written for."""
+    return Settings(
+        _env_file=None,
+        market="perps",
+        capital=1000.0,
+        fear_greed=False,
+        timeframe="1h",
+        reward_risk=2.0,
+        breakout_lookback=0,
+        atr_stop_mult=2.0,
+    )
+
+
+@pytest.fixture
 def cfg() -> Settings:
     # The market-regime filter needs a BTC series; tests that use it switch it on.
     return Settings(

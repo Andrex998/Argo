@@ -35,6 +35,6 @@ if ! uv sync; then
   uv sync || exit 1
 fi
 
-echo "Avvio del desk dei perpetui: soldi finti, rialzo e ribasso, solo regole..."
+echo "Avvio del desk dei perpetui: soldi finti, rialzo e ribasso..."
 # --market perps also tells this desk's process apart from the spot desk's.
-uv run desk run --market perps --rules-only --dashboard --open "$@"
+uv run desk run --market perps --rules-if-no-key --dashboard --open "$@"

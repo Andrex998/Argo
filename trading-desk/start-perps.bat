@@ -35,9 +35,9 @@ if errorlevel 1 (
 )
 if errorlevel 1 goto done
 
-echo Avvio del desk dei perpetui: soldi finti, rialzo e ribasso, solo regole...
+echo Avvio del desk dei perpetui: soldi finti, rialzo e ribasso...
 rem --market perps also tells this desk's process apart from the spot desk's.
-uv run desk run --market perps --rules-only --dashboard --open %*
+uv run desk run --market perps --rules-if-no-key --dashboard --open %*
 
 :done
 echo.

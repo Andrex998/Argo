@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sqlite3
 import sys
 import tempfile
 import threading
@@ -15,6 +16,7 @@ from pathlib import Path
 
 from desk import backtest, dashboard, demo, live, perps, radar, snapshot
 from desk.agents import charts, scout
+from desk.agents.budget import AnalystBudget
 from desk.agents.claude_code import ClaudeCodeLLM
 from desk.agents.llm import AgentUnavailable, ClaudeLLM
 from desk.broker import BrokerError, LiveBroker, PaperBroker, PerpsPaperBroker
@@ -103,35 +105,40 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
         broker = PaperBroker(cfg)
 
     market = open_market(cfg, exchange)
-    if perps_desk:
-        # As in the research: the analysts' prompts are written for spot longs.
-        print("Desk dei perpetui: decide con le sole regole (Scout, Charts, Risk).")
-        return PerpsDesk(cfg, market, broker, Store(cfg.db_path), echo=print_event)
-    desk = Desk(cfg, market, broker, Store(cfg.db_path), echo=print_event)
+    kind = PerpsDesk if perps_desk else Desk
+    desk = kind(cfg, market, broker, Store(cfg.db_path), echo=print_event)
     desk.store.set("analysts", "solo regole")
-    if not getattr(args, "rules_only", False):
-        try:
-            if cfg.analysts == "claude-code":
-                desk.llm = ClaudeCodeLLM(cfg, on_usage=desk.record_usage)
-                label = f"Claude Code ({cfg.claude_code_model}, abbonamento)"
-                print(
-                    f"Analisti attivi con {label}: al massimo {cfg.analyst_max_per_hour} "
-                    f"mercati all'ora e {cfg.analyst_max_per_day} al giorno.",
-                    flush=True,
-                )
-            else:
-                desk.llm = ClaudeLLM(cfg, on_usage=desk.record_usage)
-                label = cfg.model
-            desk.store.set("analysts", label)
-        except AgentUnavailable as e:
-            if getattr(args, "rules_if_no_key", False):
-                print(f"Analisti spenti ({e}): il desk decide con le sole regole.")
-                return desk
-            raise SystemExit(
-                f"Analisti non disponibili: {e}. Imposta ANTHROPIC_API_KEY in .env, oppure "
-                "DESK_ANALYSTS=claude-code per usare l'abbonamento Claude attraverso Claude "
-                "Code, oppure usa --rules-only per far girare il desk senza analisti."
-            ) from e
+    if getattr(args, "rules_only", False):
+        return desk
+    try:
+        if cfg.analysts == "claude-code":
+            desk.llm = ClaudeCodeLLM(cfg, on_usage=desk.record_usage)
+            label = f"Claude Code ({cfg.claude_code_model}, abbonamento)"
+        else:
+            desk.llm = ClaudeLLM(cfg, on_usage=desk.record_usage)
+            label = cfg.model
+    except AgentUnavailable as e:
+        if getattr(args, "rules_if_no_key", False):
+            print(f"Analisti spenti ({e}): il desk decide con le sole regole.")
+            return desk
+        raise SystemExit(
+            f"Analisti non disponibili: {e}. Imposta ANTHROPIC_API_KEY in .env, oppure "
+            "DESK_ANALYSTS=claude-code per usare l'abbonamento Claude attraverso Claude "
+            "Code, oppure usa --rules-only per far girare il desk senza analisti."
+        ) from e
+    try:  # one budget for both desks: they share the subscription (or the key)
+        desk.budget = AnalystBudget.shared(cfg.data_dir)
+    except sqlite3.Error as e:
+        desk.llm = None
+        print(f"Analisti spenti (conteggio delle analisi non leggibile: {e}): solo regole.")
+        return desk
+    desk.store.set("analysts", label)
+    print(
+        f"Analisti attivi con {label}: al massimo {cfg.analyst_max_per_hour} mercati all'ora "
+        f"e {cfg.analyst_max_per_day} al giorno, contando insieme il desk spot e quello dei "
+        "perpetui.",
+        flush=True,
+    )
     return desk
 
 
@@ -312,7 +319,7 @@ def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
         except ValueError as e:
             print(f"Pagina live spenta: {e}", flush=True)
     schedule = Schedule(period=desk.market.candle_ms / 1000)
-    mode = "solo regole" if desk.llm is None else f"analisti {cfg.model}"
+    mode = "solo regole" if desk.llm is None else f"analisti {desk.store.get('analysts')}"
     if cfg.market == "perps":
         mode = f"perpetui long e short su {cfg.exchange}, {mode}"
     desk.say(
@@ -380,8 +387,14 @@ def cmd_status(cfg: Settings, args: argparse.Namespace) -> None:
             f"R medio {sum(t.r_multiple for t in trades) / len(trades):+.2f} · "
             f"P&L {sum(t.pnl for t in trades):+.2f} {q}"
         )
+    cost = store.get_float("llm_cost")
+    spent = (
+        f"con l'abbonamento, nessuna spesa in più (a prezzi API ${cost:.2f})"
+        if store.get("analysts").startswith("Claude Code")
+        else f"spesa stimata ${cost:.2f}"
+    )
     print(
-        f"\nSpesa analisti (stima): ${store.get_float('llm_cost'):.2f} · "
+        f"\nAnalisti ({store.get('analysts') or 'mai avviati'}): {spent} · "
         f"{store.get_float('llm_input_tokens'):,.0f} token in, "
         f"{store.get_float('llm_output_tokens'):,.0f} out, "
         f"{store.get_float('llm_searches'):.0f} ricerche web"
@@ -666,7 +679,7 @@ def main(argv: list[str] | None = None) -> None:
 
     rules = "senza analisti LLM: decide solo il codice (Scout, Charts, Risk)"
     command("scan", cmd_scan, "cosa vedono ora Scout e Charts, senza operare")
-    no_key = "usa gli analisti se c'è la chiave Anthropic, altrimenti solo le regole"
+    no_key = "usa gli analisti se sono disponibili (chiave o Claude Code), sennò solo le regole"
     cycle = command("cycle", cmd_cycle, "un ciclo completo del desk", trades=True)
     cycle.add_argument("--rules-only", action="store_true", help=rules)
     cycle.add_argument("--rules-if-no-key", action="store_true", help=no_key)

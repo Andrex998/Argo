@@ -8,6 +8,7 @@ import subprocess
 import pytest
 
 from desk import cli
+from desk.agents.budget import AnalystBudget
 from desk.agents.claude_code import ClaudeCodeLLM
 from desk.agents.llm import AgentUnavailable
 from desk.config import Settings
@@ -126,17 +127,16 @@ def test_the_analysts_take_no_more_markets_than_the_hourly_cap(cfg):
     desk, _, clock = make_desk(cfg, {SYMBOL: breakout(), other: breakout()}, llm=llm())
     desk.cycle()
     assert len(desk.store.positions()) == 1  # one discussed and bought, the other not asked
-    assert "già 1 analisi nell'ultima ora" in journal(desk)
+    assert "già 1 analisi nell'ultima ora (il limite è 1)" in journal(desk)
     clock.advance(1.01)  # an hour later the cap has room again
-    assert desk._analysts_busy(clock()) == ""
+    assert desk.budget.counts(clock()) == (0, 1)
+    assert desk.budget.claim(clock(), 1, 20) == ""
 
 
-def test_and_no_more_than_the_daily_cap(cfg):
-    cfg.analyst_max_per_hour, cfg.analyst_max_per_day = 10, 2
-    desk, _, clock = make_desk(cfg, {SYMBOL: breakout()}, llm=llm())
-    for _ in range(2):
-        desk._count_debate(clock())
-        clock.advance(2)
-    assert "nelle ultime 24 ore" in desk._analysts_busy(clock())
-    clock.advance(21)  # the first one is now more than 24 hours old
-    assert desk._analysts_busy(clock()) == ""
+def test_and_no_more_than_the_daily_cap(tmp_path):
+    budget, now = AnalystBudget(tmp_path / "budget.db"), 1_750_000_000.0
+    for hours in (0, 2):
+        assert budget.claim(now + hours * 3600, 10, 2) == ""
+    assert "già 2 analisi nelle ultime 24 ore" in budget.claim(now + 4 * 3600, 10, 2)
+    assert budget.counts(now + 4 * 3600) == (0, 2)  # a refusal is not counted
+    assert budget.claim(now + 25 * 3600, 10, 2) == ""  # the first is now over 24 hours old

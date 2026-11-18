@@ -58,6 +58,7 @@ def state(db_path: Path, cfg: Settings, now: float, demo: bool = False) -> dict:
     except sqlite3.OperationalError:
         return base
     try:
+        base["analysts"] = store.get("analysts") or base["analysts"]  # what `desk run` started
         if not store.get("cash"):
             return base
         prices = store.get_json("prices")

@@ -11,12 +11,14 @@ import time
 import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from pydantic import BaseModel
 
 from desk import leverage, risk
 from desk.agents import analysts, charts, scout
+from desk.agents.budget import AnalystBudget
 from desk.agents.llm import LLM, AgentUnavailable, Usage
 from desk.broker import Broker, BrokerError
 from desk.config import Settings
@@ -29,6 +31,8 @@ Echo = Callable[[float, str, str, str], None]
 EQUITY_INTERVAL = 300.0  # seconds between equity points while nothing changes
 GAP_SECONDS = 300.0  # a shadow left unchecked longer than this has the gap's prices read
 ORPHAN_SLACK = 60.0  # a shadow opened this long before its spot position belongs to an older one
+# How the journal says "open the trade": a long is bought, a short is sold first.
+OPENING = {"long": ("comprare", "si compra"), "short": ("aprire lo short", "si apre lo short")}
 
 
 class Desk:
@@ -48,6 +52,10 @@ class Desk:
         self.broker = broker
         self.store = store
         self.llm = llm  # None runs the desk on rules alone
+        # How many markets the analysts may discuss per hour and per day. `desk run`
+        # gives both desks one shared budget; this one counts for this desk alone.
+        self.budget = AnalystBudget()
+        self.debates = 0  # markets the analysts discussed in this cycle
         self.clock = clock
         self.echo = echo
         self.equity_interval = equity_interval
@@ -362,6 +370,7 @@ class Desk:
         again within the same candle instead of waiting for the next one.
         """
         self.monitor()
+        self.debates = 0
         scanned = self._look_for_entries()
         self._pulse()
         return scanned
@@ -378,7 +387,6 @@ class Desk:
             self.say("RISK", f"nessuna nuova entrata: {reason}", kind="blocked")
             return True
 
-        debates = 0
         for candidate in scan.candidates:
             symbol = candidate.symbol
             now = self.clock()
@@ -405,26 +413,11 @@ class Desk:
                 target=plan.target,
             )
 
-            size_factor = 1.0
-            if self.llm:
-                if now - self.store.reviewed_at(symbol) < self.cfg.reanalyze_hours * 3600:
-                    self.say(
-                        "DESK", "già discusso di recente, non lo rianalizzo", symbol, "skipped"
-                    )
-                    continue
-                if debates >= self.cfg.max_candidates:
-                    self.say("DESK", "limite di analisi per ciclo raggiunto", symbol, "skipped")
-                    continue
-                if busy := self._analysts_busy(now):
-                    self.say("DESK", f"non lo faccio analizzare: {busy}", symbol, "skipped")
-                    continue
-                debates += 1
-                self.store.mark_reviewed(symbol, now)
-                self._count_debate(now)
-                factor = self._debate(candidate, plan, now)
-                if factor is None:
-                    continue
-                size_factor = factor
+            size_factor = self._verdict(candidate, plan)
+            if size_factor is None:
+                continue
+            if self.llm and (plan := self._repriced(plan)) is None:
+                continue
 
             decision = risk.evaluate(plan, book, self.cfg, now, size_factor)
             if not decision.approved:
@@ -508,48 +501,117 @@ class Desk:
             else f"{leader} in trend ribassista"
         )
 
+    def _verdict(self, candidate: Candidate, plan: ChartPlan) -> float | None:
+        """The analysts' say on a setup the risk gate would take: the size factor to trade
+        it at, or None to let it go. Without analysts every such setup trades at full size.
+
+        A market discussed within `reanalyze_hours` is not paid for again; the analysts
+        take at most `max_candidates` markets a cycle, and no more than the budget allows
+        per hour and per day."""
+        if not self.llm:
+            return 1.0
+        cfg, symbol, now = self.cfg, candidate.symbol, self.clock()
+        if now - self.store.reviewed_at(symbol) < cfg.reanalyze_hours * 3600:
+            self.say("DESK", "già discusso di recente, non lo rianalizzo", symbol, "skipped")
+            return None
+        if self.debates >= cfg.max_candidates:
+            self.say("DESK", "limite di analisi per ciclo raggiunto", symbol, "skipped")
+            return None
+        limits = (cfg.analyst_max_per_hour, cfg.analyst_max_per_day, cfg.market, symbol)
+        if busy := self.budget.claim(now, *limits):
+            self.say("DESK", f"non lo faccio analizzare: {busy}", symbol, "skipped")
+            return None
+        self.debates += 1
+        self.store.mark_reviewed(symbol, now)
+        return self._debate(candidate, plan, now)
+
+    def _repriced(self, plan: ChartPlan) -> ChartPlan | None:
+        """The plan moved to the price now. The analysts take minutes over a setup, and a
+        paper fill at the candle's close would not be what a real order gets after them.
+        Entry, stop and target shift together, so the risk per unit stays the same. None,
+        with the reason in the journal, when the price cannot be read or has moved more
+        than 1R meanwhile: the setup the analysts approved is no longer there."""
+        try:
+            price = self.market.price(plan.symbol)
+        except MarketError as e:
+            self.say(
+                "EXECUTOR",
+                f"prezzo non leggibile dopo l'analisi, entrata saltata: {e}",
+                plan.symbol,
+                "error",
+            )
+            return None
+        shift = price - plan.entry
+        if abs(shift) > plan.risk_per_unit:
+            self.say(
+                "RISK",
+                f"scartato: durante l'analisi il prezzo è passato da {plan.entry:g} a "
+                f"{price:g}, più di 1R",
+                plan.symbol,
+                "risk_rejected",
+            )
+            return None
+        return replace(plan, entry=price, stop=plan.stop + shift, target=plan.target + shift)
+
+    def _brief(self, candidate: Candidate, plan: ChartPlan, now: float) -> str:
+        """The facts every analyst starts from."""
+        return analysts.market_brief(candidate, plan, self.cfg, now)
+
     def _debate(self, candidate: Candidate, plan: ChartPlan, now: float) -> float | None:
-        """Run the analysts on one setup. Returns the size factor for a BUY, else None."""
-        symbol = candidate.symbol
-        brief = analysts.market_brief(candidate, plan, self.cfg, now)
+        """Run the analysts on one setup. Returns the size factor when the Chief opens the
+        trade (BUY for a long, SHORT for a short) and the desk's rule lets that stand,
+        else None."""
+        symbol, side = candidate.symbol, plan.side
+        brief = self._brief(candidate, plan, now)
 
         news = self._ask(
             "NEWS",
             "cerca cosa ha mosso il prezzo",
             symbol,
-            lambda: analysts.news(self.llm, brief, self.cfg),
+            lambda: analysts.news(self.llm, brief, self.cfg, side),
         )
         if news:
-            self.say("NEWS", f"{news.impact}: {news.summary}", symbol, "news", **news.model_dump())
+            self.say(
+                "NEWS",
+                f"{news.impact}: {news.summary}",
+                symbol,
+                "news",
+                side=side,
+                **news.model_dump(),
+            )
         mood = self._ask(
             "SENTIMENT",
             "legge cosa dice la gente",
             symbol,
-            lambda: analysts.sentiment(self.llm, brief, self.cfg),
+            lambda: analysts.sentiment(self.llm, brief, self.cfg, side),
         )
         if mood:
+            crowd = "rischio hype" if side == "long" else "rischio rimbalzo"
             self.say(
                 "SENTIMENT",
-                f"{mood.mood}, rischio hype {mood.hype_risk}: {mood.summary}",
+                f"{mood.mood}, {crowd} {mood.hype_risk}: {mood.summary}",
                 symbol,
                 "sentiment",
+                side=side,
                 **mood.model_dump(),
             )
         reports = f"News report:\n{_dump(news)}\n\nSentiment report:\n{_dump(mood)}"
 
+        to_open, opens = OPENING[side]
         objections = self._ask(
             "SKEPTIC",
-            "cerca tre motivi per non comprare",
+            f"cerca tre motivi per non {to_open}",
             symbol,
-            lambda: analysts.skeptic(self.llm, brief, reports, self.cfg),
+            lambda: analysts.skeptic(self.llm, brief, reports, self.cfg, side),
         )
         if not objections:
             self.say(
                 "CHIEF",
-                "WAIT: senza il parere dello Skeptic non si compra",
+                f"WAIT: senza il parere dello Skeptic non {opens}",
                 symbol,
                 "verdict",
                 decision="WAIT",
+                side=side,
             )
             return None
         for number, objection in enumerate(objections.objections, start=1):
@@ -566,7 +628,7 @@ class Desk:
             "CHIEF",
             "risponde alle obiezioni e decide",
             symbol,
-            lambda: analysts.chief(self.llm, brief, reports, objections, self.cfg),
+            lambda: analysts.chief(self.llm, brief, reports, objections, self.cfg, side),
         )
         if not verdict:
             return None
@@ -576,27 +638,23 @@ class Desk:
             f"{verdict.conviction}): {verdict.summary}",
             symbol,
             "verdict",
+            side=side,
             **verdict.model_dump(),
         )
-        if verdict.decision != "BUY":
+        go = analysts.GO[side]
+        if verdict.decision != go:
             return None
         if reason := analysts.enforce(verdict, objections, self.cfg):
-            self.say("DESK", f"BUY annullato: {reason}", symbol, "buy_cancelled")
+            self.say(
+                "DESK",
+                f"{go} annullato: {reason}",
+                symbol,
+                "buy_cancelled",
+                decision=go,
+                side=side,
+            )
             return None
         return analysts.SIZE_FACTOR[verdict.conviction]
-
-    def _analysts_busy(self, now: float) -> str:
-        """Why the analysts take no more markets now (the hourly or daily cap), or ''."""
-        times = [t for t in self.store.get_json("debate_times").get("times", []) if now - t < 86400]
-        if sum(now - t < 3600 for t in times) >= self.cfg.analyst_max_per_hour:
-            return f"già {self.cfg.analyst_max_per_hour} analisi nell'ultima ora (il limite)"
-        if len(times) >= self.cfg.analyst_max_per_day:
-            return f"già {self.cfg.analyst_max_per_day} analisi nelle ultime 24 ore (il limite)"
-        return ""
-
-    def _count_debate(self, now: float) -> None:
-        times = [t for t in self.store.get_json("debate_times").get("times", []) if now - t < 86400]
-        self.store.set_json("debate_times", {"times": [*times, now]})
 
     def _ask(self, agent: str, task: str, symbol: str, call: Callable[[], BaseModel]):
         try:

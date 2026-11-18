@@ -408,7 +408,9 @@ function bodyFor(e){
         h("span", {}, "target ", h("b", {text:price(d.target)}))));
       break;
     case "news":
-      out.push(h("div", {class:"msg-t"}, chip(WORDS.impact[d.impact] || d.impact, d.impact === "bullish" ? "good" : d.impact === "bearish" ? "crit" : ""), " ", d.summary));
+      // green when the news helps the trade: rising prices for a long, falling ones for a short
+      const helps = d.side === "short" ? "bearish" : "bullish", hurts = d.side === "short" ? "bullish" : "bearish";
+      out.push(h("div", {class:"msg-t"}, chip(WORDS.impact[d.impact] || d.impact, d.impact === helps ? "good" : d.impact === hurts ? "crit" : ""), " ", d.summary));
       if (d.catalyst_found) out.push(extra("Causa: " + d.catalyst));
       for (const flag of d.red_flags || []) out.push(extra(chip("! rischio", "warn"), " " + flag));
       for (const line of d.headlines || []) out.push(extra(`“${line.title}” · ${line.source}, ${line.date}`));
@@ -416,7 +418,7 @@ function bodyFor(e){
       break;
     case "sentiment":
       out.push(h("div", {class:"msg-t"}, chip("umore " + (WORDS.mood[d.mood] || d.mood)), " ",
-        chip("hype " + (WORDS.level[d.hype_risk] || d.hype_risk), d.hype_risk === "high" ? "warn" : ""), " ", d.summary));
+        chip((d.side === "short" ? "rimbalzo " : "hype ") + (WORDS.level[d.hype_risk] || d.hype_risk), d.hype_risk === "high" ? "warn" : ""), " ", d.summary));
       out.push(extra(`Fiducia ${Math.round(d.confidence * 100)}%`));
       break;
     case "objection":
@@ -424,7 +426,7 @@ function bodyFor(e){
       if (d.evidence) out.push(extra("Prova: " + d.evidence));
       break;
     case "verdict": {
-      const tone = d.decision === "BUY" ? "good" : "idle";
+      const tone = d.decision === "BUY" || d.decision === "SHORT" ? "good" : "idle";
       const head = [chip(d.decision, tone, true)];
       if (d.confidence != null) head.push(` fiducia ${Math.round(d.confidence * 100)}% · convinzione ${WORDS.conviction[d.conviction] || d.conviction}`);
       out.push(h("div", {class:"msg-t"}, ...head));
@@ -475,8 +477,8 @@ function appendEvents(events, fresh){
       else if (d.kind === "risk_rejected") setOutcome(t, "· respinto dal Risk");
       else if (d.kind === "skipped") setOutcome(t, "· saltato");
       else if (d.kind === "plan") setOutcome(t, "in discussione");
-      else if (d.kind === "verdict") setOutcome(t, d.decision === "BUY" ? "BUY richiesto" : "· " + d.decision);
-      else if (d.kind === "buy_cancelled") setOutcome(t, "! BUY annullato", "warn");
+      else if (d.kind === "verdict") setOutcome(t, d.decision === "BUY" || d.decision === "SHORT" ? d.decision + " richiesto" : "· " + d.decision);
+      else if (d.kind === "buy_cancelled") setOutcome(t, `! ${d.decision || "BUY"} annullato`, "warn");
       else if (d.kind === "buy") setOutcome(t, "✓ comprato", "good");
       else if (d.kind === "open") setOutcome(t, `✓ aperto ${d.side}`, "good");
       else if (d.kind === "sell" || d.kind === "close") setOutcome(t, d.pnl >= 0 ? "▲ chiuso in utile" : "▼ chiuso in perdita", d.pnl >= 0 ? "good" : "crit");
@@ -555,6 +557,10 @@ function renderState(st){
     $("llmLbl").textContent = "Margine impegnato";
     $("llm").textContent = money(st.margin);
     $("llmNote").textContent = `funding ${st.funding > 0 ? "pagato" : "incassato"} in tutto ${money(Math.abs(st.funding))} ${st.quote}`;
+  } else if ((st.analysts || "").startsWith("Claude Code")){
+    $("llmLbl").textContent = "Analisti";
+    $("llm").textContent = "abbonamento";
+    $("llmNote").textContent = `Claude Code · nessun costo extra · ${Math.round(st.llm.searches)} ricerche web`;
   } else {
     $("llm").textContent = "$" + money(st.llm.cost);
     $("llmNote").textContent = st.demo ? "nella demo gli analisti non costano" : `stima · ${Math.round(st.llm.searches)} ricerche web`;

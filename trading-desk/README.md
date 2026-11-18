@@ -114,13 +114,15 @@ Per accendere gli analisti ci sono due strade:
 
   L'abbonamento è lo stesso che usi tu, quindi gli analisti discutono al massimo
   `DESK_ANALYST_MAX_PER_HOUR` mercati all'ora (3) e `DESK_ANALYST_MAX_PER_DAY` al giorno
-  (20). Ogni mercato discusso costa quattro domande. Il modello è
-  `DESK_CLAUDE_CODE_MODEL` (sonnet). Se Claude Code manca o risponde con un errore, per
-  esempio un limite d'uso raggiunto, quel mercato non si compra.
+  (20), **contando insieme i due desk**: il conto sta in `data/analysts-budget.db`.
+  Ogni mercato discusso costa quattro domande. Il modello è `DESK_CLAUDE_CODE_MODEL`
+  (sonnet). Se Claude Code manca o risponde con un errore, per esempio un limite d'uso
+  raggiunto, su quel mercato non si apre niente.
 - **Con una chiave API**: metti `ANTHROPIC_API_KEY` in `.env`.
 
-Poi lancia `uv run desk run`. Gli analisti lavorano sul desk spot; il desk dei perpetui
-decide con le sole regole.
+Poi lancia `uv run desk run`. Gli analisti lavorano su tutti e due i desk; su quello dei
+perpetui discutono anche gli short, con istruzioni scritte per il ribasso (vedi
+[Il desk dei perpetui](#il-desk-dei-perpetui-solo-soldi-finti)).
 
 Accanto al desk spot può girare un secondo desk, solo con soldi finti, che opera al
 rialzo e al ribasso sui contratti perpetui: vedi [Il desk dei perpetui](#il-desk-dei-perpetui-solo-soldi-finti).
@@ -422,7 +424,8 @@ trading**: prezzi veri, soldi finti. Non usa chiavi API e si rifiuta di partire 
 `DESK_MODE=live` o `--live`.
 
 **Come si avvia.** Doppio clic su `start-perps.bat` (Windows) oppure `./start-perps.sh`
-(Mac, Linux). Si apre una seconda finestra, "ARGO DESK PERPETUI", con la sua dashboard
+(Mac, Linux): usa gli analisti se sono disponibili, altrimenti le sole regole. Si apre
+una seconda finestra, "ARGO DESK PERPETUI", con la sua dashboard
 su `http://127.0.0.1:8788`; se la porta è occupata ne prende un'altra e la scrive. Il
 desk spot continua a girare come prima. I due desk hanno ciascuno il suo database
 (`data/desk-paper-perps.db` per i perpetui), il suo capitale finto e il suo diario.
@@ -446,8 +449,23 @@ Ogni comando accetta `--market perps`, per esempio `uv run desk status --market 
   su quella moneta (open interest, contato in monete e non in dollari). Se Bybit non
   dà il dato, entra senza filtro e lo scrive. `DESK_PERPS_OI_FILTER=false` lo spegne.
 - **Niente memecoin**, mai: solo le monete della lista della leva (`DESK_LEVERAGE_BASES`).
-- **Solo regole.** Gli analisti Claude non partecipano: le loro istruzioni sono scritte
-  per gli acquisti spot.
+- **Gli analisti, anche al ribasso.** Se sono accesi (vedi sopra), ogni setup che passa
+  le regole viene discusso prima di aprire, nello stesso ordine dello spot: News,
+  Sentiment, Skeptic e Chief.
+  - Le istruzioni seguono la direzione del trade. Su uno short le notizie negative sono
+    a favore, e il pericolo è un rimbalzo violento (short squeeze), che diventa
+    probabile quando ormai tutti vendono.
+  - Il brief ha in più il trend di BTC, il funding del contratto e la variazione delle
+    posizioni aperte nelle ultime 24 ore.
+  - Il Chief risponde SHORT, WAIT o SKIP su uno short (BUY, WAIT o SKIP su un long). La
+    regola del desk resta: un'obiezione seria senza risposta, o una fiducia sotto la
+    soglia, annulla l'apertura. Con convinzione bassa la posizione è a metà.
+  - Dopo la discussione il desk entra al prezzo di quel momento, non a quello di
+    chiusura della candela. Se nel frattempo il prezzo si è mosso di oltre 1R, lascia
+    perdere.
+  - La ricerca dei 3 anni ha provato solo le regole. Gli analisti possono togliere
+    operazioni, non aggiungerne: il paper trading dirà se ne tolgono più di cattive che
+    di buone.
 - **Commissione** dei perpetui: 0,055% sul valore intero della posizione, quella di Bybit.
 - Gli altri limiti sono quelli dello spot: 5 posizioni, perdita giornaliera del 3%,
   12 ore di pausa dopo una perdita, stop del desk al 15% di calo dal picco.
@@ -496,6 +514,10 @@ vedono solo i mercati che hanno già superato Scout, Charts e Risk, al massimo
 `DESK_MAX_CANDIDATES` per ciclo, e non ridiscutono lo stesso mercato per
 `DESK_REANALYZE_HOURS` ore. `desk status` mostra la spesa stimata accanto al risultato.
 Puoi cambiare modello con `DESK_MODEL`.
+
+Con `DESK_ANALYSTS=claude-code` non c'è spesa in più: le domande consumano l'abbonamento
+Claude, entro i limiti all'ora e al giorno. `desk status` mostra quanto sarebbero costate
+a prezzi API.
 
 ## Passare ai soldi veri
 

@@ -1,14 +1,17 @@
 """The perpetuals desk: long and short on USDT perpetual futures, paper only.
 
-The spot desk's loop (Scout, Charts, Risk, Executor and the journal) on the rules of
-desk/perps.py. It decides by rules alone, as the research did: the analysts' prompts are
-written for spot longs. Its book is margin-based: cash pays only fees and funding until a
-position closes, and the equity counts every position's open profit or loss.
+The spot desk's loop (Scout, Charts, Risk, the analysts, Executor and the journal) on the
+rules of desk/perps.py. The research replayed the rules alone; with the analysts on, a
+setup the rules allow is also discussed by them first, with prompts written for its
+direction and the contract's funding and open interest in the brief. Its book is
+margin-based: cash pays only fees and funding until a position closes, and the equity
+counts every position's open profit or loss.
 """
 
 from __future__ import annotations
 
 from desk import leverage, perps, risk
+from desk.agents import analysts
 from desk.broker import BrokerError, PerpsBroker
 from desk.desk import Desk, mark_prices, roll_book
 from desk.market import MarketError, PerpsData
@@ -131,15 +134,19 @@ class PerpsDesk(Desk):
         self._liquidate(pos, f" mentre il desk non controllava ({extreme} {worst:g})")
         return True
 
-    def _fund(self, pos: PerpPosition, price: float, now: float) -> None:
-        """Settle the funding due since the last settlement, on the notional, at the
-        contract's own interval (usually 8 hours; on Bybit some settle every 4 or 1)."""
+    def _funding_period(self, symbol: str) -> float:
+        """The contract's funding interval in seconds: usually 8 hours, on Bybit some
+        contracts settle every 4 hours or every hour."""
         try:
             interval = getattr(self.market, "funding_interval", None)
-            period = interval(pos.symbol) if interval else perps.FUNDING_PERIOD
+            return interval(symbol) if interval else perps.FUNDING_PERIOD
         except MarketError:
-            period = perps.FUNDING_PERIOD
-        due = perps.funding_times(pos.funded_until, now, period)
+            return perps.FUNDING_PERIOD
+
+    def _fund(self, pos: PerpPosition, price: float, now: float) -> None:
+        """Settle the funding due since the last settlement, on the notional, at the
+        contract's own interval."""
+        due = perps.funding_times(pos.funded_until, now, self._funding_period(pos.symbol))
         if not due:
             return
         try:
@@ -292,8 +299,8 @@ class PerpsDesk(Desk):
     def _consider(
         self, candidate: Candidate, candles: list[Candle], side: int, book: risk.Book
     ) -> bool:
-        """Take one flagged market through Charts, Risk and the open interest. Returns True
-        when a position was opened."""
+        """Take one flagged market through Charts, Risk, the open interest and the analysts.
+        Returns True when a position was opened."""
         symbol = candidate.symbol
         if SIGN[candidate.side] != side:
             trend, allowed = ("in salita", "long") if side > 0 else ("in discesa", "short")
@@ -316,6 +323,16 @@ class PerpsDesk(Desk):
         if veto := self._open_interest_veto(symbol):
             self.say("RISK", f"scartato: {veto}", symbol, "risk_rejected")
             return False
+        size_factor = self._verdict(candidate, plan)
+        if size_factor is None:
+            return False
+        if self.llm:  # sized again: at the price after the debate, at the Chief's conviction
+            if (plan := self._repriced(plan)) is None:
+                return False
+            decision = perps.evaluate(plan, book, self.cfg, self.clock(), size_factor)
+            if not decision.approved:
+                self.say("RISK", f"respinto: {decision.reasons[0]}", symbol, "risk_rejected")
+                return False
         note = f" ({'; '.join(decision.reasons)})" if decision.reasons else ""
         self.say(
             "RISK",
@@ -328,6 +345,30 @@ class PerpsDesk(Desk):
             share=decision.notional / book.equity,
         )
         return self._enter(plan, decision, book)
+
+    def _brief(self, candidate: Candidate, plan: ChartPlan, now: float) -> str:
+        """The facts every analyst starts from, with what only a perpetual contract has:
+        BTC's trend, the funding rate and the open interest."""
+        symbol = candidate.symbol
+        trend = "an uptrend" if plan.side == "long" else "a downtrend"
+        extra = [f"BTC: in {trend}, so the desk opens only {plan.side}s for now"]
+        try:
+            rate = self.market.funding_rate(symbol)
+        except MarketError:
+            extra.append("Funding rate: not available")
+        else:
+            payer = "longs pay shorts" if rate > 0 else "shorts pay longs" if rate < 0 else "zero"
+            hours = self._funding_period(symbol) / 3600
+            extra.append(f"Funding rate: {rate:+.4%} every {hours:g}h ({payer})")
+        try:
+            growth = self.market.open_interest_growth(symbol)
+        except MarketError:
+            growth = None
+        extra.append(
+            "Open interest over the last 24h: "
+            + ("not available" if growth is None else f"{growth:+.1%}")
+        )
+        return analysts.market_brief(candidate, plan, self.cfg, now, extra)
 
     def _tell_plan(self, plan: ChartPlan) -> None:
         sign = "-" if plan.side == "long" else "+"
