@@ -147,14 +147,16 @@ chiave o la frase di recupero del wallet principale.
 
 - Ogni operazione rischia l'1% del capitale: la size deriva dalla distanza dello stop.
 - Massimo 10% del capitale per posizione, 50% investito in totale, 5 posizioni.
-- Lo stop sta a 2 ATR dall'entrata. A +1R sale a pareggio; raggiunto il target (2R)
+- Lo stop sta a 2 ATR dall'entrata. A +1R sale a pareggio; raggiunto il target (3R)
   segue il prezzo a distanza di 1R, così i vincenti possono correre.
 - Persa il 3% in un giorno: niente nuove entrate fino al giorno dopo.
 - Sceso del 15% dal picco: il desk si ferma finché non lanci `desk resume`.
 - Dopo un'uscita in perdita, quel mercato resta escluso per 12 ore.
 - Niente operazioni in cui commissioni e slippage superano un terzo del rischio: con
   uno stop stretto su un exchange caro si perde anche avendo ragione.
-- Niente nuovi acquisti mentre BTC è in trend ribassista.
+- Nuovi acquisti solo con BTC in trend rialzista.
+- Se il prezzo di una posizione aperta non arriva dall'exchange, niente nuove entrate:
+  la perdita del giorno e il calo dal picco non si possono verificare.
 
 ## Cosa dice il backtest
 

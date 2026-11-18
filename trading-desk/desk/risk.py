@@ -49,6 +49,9 @@ def blocked(book: Book, cfg: Settings) -> str:
     """Why the desk may not open anything right now, or '' if it may."""
     if book.halted:
         return f"desk fermo: {book.halted}"
+    if not book.fresh:
+        # The day's loss and the drawdown would be measured on old prices.
+        return "prezzo di una posizione aperta non disponibile: limiti di perdita non verificabili"
     if book.peak_equity > 0:
         drawdown = (1 - book.equity / book.peak_equity) * 100
         if drawdown >= cfg.max_drawdown_pct:

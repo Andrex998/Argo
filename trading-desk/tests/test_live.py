@@ -88,6 +88,28 @@ def test_a_refusal_and_a_dead_line_are_reported_in_words(tmp_path):
     assert dead.publish(1.0).startswith("database non raggiungibile")
 
 
+def test_the_token_never_travels_in_clear_over_the_network(tmp_path):
+    with pytest.raises(ValueError, match="https"):
+        live.Publisher(settings("http://x.supabase.co"), tmp_path / "none.db")
+    live.Publisher(settings("https://x.supabase.co"), tmp_path / "none.db")
+    live.Publisher(settings("http://127.0.0.1:8000"), tmp_path / "none.db")  # this PC only
+
+
+def test_after_a_failure_the_desk_does_not_wait_on_the_database_every_minute(tmp_path):
+    refusing = Database(status=503)
+    try:
+        publisher = live.Publisher(settings(refusing.url), tmp_path / "none.db")
+        first = publisher.publish(1000.0)
+        publisher.failing = first
+        assert publisher.publish(1000.0 + 60) == first  # in the pause: nothing sent
+        assert len(refusing.requests) == 1
+        refusing.status = 200
+        assert publisher.publish(1000.0 + live.RETRY_AFTER) == ""  # tried again, and it worked
+        assert len(refusing.requests) == 2
+    finally:
+        refusing.close()
+
+
 def test_the_journal_hears_of_trouble_once_and_of_the_recovery(cfg, tmp_path):
     desk, _, _ = make_desk(cfg, {SYMBOL: quiet()})
     answers = iter(["database non raggiungibile (x)", "database non raggiungibile (y)", ""])

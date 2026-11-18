@@ -240,9 +240,13 @@ def cmd_run(cfg: Settings, args: argparse.Namespace) -> None:
             "Chiudere il portatile o scegliere Sospendi lo ferma comunque.",
             flush=True,
         )
-    publisher = live.Publisher(cfg, cfg.db_path) if live.Publisher.configured(cfg) else None
-    if publisher:
-        print("Pagina live: il desk invia i suoi dati ogni minuto.", flush=True)
+    publisher = None
+    if live.Publisher.configured(cfg):
+        try:
+            publisher = live.Publisher(cfg, cfg.db_path)
+            print("Pagina live: il desk invia i suoi dati ogni minuto.", flush=True)
+        except ValueError as e:
+            print(f"Pagina live spenta: {e}", flush=True)
     schedule = Schedule(period=desk.market.candle_ms / 1000)
     mode = "solo regole" if desk.llm is None else f"analisti {cfg.model}"
     desk.say(

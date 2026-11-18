@@ -123,6 +123,25 @@ def test_an_outage_keeps_the_last_price_and_moves_no_anchor(cfg):
     assert value_book(desk.store, desk.market, clock()).fresh
 
 
+def test_no_new_entries_while_a_held_market_has_no_price(cfg):
+    other = "ETH/USDC"
+    desk, market, clock = make_desk(cfg, {SYMBOL: breakout(), other: quiet()})
+    desk.cycle()
+    assert [p.symbol for p in desk.store.positions()] == [SYMBOL]
+
+    class NoPrice(type(market)):
+        def price(self, symbol):
+            if symbol == SYMBOL:
+                raise MarketError(f"{symbol}: mercato sospeso")
+            return super().price(symbol)
+
+    desk.market = NoPrice({SYMBOL: breakout(), other: breakout()})
+    clock.advance(4)
+    desk.cycle()
+    assert [p.symbol for p in desk.store.positions()] == [SYMBOL]  # nothing new
+    assert "limiti di perdita non verificabili" in journal(desk)
+
+
 # --- the loop -------------------------------------------------------------------------
 
 
@@ -174,9 +193,10 @@ def test_the_loop_retries_after_an_unexpected_error(cfg):
 
 
 def test_no_key_means_rules_only_when_the_launcher_asks(tmp_path, monkeypatch, capsys):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
-    monkeypatch.setenv("HOME", str(tmp_path))  # no stored Claude credentials either
+    for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_PROFILE"):
+        monkeypatch.delenv(name, raising=False)
+    for home in ("HOME", "USERPROFILE", "APPDATA", "XDG_CONFIG_HOME"):
+        monkeypatch.setenv(home, str(tmp_path))  # no stored Claude credentials either
     cfg = Settings(_env_file=None, data_dir=tmp_path / "data")
     args = argparse.Namespace(rules_only=False, rules_if_no_key=True)
     desk = cli.trading_desk(cfg, args)
