@@ -209,6 +209,49 @@ uv run python research/full.py
 
 Il primo scarica i dati, il secondo prova ogni anno a parte, il terzo i tre anni di fila.
 
+### Rialzo e ribasso sui contratti perpetui (ricerca)
+
+È solo una ricerca: il desk oggi compra spot e solo al rialzo. Il test usa tre anni di
+contratti perpetui di Binance (novembre 2023 – ottobre 2026), con i finanziamenti veri
+e la commissione dei perpetui (0,05%). Le monete sono le 36 del 2023 senza le memecoin,
+che restano senza leva.
+
+Le regole al ribasso sono quelle al rialzo rovesciate, senza ritocchi:
+- un picco di volume mentre il prezzo scende;
+- trend al ribasso;
+- chiusura sotto il minimo delle 20 candele precedenti;
+- stop sopra l'entrata, target 3R sotto.
+
+Si apre al rialzo solo con BTC in salita, e al ribasso solo con BTC in discesa.
+
+| Modo | Anno 1 | Anno 2 | Anno 3 | 3 anni | Calo massimo |
+|---|---|---|---|---|---|
+| solo rialzo | +3,5% | +7,8% | +13,1% | +26,2% | 7,5% |
+| solo ribasso | +4,4% | −4,5% | +20,4% | +19,9% | 7,9% |
+| rialzo e ribasso | +8,0% | +2,9% | +36,2% | +51,3% | 8,8% |
+| rialzo e ribasso, misura piena | +10,1% | +9,1% | +63,2% | +95,9% | 14,9% |
+| BTC comprato e tenuto | +103% | +56% | −29% | +124% | – |
+
+- **Il ribasso aggiunge davvero.** Nei 3 anni le operazioni al ribasso hanno reso +224 $
+  su 99 operazioni, quasi tutto nell'anno in cui BTC perdeva il 29%. Nell'anno 2 hanno
+  perso il 4,5%.
+- **La leva non aumenta il rischio per operazione**, che resta l'1% del capitale allo
+  stop. Serve solo a tenere bloccato meno capitale, così la posizione può avere la
+  dimensione piena invece di fermarsi al 10% del capitale. Con la "misura piena" le
+  posizioni insieme arrivano a 1,5 volte il capitale, con al massimo x3 su una sola: il
+  risultato quasi raddoppia e il calo massimo sale dall'8,8% al 14,9%. Nessuna
+  liquidazione in 3 anni: lo stop arriva sempre molto prima.
+- **Il "sentimento" misurato con i finanziamenti non aiuta.** Saltare i rialzi quando
+  tutti sono già al rialzo, e viceversa, dà +49,8% invece di +51,3%.
+- **Limiti:**
+  - le regole al ribasso sono nuove e provate su un solo periodo, senza un anno tenuto da
+    parte per la verifica;
+  - l'anno 3, al ribasso, pesa molto sul totale;
+  - per i soldi veri va verificato quale exchange offre i perpetui a un cliente
+    privato in Italia.
+
+Rifallo tu: `uv run python research/perps.py download`, poi `uv run python research/perps.py run`.
+
 ### Quattro storici brevi (Kraken e BingX)
 
 Prima del test lungo, il 18/11/2026 il desk è stato rigiocato su quattro storici brevi,
