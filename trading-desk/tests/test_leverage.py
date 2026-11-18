@@ -41,7 +41,9 @@ def test_a_winner_earns_leverage_times_the_move_less_fees_and_funding(cfg):
     b.accrue("SOL/USD", ENTRY, now=24 * 3600, cfg=cfg)  # three funding periods
     result = b.close("SOL/USD", 103.0, now=24 * 3600, cfg=cfg)
     notional = 1000.0
-    expected = notional * 0.03 - notional * 0.0005 - notional * 1.03 * 0.0005 - notional * 3 * 0.0001
+    expected = (
+        notional * 0.03 - notional * 0.0005 - notional * 1.03 * 0.0005 - notional * 3 * 0.0001
+    )
     assert result.pnl == pytest.approx(expected)
     assert result.funding == pytest.approx(0.3)
     assert b.cash == pytest.approx(1000 + expected)
