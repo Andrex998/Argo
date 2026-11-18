@@ -203,11 +203,42 @@ isolato, con la commissione sul valore intero della posizione (0,05%), il finanz
 pagato ogni 8 ore (0,01%) e la liquidazione quando il prezzo scende sotto
 entrata × (1 − 1/leva + 1%). Una posizione liquidata perde tutto il suo margine. È solo
 una simulazione: il desk non apre mai posizioni con leva e la leva non cambia le sue
-decisioni. Le memecoin restano senza leva.
+decisioni.
 
-Sullo storico la leva moltiplica soprattutto i giorni cattivi: con le regole vecchie,
-nel mese di Kraken a 1 ora x20 perdeva l'83% e nei 120 giorni a 4 ore 32 posizioni su 91
-finivano liquidate. Il dettaglio per livello lo stampa `desk backtest`.
+**Le memecoin restano senza leva.** La leva si simula solo sulle monete grandi con un
+mercato dei perpetui profondo: BTC, ETH, SOL, XRP, BNB, ADA, AVAX, LINK, LTC, BCH, DOT,
+TRX, TON, XLM, XMR, ZEC, ETC, ATOM, NEAR, SUI, APT, ARB, OP, AAVE, UNI, HBAR, ICP, INJ,
+TAO, ENA, CRV, FIL, HYPE, QNT (`DESK_LEVERAGE_BASES`). Un'operazione su qualsiasi altra
+moneta, memecoin o moneta appena nata, resta solo spot, e il diario lo dice.
+
+Se il PC resta spento o senza rete, al riavvio il desk legge il prezzo più basso del
+periodo: se è sceso sotto il livello di liquidazione, quella leva risulta liquidata, come
+avrebbe fatto l'exchange anche senza il desk a guardare.
+
+Sui 120 giorni di Kraken a 4 ore, con le regole di oggi (51 operazioni, 39 sulle monete
+ammesse alla leva):
+
+| Leva | Rendimento | Calo massimo | Liquidate |
+|---|---|---|---|
+| spot, il desk | +8,5% | 4,4% | – |
+| x1 | +7,9% | 3,2% | 0 su 39 |
+| x3 | +24,0% | 9,3% | 0 su 39 |
+| x5 | +40,5% | 15,0% | 0 su 39 |
+| x10 | +81,3% | 27,8% | 0 su 39 |
+| x15 | +118,9% | 37,7% | 3 su 39 |
+| x20 | +56,7% | 65,9% | 15 su 39 |
+
+Da leggere con prudenza:
+
+- le regole di oggi sono state scelte proprio su questi storici, e la leva moltiplica
+  anche la fortuna di quella scelta;
+- sugli stessi 120 giorni con le regole vecchie x20 perde il 57,8% (21 posizioni
+  liquidate su 64); nel mese di Kraken a 1 ora, con BTC a −21%, anche con le regole
+  di oggi x10 perde il 19,1% e x20 il 36,5%;
+- oltre x10 le liquidazioni si mangiano il guadagno: x20 rende meno di x15, con un calo
+  massimo quasi doppio.
+
+Il dettaglio per livello lo stampa `desk backtest`.
 
 ## Radar: il filtro per le memecoin
 

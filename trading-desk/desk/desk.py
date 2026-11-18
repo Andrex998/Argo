@@ -27,6 +27,8 @@ from desk.store import Store, Trade
 Echo = Callable[[float, str, str, str], None]
 
 EQUITY_INTERVAL = 300.0  # seconds between equity points while nothing changes
+GAP_SECONDS = 300.0  # a shadow left unchecked longer than this has the gap's prices read
+ORPHAN_SLACK = 60.0  # a shadow opened this long before its spot position belongs to an older one
 
 
 class Desk:
@@ -52,6 +54,7 @@ class Desk:
         init_book(store, cfg)
         # Simulated leverage: shadows of the desk's own trades, never real orders.
         self.shadows = store.leverage_books(cfg.leverage_levels, cfg.capital)
+        self._settle_orphans()
 
     def say(self, agent: str, message: str, symbol: str = "", kind: str = "note", **facts) -> None:
         """Write one journal entry. `facts` are the numbers behind the sentence."""
@@ -164,7 +167,6 @@ class Desk:
         )
         if pnl < 0:
             self.store.set_cooldown(pos.symbol, now + self.cfg.cooldown_hours * 3600)
-        self._shadow_close(pos.symbol, fill.price)
         self.say(
             "EXECUTOR",
             f"venduto a {fill.price:g} ({reason}): {pnl:+.2f} {self.cfg.quote}, {r_multiple:+.1f}R",
@@ -175,19 +177,36 @@ class Desk:
             pnl=pnl,
             r=r_multiple,
         )
+        self._shadow_close(pos.symbol, fill.price)
 
     def close_all(self, reason: str = "chiusura manuale") -> None:
         for pos in self.store.positions():
             try:
-                self.close(pos, self.market.price(pos.symbol), reason)
+                price = self.market.price(pos.symbol)
             except MarketError as e:
                 self.say("EXECUTOR", f"chiusura non riuscita: {e}", pos.symbol, "error")
+                continue
+            # close-all runs while `desk run` is stopped: settle the shadows for that time first.
+            self._shadow_tick(pos, price)
+            self.close(pos, price, reason)
         self._pulse()
 
     # --- simulated leverage ----------------------------------------------------
 
     def _shadow_open(self, symbol: str, share: float, price: float, stop: float) -> None:
         """Open the same long on every shadow book, at its own leverage."""
+        if not self.shadows:
+            return
+        if not leverage.allowed(symbol, self.cfg):
+            self.say(
+                "LEVA",
+                f"nessuna leva simulata: {leverage.base(symbol)} non è tra le monete ammesse "
+                "(le memecoin restano senza leva)",
+                symbol,
+                "leverage",
+                levels=[],
+            )
+            return
         prices = self.store.get_json("prices")
         opened = []
         for shadow in self.shadows:
@@ -203,7 +222,8 @@ class Desk:
         note = (
             f"; si liquiderebbero prima dello stop ({stop:g}): {', '.join(risky)}"
             if risky
-            else "; lo stop del desk arriva prima di ogni liquidazione"
+            else f"; ogni liquidazione è sotto lo stop ({stop:g}), ma un crollo improvviso "
+            "o il PC spento possono liquidare lo stesso"
         )
         self.say(
             "LEVA",
@@ -215,26 +235,92 @@ class Desk:
         )
 
     def _shadow_tick(self, pos: Position, price: float) -> None:
-        """Charge funding and liquidate any shadow the price has reached."""
+        """Charge funding and liquidate any shadow the price has reached.
+
+        After a gap in the checks (PC asleep, desk stopped, no connection) the lowest price
+        traded during the gap counts as well: an exchange liquidates whether the desk is
+        watching or not, and the desk's stop could not have sold first.
+        """
         now = self.clock()
+        gap_lows: dict[float, float | None] = {}
         for shadow in self.shadows:
             leg = shadow.legs.get(pos.symbol)
             if not leg:
                 continue
+            if leg.liquidation > 0 and now - leg.funded_until > self._gap_seconds():
+                since = leg.funded_until
+                if since not in gap_lows:
+                    gap_lows[since] = self._lowest_since(pos.symbol, since)
+                low = gap_lows[since]
+                if low is not None and low <= leg.liquidation:
+                    self._liquidate(
+                        shadow, pos.symbol, f" mentre il desk non controllava (minimo {low:g})"
+                    )
+                    continue
             shadow.accrue(pos.symbol, price, now, self.cfg)
             if leverage.liquidated_first(leg, open_=price, low=price, stop=pos.stop):
-                result = shadow.liquidate(pos.symbol, now)
+                self._liquidate(shadow, pos.symbol)
+                continue
+            self.store.save_leverage(shadow)
+
+    def _gap_seconds(self) -> float:
+        """How long without a check counts as a gap worth reading the prices of."""
+        return max(GAP_SECONDS, 3 * self.cfg.monitor_seconds)
+
+    def _lowest_since(self, symbol: str, since: float) -> float | None:
+        try:
+            return self.market.lowest_since(symbol, since)
+        except MarketError:
+            return None  # the price now is still checked; the gap stays unread
+
+    def _liquidate(self, shadow: leverage.Book, symbol: str, when: str = "") -> None:
+        leg = shadow.legs[symbol]
+        result = shadow.liquidate(symbol, self.clock())
+        self.store.add_leverage_result(result)
+        self.store.save_leverage(shadow)
+        self.say(
+            "LEVA",
+            f"x{shadow.level:g} liquidata a {leg.liquidation:g}{when}: persi "
+            f"{result.margin:.2f} {self.cfg.quote} di margine (simulazione)",
+            symbol,
+            "liquidation",
+            level=shadow.level,
+            pnl=result.pnl,
+        )
+
+    def _settle_orphans(self) -> None:
+        """Close the shadow positions the desk no longer holds.
+
+        A leg outlives its spot position when its level was switched off while the desk
+        sold (and maybe bought again), or when the desk stopped between a sale and the
+        shadows' close. It is closed where the desk sold, or at its own entry when no sale
+        is on record, so it can neither block nor take over a later trade on that symbol.
+        """
+        held = {p.symbol: p for p in self.store.positions()}
+        sales = None
+        for shadow in self.shadows:
+            for symbol, leg in list(shadow.legs.items()):
+                pos = held.get(symbol)
+                if pos and leg.opened >= pos.entry_ts - ORPHAN_SLACK:
+                    continue  # the shadow of the position the desk holds now
+                if sales is None:
+                    sales = self.store.trades()  # oldest first
+                sale = next(
+                    (t for t in sales if t.symbol == symbol and t.exit_ts >= leg.opened), None
+                )
+                price, when = (sale.exit_price, sale.exit_ts) if sale else (leg.entry, self.clock())
+                result = shadow.close(symbol, price, when, self.cfg)
                 self.store.add_leverage_result(result)
+                self.store.save_leverage(shadow)
                 self.say(
                     "LEVA",
-                    f"x{shadow.level:g} liquidata a {leg.liquidation:g}: persi "
-                    f"{result.margin:.2f} {self.cfg.quote} di margine (simulazione)",
-                    pos.symbol,
-                    "liquidation",
+                    f"x{shadow.level:g} chiusa a {price:g}: il desk non ha più questa posizione "
+                    f"({result.pnl:+.2f} {self.cfg.quote}, simulazione)",
+                    symbol,
+                    "leverage",
                     level=shadow.level,
                     pnl=result.pnl,
                 )
-            self.store.save_leverage(shadow)
 
     def _shadow_close(self, symbol: str, price: float) -> None:
         """The desk sold: close the shadows still open, at the same price."""

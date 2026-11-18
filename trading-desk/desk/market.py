@@ -63,6 +63,10 @@ class Market(Protocol):
 
     def price(self, symbol: str) -> float: ...
 
+    def lowest_since(self, symbol: str, since: float) -> float | None:
+        """The lowest price traded since `since` (seconds), or None if it is not known."""
+        ...
+
 
 def make_exchange(cfg: Settings, *, authenticated: bool = False) -> ccxt.Exchange:
     if cfg.exchange not in ccxt.exchanges:
@@ -151,6 +155,23 @@ class CcxtMarket:
         if not last:
             raise MarketError(f"{symbol}: nessun prezzo disponibile")
         return float(last)
+
+    def lowest_since(self, symbol: str, since: float) -> float | None:
+        """The lowest price traded since `since`, the candle still forming included.
+
+        Read from the finest candles that still reach that far back: exchanges keep only
+        the latest few hundred of each size. A candle that began before `since` is left
+        out, since the desk was still watching then.
+        """
+        gap = self.ex.milliseconds() / 1000 - since
+        timeframe = "5m" if gap <= 2 * 86_400 else "1h" if gap <= 25 * 86_400 else "1d"
+        start = int(since * 1000)
+        try:
+            rows = self.ex.fetch_ohlcv(symbol, timeframe, since=start, limit=720)
+        except ccxt.BaseError as e:
+            raise market_error(e, symbol) from e
+        lows = [float(row[3]) for row in rows if row[0] >= start and row[3] is not None]
+        return min(lows) if lows else None
 
     def _fetch(self, symbol: str, **kwargs) -> list[list]:
         try:

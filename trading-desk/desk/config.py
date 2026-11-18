@@ -8,6 +8,15 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Coins the leverage simulation may shadow: large, established, with deep perpetual
+# markets. Memecoins (DOGE, PEPE, TRUMP, PENGU, ...) are left out on purpose, and so is
+# any coin not named here, since new memecoins keep entering the most traded pairs.
+LEVERAGE_BASES = (
+    "BTC", "ETH", "SOL", "XRP", "BNB", "ADA", "AVAX", "LINK", "LTC", "BCH", "DOT", "TRX",
+    "TON", "XLM", "XMR", "ZEC", "ETC", "ATOM", "NEAR", "SUI", "APT", "ARB", "OP", "AAVE",
+    "UNI", "HBAR", "ICP", "INJ", "TAO", "ENA", "CRV", "FIL", "HYPE", "QNT",
+)  # fmt: skip
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -70,6 +79,7 @@ class Settings(BaseSettings):
     # --- Simulated leverage: shadow books on perpetuals, never real orders ----
     # x1 is the same contract without leverage: it separates the fee saving from leverage itself.
     leverage_levels: list[float] = Field(default_factory=lambda: [1.0, 3.0, 5.0, 10.0, 15.0, 20.0])
+    leverage_bases: list[str] = Field(default_factory=lambda: list(LEVERAGE_BASES))
     futures_fee_rate: float = 0.0005  # taker fee on the whole notional (Kraken Futures, Bybit)
     funding_rate_8h: float = 0.0001  # a long pays 0.01% of the notional every 8 hours
     maintenance_margin: float = (

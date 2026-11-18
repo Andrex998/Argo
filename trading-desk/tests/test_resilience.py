@@ -36,6 +36,11 @@ class Offline(FakeMarket):
             raise MarketUnavailable(f"{symbol}: connessione assente")
         return super().price(symbol)
 
+    def lowest_since(self, symbol, since):
+        if self.down:
+            raise MarketUnavailable(f"{symbol}: connessione assente")
+        return super().lowest_since(symbol, since)
+
 
 def offline_desk(cfg, data):
     desk, _, clock = make_desk(cfg, data)

@@ -211,3 +211,170 @@ def test_funding_is_charged_while_the_position_is_open(cfg):
     desk.monitor()
     leg = x10.legs[symbol]
     assert leg.funding == pytest.approx(leg.qty * market.prices[symbol] * 0.0001, rel=1e-6)
+
+
+def test_a_quick_sale_and_rebuy_in_the_backtest_values_the_new_leg_at_its_entry(cfg, monkeypatch):
+    """A coin sold earlier keeps no old price: re-bought on the same candle as another coin,
+    its new leg is worth its margin when the second leg is sized, not the old price's worth."""
+    from desk.agents import charts, scout
+    from desk.models import Candidate, ChartPlan
+    from desk.synthetic import HOUR_MS, series
+
+    cfg.leverage_levels = [20.0]
+    cfg.leverage_bases = ["AAA", "BBB"]
+    cfg.max_hold_hours = 3.0  # AAA's first trade ends on time, at 100
+    n = 160
+    falling = [100.0] * 104 + [100.0 - 20.0 * (i + 1) / 26 for i in range(26)] + [80.0] * 30
+    histories = {
+        "AAA/USDC": series(falling, [1000.0] * n),
+        "BBB/USDC": series([50.0] * n, [1000.0] * n),
+    }
+    signals = {("AAA/USDC", 100): 5.0, ("AAA/USDC", 130): 5.0, ("BBB/USDC", 130): 3.0}
+
+    def evaluate(symbol, window, quote_volume, cfg):
+        rvol = signals.get((symbol, window[-1].ts // HOUR_MS))
+        close = window[-1].close
+        return Candidate(symbol, close, rvol, 0.03, 0.05, 1e7) if rvol else None
+
+    def plan(symbol, window, cfg):
+        close = window[-1].close
+        return ChartPlan(symbol, "up", close, close * 0.95, close * 1.1, 1.0, 50.0, *[close] * 4)
+
+    monkeypatch.setattr(scout, "evaluate", evaluate)
+    monkeypatch.setattr(charts, "plan", plan)
+    seen = []
+    original = Book.open
+
+    def spy(self, symbol, share, entry, now, cfg, prices):
+        at_entry = self.cash + sum(leg.value(leg.entry) for leg in self.legs.values())
+        seen.append((symbol, self.equity(prices), at_entry))
+        return original(self, symbol, share, entry, now, cfg, prices)
+
+    monkeypatch.setattr(Book, "open", spy)
+    backtest.run(histories, cfg)
+    assert [s for s, _, _ in seen] == ["AAA/USDC", "AAA/USDC", "BBB/USDC"]
+    _, used, at_entry = seen[-1]
+    assert used == pytest.approx(at_entry)  # not AAA's new leg valued at its old 100
+
+
+# --- which coins get leverage ---------------------------------------------------------------
+
+
+def test_memecoins_and_unknown_coins_get_no_leverage(cfg):
+    assert leverage.allowed("BTC/USD", cfg) and leverage.allowed("sol/usdc", cfg)
+    for symbol in ("DOGE/USD", "PEPE/USD", "TRUMP/USD", "PENGU/USD", "NUOVACOIN/USD"):
+        assert not leverage.allowed(symbol, cfg)
+
+
+def test_a_memecoin_buy_opens_no_shadow_and_says_so(cfg):
+    from tests.conftest import breakout
+    from tests.test_desk import make_desk
+
+    cfg.leverage_levels = [3.0, 20.0]
+    desk, _, _ = make_desk(cfg, {"PEPE/USDC": breakout()})
+    desk.cycle()
+    assert [p.symbol for p in desk.store.positions()] == ["PEPE/USDC"]  # spot still trades it
+    assert all(not b.legs for b in desk.shadows)
+    said = "\n".join(e.message for e in desk.store.events(50) if e.agent == "LEVA")
+    assert "nessuna leva simulata" in said and "memecoin" in said
+
+
+def test_backtest_leaves_coins_outside_the_list_on_spot_only(cfg):
+    cfg.leverage_levels = [3.0]
+    cfg.leverage_bases = ["BTC"]
+    result = backtest.run({"SOL/USDC": history([0.01] * 12 + [-0.03] * 3)}, cfg)
+    assert len(result.trades) == 1 and result.unleveraged == 1
+    (x3,) = result.leverage
+    assert x3.results == [] and x3.last_equity == pytest.approx(x3.start)
+
+
+# --- live: gaps, manual closes, leftovers, journal order ------------------------------------
+
+
+def test_a_dip_through_liquidation_while_the_pc_slept_liquidates_on_waking(cfg):
+    desk, market, clock, symbol = live_desk(cfg)
+    desk.cycle()
+    x3, x20 = desk.shadows
+    liquidation = x20.legs[symbol].liquidation
+    clock.advance(8)  # the PC slept
+    market.lows[symbol] = liquidation * 0.99  # the price dipped through x20's level...
+    desk.monitor()  # ...and is back where it was when the desk wakes up
+    assert symbol not in x20.legs and x20.liquidations == 1
+    assert symbol in x3.legs and x3.liquidations == 0
+    assert desk.store.positions()  # the desk's own stop was not hit at the price now
+    said = "\n".join(e.message for e in desk.store.events(50) if e.agent == "LEVA")
+    assert "x20 liquidata" in said and "mentre il desk non controllava" in said
+
+
+def test_without_a_gap_the_lowest_price_is_not_even_asked(cfg):
+    desk, market, clock, symbol = live_desk(cfg)
+    desk.cycle()
+    market.lows[symbol] = 0.0  # would liquidate everything, if it were read
+    clock.advance(1 / 60)  # the next check, a minute later
+    desk.monitor()
+    assert all(symbol in b.legs for b in desk.shadows)
+
+
+def test_a_gap_that_cannot_be_read_falls_back_to_the_price_now(cfg):
+    from desk.market import MarketUnavailable
+
+    desk, market, clock, symbol = live_desk(cfg)
+    desk.cycle()
+
+    def unreachable(symbol, since):
+        raise MarketUnavailable("kraken: connessione assente")
+
+    market.lowest_since = unreachable
+    clock.advance(8)
+    desk.monitor()
+    assert all(symbol in b.legs for b in desk.shadows)
+    assert desk.shadows[0].legs[symbol].funding > 0  # funding is still charged
+
+
+def test_close_all_settles_the_shadows_for_the_time_the_desk_was_stopped(cfg):
+    desk, market, clock, symbol = live_desk(cfg)
+    desk.cycle()
+    x3, x20 = desk.shadows
+    market.lows[symbol] = x20.legs[symbol].liquidation * 0.99
+    clock.advance(48)  # desk run stopped for two days, then `desk close-all`
+    desk.close_all()
+    assert desk.store.positions() == []
+    results = {r.level: r for r in desk.store.leverage_results()}
+    assert results[20.0].liquidated and not results[3.0].liquidated
+    assert results[3.0].funding > 0  # two days of funding, charged before the close
+
+
+def test_a_shadow_left_over_from_an_older_position_is_closed_at_the_desk_sale(cfg):
+    from desk.broker import PaperBroker
+    from desk.desk import Desk
+
+    desk, market, clock, symbol = live_desk(cfg)
+    desk.cycle()
+    [pos] = desk.store.positions()
+    # x20 is switched off; meanwhile the desk sells at its stop.
+    cfg.leverage_levels = [3.0]
+    without = Desk(cfg, market, PaperBroker(cfg), desk.store, clock=clock)
+    market.prices[symbol] = pos.stop * 0.999
+    clock.advance(1)
+    without.monitor()
+    [sale] = desk.store.trades()
+    # x20 is switched back on: its leg belongs to a position the desk no longer holds.
+    cfg.leverage_levels = [3.0, 20.0]
+    again = Desk(cfg, market, PaperBroker(cfg), desk.store, clock=clock)
+    x20 = again.shadows[1]
+    assert symbol not in x20.legs
+    [result] = [r for r in desk.store.leverage_results() if r.level == 20.0]
+    assert result.exit == pytest.approx(sale.exit_price) and not result.liquidated
+
+
+def test_the_journal_tells_the_sale_before_its_leveraged_results(cfg):
+    desk, market, clock, symbol = live_desk(cfg)
+    desk.cycle()
+    [pos] = desk.store.positions()
+    market.prices[symbol] = pos.stop * 0.999
+    clock.advance(1 / 60)
+    desk.monitor()
+    order = [e.message for e in desk.store.events(50)]
+    sold = next(i for i, m in enumerate(order) if m.startswith("venduto"))
+    leveraged = next(i for i, m in enumerate(order) if m.startswith("con la leva"))
+    assert sold < leveraged

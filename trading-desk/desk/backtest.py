@@ -34,6 +34,7 @@ class Result:
     benchmark_pct: float | None  # buy-and-hold of BTC over the same period
     trades: list[Trade] = field(default_factory=list)
     leverage: list[leverage.Book] = field(default_factory=list)  # the same trades, leveraged
+    unleveraged: int = 0  # entries on coins outside `leverage_bases`: spot only
 
     @property
     def return_pct(self) -> float:
@@ -73,6 +74,7 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
     pending: list[tuple[ChartPlan, float]] = []  # (plan, notional) to fill at the next open
     trades: list[Trade] = []
     shadows = leverage.books(cfg)
+    unleveraged = 0
 
     for ts in timeline:
         close_time = ts / 1000 + candle_s
@@ -92,8 +94,11 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             cash += fill.quote_delta
             fees += fill.fee
             share = fill.qty * fill.price / spot_equity  # of the book, as the desk sized it
-            for book in shadows:
-                book.open(plan.symbol, share, fill.price, ts / 1000, cfg, last_price)
+            if leverage.allowed(plan.symbol, cfg):
+                for book in shadows:
+                    book.open(plan.symbol, share, fill.price, ts / 1000, cfg, last_price)
+            else:
+                unleveraged += 1
             positions[plan.symbol] = Position(
                 plan.symbol,
                 fill.qty,
@@ -134,6 +139,7 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
             cash += fill.quote_delta
             fees += fill.fee
             del positions[symbol]
+            last_price.pop(symbol, None)  # a later re-buy is valued at its own entry
             for book in shadows:
                 book.close(symbol, fill.price, close_time, cfg)
             trades.append(
@@ -206,4 +212,5 @@ def run(histories: dict[str, list[Candle]], cfg: Settings) -> Result:
         benchmark_pct=(btc[-1].close / btc[0].open - 1) * 100 if btc else None,
         trades=trades,
         leverage=shadows,
+        unleveraged=unleveraged,
     )

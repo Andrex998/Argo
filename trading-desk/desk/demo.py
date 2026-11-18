@@ -88,6 +88,9 @@ class StagedMarket:
             raise MarketError(f"{symbol}: nessun prezzo disponibile")
         return self.prices[symbol]
 
+    def lowest_since(self, symbol: str, since: float) -> float | None:
+        return None  # the staged prices move only when the script moves them
+
 
 class StagedAnalysts:
     """Stands in for the model: answers with the line prepared for that market."""

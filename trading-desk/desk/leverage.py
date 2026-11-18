@@ -13,6 +13,10 @@ The model, per position:
 - isolated margin: when the price falls to entry x (1 - 1/leverage + maintenance),
   the position is liquidated and its margin is lost, but never more than its margin.
 
+Only coins in `leverage_bases` are shadowed: large, established coins with deep
+perpetual markets. Memecoins never are, and a trade on any coin outside the list stays
+spot only.
+
 Real exchanges move the liquidation price with fees and funding, use a mark price
 rather than the last trade, and raise the maintenance margin for larger positions.
 This is an estimate of the order of magnitude, not of the last cent.
@@ -26,6 +30,16 @@ from desk.config import Settings
 
 FUNDING_PERIOD = 8 * 3600  # seconds between two funding payments on most exchanges
 WIPED_OUT = 0.01  # a book under 1% of its starting capital takes no new positions
+
+
+def base(symbol: str) -> str:
+    """The coin of a pair: SOL for SOL/USD."""
+    return symbol.split("/")[0].upper()
+
+
+def allowed(symbol: str, cfg: Settings) -> bool:
+    """Whether the simulation may shadow this market. Memecoins never are."""
+    return base(symbol) in {coin.upper() for coin in cfg.leverage_bases}
 
 
 def liquidation_price(entry: float, level: float, maintenance: float) -> float:

@@ -16,6 +16,7 @@ class FakeMarket:
     def __init__(self, data: dict[str, list[Candle]]):
         self.data = data
         self.prices = {symbol: candles[-1].close for symbol, candles in data.items()}
+        self.lows: dict[str, float] = {}  # the lowest price of a gap in the checks, if any
 
     def universe(self) -> list[tuple[str, float]]:
         return [(symbol, 10_000_000.0) for symbol in self.data]
@@ -27,6 +28,9 @@ class FakeMarket:
 
     def price(self, symbol: str) -> float:
         return self.prices[symbol]
+
+    def lowest_since(self, symbol: str, since: float) -> float | None:
+        return self.lows.get(symbol)
 
 
 class FakeLLM:
