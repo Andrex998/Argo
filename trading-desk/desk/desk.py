@@ -415,8 +415,12 @@ class Desk:
                 if debates >= self.cfg.max_candidates:
                     self.say("DESK", "limite di analisi per ciclo raggiunto", symbol, "skipped")
                     continue
+                if busy := self._analysts_busy(now):
+                    self.say("DESK", f"non lo faccio analizzare: {busy}", symbol, "skipped")
+                    continue
                 debates += 1
                 self.store.mark_reviewed(symbol, now)
+                self._count_debate(now)
                 factor = self._debate(candidate, plan, now)
                 if factor is None:
                     continue
@@ -580,6 +584,19 @@ class Desk:
             self.say("DESK", f"BUY annullato: {reason}", symbol, "buy_cancelled")
             return None
         return analysts.SIZE_FACTOR[verdict.conviction]
+
+    def _analysts_busy(self, now: float) -> str:
+        """Why the analysts take no more markets now (the hourly or daily cap), or ''."""
+        times = [t for t in self.store.get_json("debate_times").get("times", []) if now - t < 86400]
+        if sum(now - t < 3600 for t in times) >= self.cfg.analyst_max_per_hour:
+            return f"già {self.cfg.analyst_max_per_hour} analisi nell'ultima ora (il limite)"
+        if len(times) >= self.cfg.analyst_max_per_day:
+            return f"già {self.cfg.analyst_max_per_day} analisi nelle ultime 24 ore (il limite)"
+        return ""
+
+    def _count_debate(self, now: float) -> None:
+        times = [t for t in self.store.get_json("debate_times").get("times", []) if now - t < 86400]
+        self.store.set_json("debate_times", {"times": [*times, now]})
 
     def _ask(self, agent: str, task: str, symbol: str, call: Callable[[], BaseModel]):
         try:

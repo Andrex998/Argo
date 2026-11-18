@@ -103,7 +103,24 @@ uv run desk run --rules-only   # desk in continuo, senza analisti LLM, soldi fin
 uv run desk snapshot        # i dati per la pagina ARGO DESK Live su claude.ai
 ```
 
-Per accendere gli analisti metti `ANTHROPIC_API_KEY` in `.env` e lancia `uv run desk run`.
+Per accendere gli analisti ci sono due strade:
+
+- **Con l'abbonamento Claude, senza chiave.** Se sul PC c'è Claude Code con il tuo
+  accesso, metti `DESK_ANALYSTS=claude-code` in `.env`. Ogni analista è una domanda a
+  Claude Code in modalità silenziosa:
+  - una sessione nuova ogni volta, che non viene salvata;
+  - la ricerca web solo per News e Sentiment;
+  - nessun altro strumento, nessun plugin e nessun hook.
+
+  L'abbonamento è lo stesso che usi tu, quindi gli analisti discutono al massimo
+  `DESK_ANALYST_MAX_PER_HOUR` mercati all'ora (3) e `DESK_ANALYST_MAX_PER_DAY` al giorno
+  (20). Ogni mercato discusso costa quattro domande. Il modello è
+  `DESK_CLAUDE_CODE_MODEL` (sonnet). Se Claude Code manca o risponde con un errore, per
+  esempio un limite d'uso raggiunto, quel mercato non si compra.
+- **Con una chiave API**: metti `ANTHROPIC_API_KEY` in `.env`.
+
+Poi lancia `uv run desk run`. Gli analisti lavorano sul desk spot; il desk dei perpetui
+decide con le sole regole.
 
 Accanto al desk spot può girare un secondo desk, solo con soldi finti, che opera al
 rialzo e al ribasso sui contratti perpetui: vedi [Il desk dei perpetui](#il-desk-dei-perpetui-solo-soldi-finti).

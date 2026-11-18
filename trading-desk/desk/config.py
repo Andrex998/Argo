@@ -80,6 +80,16 @@ class Settings(BaseSettings):
     fear_greed: bool = True  # give the Sentiment analyst the public Fear & Greed index
     refusal_fallback: bool = True  # let the API retry a declined request on a fallback model
     anthropic_api_key: str = Field(default="", validation_alias="ANTHROPIC_API_KEY")
+    # "claude-code": the analysts run through Claude Code on this PC, on the owner's Claude
+    # subscription, with no API key. "api": the Anthropic API with ANTHROPIC_API_KEY.
+    analysts: Literal["api", "claude-code"] = "api"
+    claude_code_path: str = ""  # empty: found on PATH or in npm's global folder
+    claude_code_model: str = "sonnet"  # an alias Claude Code understands
+    claude_code_timeout: float = 180.0  # seconds one analyst may take
+    # The subscription is shared with the owner's own use of Claude: each market discussed
+    # costs four calls, so the analysts take at most this many markets.
+    analyst_max_per_hour: int = 3
+    analyst_max_per_day: int = 20
 
     # --- Loop: a full cycle runs at every candle close ------------------------
     monitor_seconds: int = 60  # how often open positions are checked in between

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from desk import backtest, dashboard, demo, live, perps, radar, snapshot
 from desk.agents import charts, scout
+from desk.agents.claude_code import ClaudeCodeLLM
 from desk.agents.llm import AgentUnavailable, ClaudeLLM
 from desk.broker import BrokerError, LiveBroker, PaperBroker, PerpsPaperBroker
 from desk.config import Settings
@@ -107,16 +108,29 @@ def trading_desk(cfg: Settings, args: argparse.Namespace) -> Desk:
         print("Desk dei perpetui: decide con le sole regole (Scout, Charts, Risk).")
         return PerpsDesk(cfg, market, broker, Store(cfg.db_path), echo=print_event)
     desk = Desk(cfg, market, broker, Store(cfg.db_path), echo=print_event)
+    desk.store.set("analysts", "solo regole")
     if not getattr(args, "rules_only", False):
         try:
-            desk.llm = ClaudeLLM(cfg, on_usage=desk.record_usage)
+            if cfg.analysts == "claude-code":
+                desk.llm = ClaudeCodeLLM(cfg, on_usage=desk.record_usage)
+                label = f"Claude Code ({cfg.claude_code_model}, abbonamento)"
+                print(
+                    f"Analisti attivi con {label}: al massimo {cfg.analyst_max_per_hour} "
+                    f"mercati all'ora e {cfg.analyst_max_per_day} al giorno.",
+                    flush=True,
+                )
+            else:
+                desk.llm = ClaudeLLM(cfg, on_usage=desk.record_usage)
+                label = cfg.model
+            desk.store.set("analysts", label)
         except AgentUnavailable as e:
             if getattr(args, "rules_if_no_key", False):
                 print(f"Analisti spenti ({e}): il desk decide con le sole regole.")
                 return desk
             raise SystemExit(
-                f"Analisti non disponibili: {e}. Imposta ANTHROPIC_API_KEY in .env "
-                "oppure usa --rules-only per far girare il desk senza analisti."
+                f"Analisti non disponibili: {e}. Imposta ANTHROPIC_API_KEY in .env, oppure "
+                "DESK_ANALYSTS=claude-code per usare l'abbonamento Claude attraverso Claude "
+                "Code, oppure usa --rules-only per far girare il desk senza analisti."
             ) from e
     return desk
 
