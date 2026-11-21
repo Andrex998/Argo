@@ -138,7 +138,7 @@ def live(market: Replay, start: int = START, **settings) -> PerpsDesk:
         _env_file=None,
         market="perps",
         fear_greed=False,
-        max_drawdown_pct=100.0,
+        perps_max_drawdown_pct=40.0,  # the highest the desk allows
         perps_fee_rate=0.0005,  # the research's fee, Binance's
         **settings,
     )
@@ -164,12 +164,13 @@ def live(market: Replay, start: int = START, **settings) -> PerpsDesk:
     return desk
 
 
-def agree(mine: dict, theirs: dict, money: float = 0.15) -> None:
-    """The same trades, and the same money within `money` (the research rounds to 0.1)."""
+def agree(mine: dict, theirs: dict, money: float = 0.15, share: float = 0.0) -> None:
+    """The same trades, and the same money within `money`, or within `share` of each
+    figure (the research rounds to 0.1)."""
     for key in ("trades", "long", "short", "liquidations"):
         assert mine[key] == theirs[key], key
     for key in ("ret", "pnl_long", "pnl_short", "fees", "funding"):
-        assert mine[key] == pytest.approx(theirs[key], abs=money), key
+        assert mine[key] == pytest.approx(theirs[key], abs=money, rel=share), key
 
 
 def figures(desk: PerpsDesk) -> dict:
@@ -193,6 +194,7 @@ def figures(desk: PerpsDesk) -> dict:
 def test_the_live_desk_trades_like_the_research(seed):
     data, growth = history(seed)
     setup = research.Setup(sides="both", cap_pos=0.33, cap_total=1.5)  # the desk's defaults
+    setup.rules = {"max_stop_pct": Settings(_env_file=None, market="perps").max_stop_pct}
     setup.entry_filter = lambda symbol, side, ts: (g := growth[symbol, ts]) is None or g > 0
     theirs = research.replay(data, setup, START, T0 + BARS * H4)
 
@@ -265,7 +267,8 @@ def test_short_setups_match_the_research():
     not (RESEARCH / "perps.pkl").exists() or not (RESEARCH / "derivs.pkl").exists(),
     reason="the research's data is not downloaded (research/perps.py, research/derivs.py)",
 )
-def test_three_real_years_with_rule_c():
+@pytest.mark.parametrize("max_stop", [8.0, 12.0])  # the rule of the research, and today's
+def test_three_real_years_with_rule_c(max_stop):
     """The research's three years of Binance perpetuals, at the desk's defaults: full size
     and rule C. Its 36 coins are allowed here, ten of them outside `leverage_bases`."""
     sys.path.insert(0, str(RESEARCH))
@@ -283,6 +286,7 @@ def test_three_real_years_with_rule_c():
         "funding": full["funding"],
     }
     setup = research.Setup(sides="both", cap_pos=0.33, cap_total=1.5)
+    setup.rules = {"max_stop_pct": max_stop}
     setup.entry_filter = derivs.make_filter("C", metrics)
     theirs = research.replay(data, setup, start, end)
 
@@ -294,8 +298,10 @@ def test_three_real_years_with_rule_c():
             return p.oi_growth(self.ts + H4) if p else None
 
     coins = [s.split("/")[0] for s in data["klines"]]
-    desk = live(WithOpenInterest(data, {}), start, leverage_bases=coins)
-    # Within a candle the live desk sizes each entry on the book after the one before: a
-    # few cents on three years of trades.
-    agree(figures(desk), theirs, money=1.0)
+    market = WithOpenInterest(data, {})
+    desk = live(market, start, leverage_bases=coins, perps_max_stop_pct=max_stop)
+    # Within a candle the live desk sizes each entry on the book after the one before, and
+    # sizing follows equity: a few cents on the 256 trades of an 8% cap, a few dollars (under
+    # 2% of each figure) on the 412 of a 12% cap. The trades themselves are the same.
+    agree(figures(desk), theirs, money=1.0, share=0.0 if max_stop == 8.0 else 0.02)
     assert theirs["trades"] > 200 and theirs["liquidations"] == 0

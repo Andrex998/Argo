@@ -215,12 +215,14 @@ class Setup:
     maintenance: float = 0.01
     # entry_filter(symbol, side, ts_ms) -> bool: an extra yes/no on each setup (research hooks)
     entry_filter: object = None
+    # Desk rules that differ from the defaults, e.g. {"max_stop_pct": 12} (research hooks)
+    rules: dict | None = None
 
 
 def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
     cfg = Settings(
         _env_file=None, exchange="binance", quote="USDT", timeframe="4h", fear_greed=False,
-        leverage_levels=[], fee_rate=setup.fee,
+        leverage_levels=[], fee_rate=setup.fee, **(setup.rules or {}),
     )  # fmt: skip
     histories = {
         s: [c for c in candles if start - WARMUP * CANDLE_MS <= c.ts < end]

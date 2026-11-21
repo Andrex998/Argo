@@ -108,6 +108,29 @@ def test_the_spot_desk_keeps_its_defaults_and_the_perps_desk_its_own_venue_and_f
     )
 
 
+def test_the_perps_desk_runs_on_its_own_risk_rules(monkeypatch, capsys):
+    spot, perps_ = Settings(_env_file=None), Settings(_env_file=None, market="perps")
+    assert (spot.max_stop_pct, spot.risk_per_trade_pct, spot.max_drawdown_pct) == (8.0, 1.0, 15.0)
+    assert (perps_.max_stop_pct, perps_.risk_per_trade_pct, perps_.max_drawdown_pct) == (
+        12.0,
+        1.0,
+        15.0,
+    )
+    monkeypatch.setenv("DESK_MAX_STOP_PCT", "6")  # the spot desk's own key...
+    monkeypatch.setenv("DESK_PERPS_RISK_PER_TRADE_PCT", "2")
+    monkeypatch.setenv("DESK_PERPS_MAX_DRAWDOWN_PCT", "25")
+    bolder = Settings(_env_file=None, market="perps")
+    assert (bolder.max_stop_pct, bolder.risk_per_trade_pct, bolder.max_drawdown_pct) == (
+        12.0,  # ...does not reach the perpetuals desk
+        2.0,
+        25.0,
+    )
+    assert Settings(_env_file=None).max_stop_pct == 6.0
+    monkeypatch.setenv("DESK_PERPS_RISK_PER_TRADE_PCT", "20")  # a slip of the finger
+    assert Settings(_env_file=None, market="perps").risk_per_trade_pct == 1.0
+    assert "DESK_PERPS_RISK_PER_TRADE_PCT='20' non valido: uso 1.0" in capsys.readouterr().out
+
+
 # --- exits on both sides ----------------------------------------------------------------------
 
 # Candles (open, high, low, close) around a long entered at 100, stop 96, target 108.

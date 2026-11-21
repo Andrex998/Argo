@@ -117,6 +117,13 @@ class Settings(BaseSettings):
     perps_cap_total_pct: float = 150.0  # notional of all positions together, % of equity
     perps_max_leverage: float = Field(default=3.0, ge=1.0, le=20.0)
     perps_oi_filter: bool = True  # enter only while the coin's open interest grew over 24h
+    # The perpetuals desk's own risk rules, in place of the spot desk's on that desk.
+    # research/riskier.py (21/11/2026): stops up to 12% did better than 8% in each of the
+    # three years, at the same 1% risk and the same drawdown. 1.5% or 2% risk roughly
+    # doubles gains and drawdowns: past the 15% halt in two years of three.
+    perps_max_stop_pct: float = Field(default=12.0, ge=2.0, le=25.0)
+    perps_risk_per_trade_pct: float = Field(default=1.0, gt=0.0, le=3.0)
+    perps_max_drawdown_pct: float = Field(default=15.0, ge=5.0, le=40.0)
 
     # --- Live page: a snapshot of the desk every minute (optional) ----------
     live_url: str = ""  # https://<progetto>.supabase.co
@@ -144,13 +151,16 @@ class Settings(BaseSettings):
         "claude_code_timeout",
         "analyst_max_per_hour",
         "analyst_max_per_day",
+        "perps_max_stop_pct",
+        "perps_risk_per_trade_pct",
+        "perps_max_drawdown_pct",
         mode="wrap",
     )
     @classmethod
     def _or_default(cls, value: object, handler, info: ValidationInfo) -> object:
-        """A typo or an absurd value in the analysts' keys must not stop the desks (they
-        would restart every 30 seconds for ever): the default stands in, and the console
-        says so. For the perpetuals' switch the default is off."""
+        """A typo or an absurd value in these keys must not stop the desks (they would
+        restart every 30 seconds for ever): the default stands in, and the console says so.
+        For the perpetuals' analysts switch the default is off."""
         try:
             return handler(value)
         except ValidationError:
@@ -161,9 +171,13 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _perps_venue(self) -> Settings:
         """The perpetuals desk always reads USDT perpetuals on `perps_exchange`, whatever
-        exchange and currency the spot desk takes from the same .env."""
+        exchange and currency the spot desk takes from the same .env, and runs on its own
+        stop cap, risk per trade and drawdown halt."""
         if self.market == "perps":
             self.exchange, self.quote = self.perps_exchange, PERPS_QUOTE
+            self.max_stop_pct = self.perps_max_stop_pct
+            self.risk_per_trade_pct = self.perps_risk_per_trade_pct
+            self.max_drawdown_pct = self.perps_max_drawdown_pct
         return self
 
     @property
