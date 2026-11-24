@@ -23,6 +23,10 @@ nel cloud. La sessione segue [PROCEDURA.md](PROCEDURA.md):
 4. propongono le operazioni, e il motore le esegue o le respinge secondo le regole;
 5. il Preside dà il giudizio e i voti.
 
+Alle 15:41 una seconda attività programmata, "Mini Scuola Forex · recupero", controlla il
+diario del giorno. Fa la giornata solo se quella del mattino non c'è riuscita, per
+esempio perché era finito il limite d'uso dell'abbonamento; altrimenti si ferma subito.
+
 Ogni giorno ha il suo ritmo:
 - **dal lunedì al venerdì** si opera;
 - **il sabato** c'è l'interrogazione;
@@ -72,10 +76,11 @@ Le fa rispettare il motore:
 ## Costi e come fermarla
 
 Ogni giornata usa l'abbonamento Claude, come i desk di trading: il primo giorno è durato
-dieci minuti. Per fermare la scuola basta spegnere l'attività programmata "Mini Scuola
-Forex" su claude.ai, oppure chiederlo a Claude. Dopo il diploma del 4/1/2027 va spenta a
-mano, perché le sessioni del mattino non hanno lo strumento per farlo: dal 5 gennaio la
-pagina lo ricorda, e le sessioni che partono ancora si fermano subito.
+dieci minuti. Per fermare la scuola basta spegnere su claude.ai le due attività
+programmate, "Mini Scuola Forex" e "Mini Scuola Forex · recupero", oppure chiederlo a
+Claude. Dopo il diploma del 4/1/2027 vanno spente a mano, perché le sessioni della scuola
+non hanno lo strumento per farlo: dal 5 gennaio la pagina lo ricorda, e le sessioni che
+partono ancora si fermano subito.
 
 ## Prove
 

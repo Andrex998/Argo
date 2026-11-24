@@ -459,6 +459,37 @@ paper trading in avanti, la prova finale.
 
 Rifallo tu: `uv run python research/placebo.py` (circa 20 secondi).
 
+### Esame E02: il trend lento (24/11/2026)
+
+La biblioteca indicava il pezzo mancante del desk: un motore lento, che tiene le posizioni
+dentro i trend lunghi degli anni di rialzo. `research/trend.py` lo prova con le regole
+che la biblioteca aveva fissato prima. La decisione è giornaliera, su tutte le 36 monete,
+e ogni moneta pesa in proporzione inversa alla sua volatilità. Ci sono tre varianti:
+- il segno del rendimento a 7-112 giorni, long e short;
+- lo stesso, solo long;
+- i canali di Donchian a 10-150 giorni, solo long.
+
+I costi e il funding sono pieni. Il voto riguarda gli anni 2 e 3.
+
+- **Guadagna pochissimo**: in media +2,4% in due anni, con un calo massimo intorno al 10%.
+  Con queste regole il motore tiene investito solo il 6-14% del capitale. Nell'anno 2 è in
+  pratica un piccolo long sul mercato.
+- **Accanto al desk a 4 ore non serve.** A rischio uguale, metà desk e metà trend lento
+  hanno un MAR di 1,6, contro 3,47 del desk da solo. Il MAR è il rendimento annuo diviso
+  il calo massimo. I due motori sono troppo simili (correlazione 0,51) e il trend lento
+  è troppo debole.
+- **I canali di Donchian non replicano lo studio**: +4,5% fino ad aprile 2025, il periodo
+  dello studio, e -1,8% dopo.
+- Senza la moneta migliore (XLM) le tre varianti restano appena positive.
+- Il riferimento classico, il Sistema 2 delle Turtles, ha cali del 48-55%. Il trend
+  seguito alla cieca sulle cripto, con quei rischi, fa male.
+
+In breve, il trend lento **non passa**: sulle nostre monete, in questi anni, non aggiunge
+niente al desk a 4 ore. Prossimo nell'ordine della biblioteca: gli strati di rischio
+(dimensione legata alla volatilità e tetto al rischio correlato) sul desk che c'è.
+
+Rifallo tu: `uv run python research/trend.py` (circa 10 secondi).
+
 ### Quattro storici brevi (Kraken e BingX)
 
 Prima del test lungo, il 18/11/2026 il desk è stato rigiocato su quattro storici brevi,

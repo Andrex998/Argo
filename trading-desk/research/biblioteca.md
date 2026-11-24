@@ -125,6 +125,15 @@ L'anno 1 serve quasi tutto a scaldare le medie, quindi non si sceglie. Si verifi
 
 **Ruolo atteso.** Motore principale lento e diversificazione rispetto al 4 ore (copre gli anni di rialzo)
 
+**Esito (24/11/2026, `research/trend.py`).** Anni 2 e 3, dopo costi e funding:
+- **Le tre varianti:** T1 long e short +1,1%, T1 solo long +3,6%, T2 solo long +2,6%. La
+  media è +2,4%, con un'esposizione media del 6-14%.
+- **Accanto a E01 a rischio uguale:** MAR 1,6 contro 3,47 di E01 da solo (correlazione
+  0,51). **Non passa.**
+- **Senza XLM**, la moneta migliore, le varianti restano positive.
+- **T2:** +4,5% prima di aprile 2025, -1,8% dopo. Lo studio non si replica.
+- **Turtle S2:** cali del 48-55%.
+
 ### E03 · Volatilità obiettivo (regolatore della dimensione)
 
 Famiglia: Gestione del rischio: dimensione per volatilità. Forza delle prove: **A forte**.

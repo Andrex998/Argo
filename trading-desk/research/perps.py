@@ -219,6 +219,7 @@ class Setup:
     rules: dict | None = None
     delay: int = 0  # candles an entry waits beyond the next open (research hooks)
     keep_trades: bool = False  # also return every closed trade, as "trade_list"
+    keep_curve: bool = False  # also return the equity at each day's last close, as "curve"
 
 
 def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
@@ -245,6 +246,7 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
     cooldowns: dict[str, float] = {}
     trades: list[dict] = []
     last_price: dict[str, float] = {}
+    curve: dict[str, float] = {}
 
     def equity_now() -> float:
         return cash + sum(
@@ -334,6 +336,8 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
             day, day_start = today, equity
         peak = max(peak, equity)
         max_dd = max(max_dd, (1 - equity / peak) * 100)
+        if setup.keep_curve and close_time * 1000 >= start:  # the last mark of each UTC day
+            curve[datetime.fromtimestamp(close_time - 1, UTC).date().isoformat()] = equity
 
         # 4. New setups on the candles that just closed.
         if close_time * 1000 < start or leader not in bars:
@@ -422,6 +426,7 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
         ),
         "btc": round((btc[-1].close / btc[0].open - 1) * 100, 1) if btc else None,
         **({"trade_list": trades} if setup.keep_trades else {}),
+        **({"curve": sorted(curve.items())} if setup.keep_curve else {}),
     }
 
 
