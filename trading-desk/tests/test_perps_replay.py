@@ -308,3 +308,18 @@ def test_three_real_years_with_rule_c(max_stop):
     # trades themselves are the same.
     agree(figures(desk), theirs, money=1.0, share=0.02)
     assert theirs["trades"] > 200 and theirs["liquidations"] == 0
+
+
+def test_the_research_hooks_for_the_exams():
+    """keep_trades returns the closed trades behind the figures; delay fills later, and the
+    same trades waiting an extra candle never exceed the desk's open positions."""
+    data, growth = history(4)
+    plain = research.replay(data, research.Setup(keep_trades=True), START, T0 + BARS * H4)
+    trades = plain["trade_list"]
+    assert len(trades) == plain["trades"]
+    assert sum(t["pnl"] for t in trades if t["side"] > 0) == pytest.approx(
+        plain["pnl_long"], abs=0.1
+    )
+    assert "trade_list" not in research.replay(data, research.Setup(), START, T0 + BARS * H4)
+    late = research.replay(data, research.Setup(keep_trades=True, delay=1), START, T0 + BARS * H4)
+    assert late["trades"] > 0 and late["trade_list"] != trades

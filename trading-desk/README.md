@@ -422,6 +422,43 @@ rottura di volume o solo nello stare dalla parte di BTC, contro entrate a caso c
 stessa gestione. I numeri della letteratura vengono da abstract ed estratti: vanno
 ricontrollati prima di diventare parametri.
 
+### Esame E01: le entrate a caso (24/11/2026)
+
+La biblioteca chiedeva prima di tutto se il desk dei perpetui guadagna grazie alla sua
+rottura di volume, o solo perché sta dalla parte di BTC. `research/placebo.py` mette le
+operazioni vere dei tre anni contro 1.000 serie di entrate a caso. Ogni entrata a caso
+cade nello stesso mese dell'operazione vera, su una moneta a caso, nel lato che BTC
+permetteva in quel momento. La gestione è la stessa: stop, target, pareggio, trailing,
+costi e funding. Tutto è contato in R, cioè quanto ha reso un'operazione rispetto a
+quanto rischiava allo stop.
+
+- **Le entrate a caso, da sole, fanno zero**: +0,00 R a operazione, su 99.120 entrate
+  possibili. Messe negli stessi mesi delle operazioni vere fanno circa +0,08 R: stare
+  dalla parte di BTC aiuta un poco.
+- **Le operazioni vere fanno di più**: +0,31 R a operazione con le regole del 18/11 (stop
+  fino all'8%), +0,22 R con quelle in uso (stop fino al 12%). Sui tre anni battono tutte
+  le 1.000 serie a caso, sia nei long sia negli short.
+- **Anno per anno è meno netto.** Con lo stop all'8%, il primo e il secondo anno battono
+  l'81% e l'86% delle serie a caso: potrebbe essere fortuna. Con lo stop al 12% battono
+  l'82%, il 96% e il 100%. L'esame chiedeva più del 95% in almeno due anni su tre:
+  - le regole in uso lo passano;
+  - quelle del 18/11 no.
+
+  Lo stop al 12% però è stato scelto guardando i tre anni, quindi la sua promozione vale
+  un po' meno.
+- **La regola C resta.** Batte il 96-97% delle serie in cui si toglie a caso la stessa
+  quota di operazioni (10-13%).
+- **Il vantaggio non sta nei centesimi né nel tempismo.**
+  - Con una candela di ritardo il risultato non peggiora: +120% contro +108%.
+  - Con i costi doppi resta positivo in ogni anno: +95% sui tre anni.
+
+In breve, la rottura di volume aggiunge qualcosa di vero allo stare dalla parte di BTC.
+Però la prova forte viene quasi tutta dal terzo anno, quello di ribasso. Resta da vedere
+se il desk vero su Bybit fa le stesse operazioni del backtest su Binance: lo dirà il
+paper trading in avanti, la prova finale.
+
+Rifallo tu: `uv run python research/placebo.py` (circa 20 secondi).
+
 ### Quattro storici brevi (Kraken e BingX)
 
 Prima del test lungo, il 18/11/2026 il desk è stato rigiocato su quattro storici brevi,

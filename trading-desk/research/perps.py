@@ -217,6 +217,8 @@ class Setup:
     entry_filter: object = None
     # Desk rules that differ from the defaults, e.g. {"max_stop_pct": 12} (research hooks)
     rules: dict | None = None
+    delay: int = 0  # candles an entry waits beyond the next open (research hooks)
+    keep_trades: bool = False  # also return every closed trade, as "trade_list"
 
 
 def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
@@ -283,8 +285,12 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
                     p.funding += amount
                     paid_funding += amount
 
-        # 1. Fill the entries decided at the previous close.
-        for side, symbol, plan_entry, plan_stop, plan_target, notional in pending:
+        # 1. Fill the entries decided at the previous close (or `delay` candles before it).
+        later = []
+        for side, symbol, plan_entry, plan_stop, plan_target, notional, wait in pending:
+            if wait > 0:
+                later.append((side, symbol, plan_entry, plan_stop, plan_target, notional, wait - 1))
+                continue
             bar = bars.get(symbol)
             if not bar or symbol in positions:
                 continue
@@ -305,7 +311,7 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
                 symbol, side, qty, price, ts / 1000, plan_stop + shift, plan_stop + shift,
                 plan_target + shift, price, margin, price * (1 - side * liq_move), fee,
             )  # fmt: skip
-        pending = []
+        pending = later
 
         # 2. Exits on this candle: liquidation first, then the desk's own rules.
         for symbol, p in list(positions.items()):
@@ -348,8 +354,9 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
         ):
             continue
         candidates = []
+        waiting = {entry[1] for entry in pending}
         for symbol in bars:
-            if symbol in positions or cooldowns.get(symbol, 0) > close_time:
+            if symbol in positions or symbol in waiting or cooldowns.get(symbol, 0) > close_time:
                 continue
             j = index[symbol][ts]
             window = histories[symbol][max(0, j - 200 + 1) : j + 1]
@@ -368,7 +375,8 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
                     candidates.append((rvol, symbol, *plan))
         candidates.sort(reverse=True)
         exposure = sum(p.qty * last_price.get(s, p.entry) for s, p in positions.items())
-        open_count = len(positions)
+        exposure += sum(entry[5] for entry in pending)
+        open_count = len(positions) + len(pending)
         for _, symbol, entry, stop, target in candidates:
             if open_count >= cfg.max_open_positions:
                 break
@@ -387,7 +395,7 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
             notional = min(notional, equity * setup.cap_pos, equity * setup.cap_total - exposure)
             if notional < cfg.min_notional:
                 continue
-            pending.append((side, symbol, entry, stop, target, notional))
+            pending.append((side, symbol, entry, stop, target, notional, setup.delay))
             exposure += notional
             open_count += 1
 
@@ -413,6 +421,7 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
             (equity - sum(sorted((t["pnl"] for t in trades), reverse=True)[:2])) / 10 - 100, 1
         ),
         "btc": round((btc[-1].close / btc[0].open - 1) * 100, 1) if btc else None,
+        **({"trade_list": trades} if setup.keep_trades else {}),
     }
 
 

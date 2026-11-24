@@ -88,6 +88,18 @@ La prova finale è il paper trading in avanti (punto 9 del protocollo).
 
 **Ruolo atteso.** Motore principale da confermare e metro di paragone per tutte le altre
 
+**Esito (24/11/2026, `research/placebo.py`).**
+- **P1, sui tre anni:** le operazioni vere battono tutte le 1.000 serie a caso, sia con
+  lo stop all'8% sia con quello al 12%. Rendono +0,31 R e +0,22 R a operazione, contro
+  circa +0,08 R delle entrate a caso negli stessi mesi.
+- **P1, anno per anno:**
+  - B0 (stop all'8%) batte l'81%, l'86% e il 99,9%: oltre il 95% in un anno solo, quindi
+    **non passa**;
+  - B4 (stop al 12%) batte l'82%, il 96% e il 100%: **passa**, ma lo stop al 12% è stato
+    scelto sui dati.
+- **P2:** la regola C batte il 96,5% e il 96,9% delle rimozioni a caso, quindi resta.
+- **B5 e B6** restano positivi in ogni anno.
+
 ### E02 · Trend lento multi-orizzonte sul paniere (segno del rendimento e canali di Donchian)
 
 Famiglia: Trend following lento (momentum nel tempo). Forza delle prove: **B buona**.
