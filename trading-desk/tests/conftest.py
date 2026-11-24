@@ -87,6 +87,9 @@ def pcfg() -> Settings:
         reward_risk=2.0,
         breakout_lookback=0,
         atr_stop_mult=2.0,
+        # the sizing arithmetic counts in 1% steps; the desk's own 1.5% has its own test
+        perps_risk_per_trade_pct=1.0,
+        perps_max_drawdown_pct=15.0,
     )
 
 

@@ -113,22 +113,22 @@ def test_the_perps_desk_runs_on_its_own_risk_rules(monkeypatch, capsys):
     assert (spot.max_stop_pct, spot.risk_per_trade_pct, spot.max_drawdown_pct) == (8.0, 1.0, 15.0)
     assert (perps_.max_stop_pct, perps_.risk_per_trade_pct, perps_.max_drawdown_pct) == (
         12.0,
-        1.0,
-        15.0,
+        1.5,  # the owner's choice of 24/11/2026...
+        25.0,  # ...and the halt that leaves room for its drawdown
     )
     monkeypatch.setenv("DESK_MAX_STOP_PCT", "6")  # the spot desk's own key...
     monkeypatch.setenv("DESK_PERPS_RISK_PER_TRADE_PCT", "2")
-    monkeypatch.setenv("DESK_PERPS_MAX_DRAWDOWN_PCT", "25")
+    monkeypatch.setenv("DESK_PERPS_MAX_DRAWDOWN_PCT", "30")
     bolder = Settings(_env_file=None, market="perps")
     assert (bolder.max_stop_pct, bolder.risk_per_trade_pct, bolder.max_drawdown_pct) == (
         12.0,  # ...does not reach the perpetuals desk
         2.0,
-        25.0,
+        30.0,
     )
     assert Settings(_env_file=None).max_stop_pct == 6.0
     monkeypatch.setenv("DESK_PERPS_RISK_PER_TRADE_PCT", "20")  # a slip of the finger
-    assert Settings(_env_file=None, market="perps").risk_per_trade_pct == 1.0
-    assert "DESK_PERPS_RISK_PER_TRADE_PCT='20' non valido: uso 1.0" in capsys.readouterr().out
+    assert Settings(_env_file=None, market="perps").risk_per_trade_pct == 1.5
+    assert "DESK_PERPS_RISK_PER_TRADE_PCT='20' non valido: uso 1.5" in capsys.readouterr().out
 
 
 # --- exits on both sides ----------------------------------------------------------------------

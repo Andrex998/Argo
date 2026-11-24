@@ -40,6 +40,7 @@ def _research():
 
 research = _research()
 H4, FUNDING_MS = research.CANDLE_MS, research.FUNDING_MS
+RISK = Settings(_env_file=None, market="perps").perps_risk_per_trade_pct  # the desk's own
 T0 = 1_700_006_400_000  # 15/11/2023 00:00 UTC: a funding hour
 COINS = ("BTC", "ETH", "SOL", "XRP", "ADA", "AVAX", "LINK")
 SOL, SOL_R = "SOL/USDT:USDT", "SOL/USDT"  # the desk's symbol, and the research's
@@ -194,7 +195,8 @@ def figures(desk: PerpsDesk) -> dict:
 def test_the_live_desk_trades_like_the_research(seed):
     data, growth = history(seed)
     setup = research.Setup(sides="both", cap_pos=0.33, cap_total=1.5)  # the desk's defaults
-    setup.rules = {"max_stop_pct": Settings(_env_file=None, market="perps").max_stop_pct}
+    pcfg = Settings(_env_file=None, market="perps")
+    setup.rules = {"max_stop_pct": pcfg.max_stop_pct, "risk_per_trade_pct": pcfg.risk_per_trade_pct}
     setup.entry_filter = lambda symbol, side, ts: (g := growth[symbol, ts]) is None or g > 0
     theirs = research.replay(data, setup, START, T0 + BARS * H4)
 
@@ -286,7 +288,7 @@ def test_three_real_years_with_rule_c(max_stop):
         "funding": full["funding"],
     }
     setup = research.Setup(sides="both", cap_pos=0.33, cap_total=1.5)
-    setup.rules = {"max_stop_pct": max_stop}
+    setup.rules = {"max_stop_pct": max_stop, "risk_per_trade_pct": RISK}
     setup.entry_filter = derivs.make_filter("C", metrics)
     theirs = research.replay(data, setup, start, end)
 
@@ -299,9 +301,10 @@ def test_three_real_years_with_rule_c(max_stop):
 
     coins = [s.split("/")[0] for s in data["klines"]]
     market = WithOpenInterest(data, {})
-    desk = live(market, start, leverage_bases=coins, perps_max_stop_pct=max_stop)
+    desk = live(market, start, leverage_bases=coins, perps_max_stop_pct=max_stop)  # at RISK
     # Within a candle the live desk sizes each entry on the book after the one before, and
-    # sizing follows equity: a few cents on the 256 trades of an 8% cap, a few dollars (under
-    # 2% of each figure) on the 412 of a 12% cap. The trades themselves are the same.
-    agree(figures(desk), theirs, money=1.0, share=0.0 if max_stop == 8.0 else 0.02)
+    # sizing follows equity: at the desk's 1.5% risk a dollar or so on the 256 trades of an 8%
+    # cap, a few dollars on the 412 of a 12% cap, under 2% of each figure either way. The
+    # trades themselves are the same.
+    agree(figures(desk), theirs, money=1.0, share=0.02)
     assert theirs["trades"] > 200 and theirs["liquidations"] == 0

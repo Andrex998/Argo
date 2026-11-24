@@ -393,9 +393,12 @@ Cosa dice:
   (`DESK_PERPS_MAX_STOP_PCT`, 12). Lo spot resta all'8%.
 - **Spegnere la regola C peggiora** in tutti e tre gli anni: resta accesa.
 - **Più rischio per operazione** (1,5% o 2%) più che raddoppia il risultato, ma anche il
-  calo massimo: 20-26%, oltre il 15% che ferma il desk in due anni su tre. Si può
-  scegliere con `DESK_PERPS_RISK_PER_TRADE_PCT` (1, al massimo 3) e
-  `DESK_PERPS_MAX_DRAWDOWN_PCT` (15, al massimo 40).
+  calo massimo: 20-26%, oltre il 15% che ferma il desk in due anni su tre. Il 24/11/2026 il
+  proprietario ha scelto l'**1,5%**: nei tre anni fa +230%, con un calo massimo del 20,2%.
+  Per questo il desk dei perpetui ora si ferma al 25% di calo dal picco, non più al 15%:
+  il 15% lo fermerebbe dentro il calo accettato. Si cambia con
+  `DESK_PERPS_RISK_PER_TRADE_PCT` (1,5, al massimo 3) e `DESK_PERPS_MAX_DRAWDOWN_PCT` (25,
+  al massimo 40).
 - Le varianti sono state scelte dopo aver visto i dati, quindi i numeri sono ottimisti.
   Lo stop al 12% però migliora in ogni anno, non in uno solo.
 
@@ -554,9 +557,10 @@ Ogni comando accetta `--market perps`, per esempio `uv run desk status --market 
 - **Commissione** dei perpetui: 0,055% sul valore intero della posizione, quella di Bybit.
 - **Regole di rischio sue.** Stop fino al 12% del prezzo, invece dell'8% dello spot: è
   il risultato della prova [Più rischio sui perpetui](#più-rischio-sui-perpetui-21112026).
-  Il rischio per operazione (1%) e lo stop del desk al 15% di calo dal picco sono gli
-  stessi dello spot, ma si cambiano a parte, con `DESK_PERPS_RISK_PER_TRADE_PCT` e
-  `DESK_PERPS_MAX_DRAWDOWN_PCT`: le chiavi dello spot non toccano questo desk.
+  Il rischio per operazione è l'1,5% (lo spot resta all'1%) e il desk si ferma al 25% di
+  calo dal picco (lo spot al 15%): è la scelta del proprietario del 24/11/2026. Si cambiano
+  con `DESK_PERPS_RISK_PER_TRADE_PCT` e `DESK_PERPS_MAX_DRAWDOWN_PCT`: le chiavi dello spot
+  non toccano questo desk.
 - Gli altri limiti sono quelli dello spot: 5 posizioni, perdita giornaliera del 3%,
   12 ore di pausa dopo una perdita.
 

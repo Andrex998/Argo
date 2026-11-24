@@ -120,10 +120,12 @@ class Settings(BaseSettings):
     # The perpetuals desk's own risk rules, in place of the spot desk's on that desk.
     # research/riskier.py (21/11/2026): stops up to 12% did better than 8% in each of the
     # three years, at the same 1% risk and the same drawdown. 1.5% or 2% risk roughly
-    # doubles gains and drawdowns: past the 15% halt in two years of three.
+    # doubles gains and drawdowns: past the 15% halt in two years of three. The owner chose
+    # 1.5% on 24/11/2026 (+230% over the three years, worst drawdown 20.2%), so the halt
+    # moves to 25%: the old 15% would stop the desk inside the drawdown it accepted.
     perps_max_stop_pct: float = Field(default=12.0, ge=2.0, le=25.0)
-    perps_risk_per_trade_pct: float = Field(default=1.0, gt=0.0, le=3.0)
-    perps_max_drawdown_pct: float = Field(default=15.0, ge=5.0, le=40.0)
+    perps_risk_per_trade_pct: float = Field(default=1.5, gt=0.0, le=3.0)
+    perps_max_drawdown_pct: float = Field(default=25.0, ge=5.0, le=40.0)
 
     # --- Live page: a snapshot of the desk every minute (optional) ----------
     live_url: str = ""  # https://<progetto>.supabase.co

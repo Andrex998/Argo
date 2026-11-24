@@ -61,6 +61,21 @@ Lo storico non è stato riscritto: le correzioni valgono da quel momento in poi.
     quando scendono sotto il tetto.
   - Per tornare indietro: `update desk_strategies set params = params - 'guard' where id
     in ('filtro', 'filtro_piccoli', 'filtro_10', 'filtro_piccoli_10');`
+- **24/11/2026, mattina.** Su richiesta del proprietario, **fermati i quattro FILTRO**. Da
+  1.000 $ finti l'uno erano scesi a:
+  - FILTRO v2: 157 $;
+  - FILTRO v2 piccoli: 158 $;
+  - FILTRO v2 · size 10%: 697 $;
+  - FILTRO v2 piccoli · size 10%: 116 $.
+
+  Come le altre strategie ferme, hanno `params.sizing.pct_of_equity = 0` e
+  `params.guard.halted = true`, con il motivo. Non comprano più. Le 27 posizioni aperte
+  (circa 470 $) escono con le regole di sempre. Resta attivo solo il registro ombra, che
+  misura il tasso di base del mercato.
+  - Per tornare indietro, nel `params` di ognuna togli `halted` e `reason` dal `guard` e
+    rimetti la misura di prima: 5,5 per `filtro` e `filtro_piccoli`, 10 per `filtro_10` e
+    `filtro_piccoli_10`. Per esempio:
+    `update desk_strategies set params = jsonb_set(params #- '{guard,halted}' #- '{guard,reason}', '{sizing,pct_of_equity}', '5.5') where id in ('filtro', 'filtro_piccoli');`
 
 ## Cartelle
 
