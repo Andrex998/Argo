@@ -5,7 +5,7 @@ made up here.
 Run from the repository root:  trading-desk/.venv/bin/python -m pytest fx-school -q
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 import school  # pytest puts this folder on the import path
@@ -210,14 +210,37 @@ def test_holidays(moment, fx, slv):
     assert school.market_open("SLV", moment) is slv
 
 
+def weekdays(n, first=date(2025, 9, 1)):
+    out, d = [], first
+    while len(out) < n:
+        if d.weekday() < 5:
+            out.append(d.isoformat())
+        d += timedelta(days=1)
+    return out
+
+
 def test_the_picture_of_a_market_on_daily_candles():
-    # 300 days rising by 1 a day from 100, each day ranging 2 around its close
-    days = [Candle(f"day-{i:03d} 00:00:00", 100 + i - 0.5, 100 + i + 1, 100 + i - 1, 100 + i)
-            for i in range(300)]  # fmt: skip
-    row = school.picture({"XAU/USD": days}, "2026-11-24")["XAU/USD"]
+    # 300 trading days rising by 1 a day from 100, each day ranging 2 around its close,
+    # with a quiet Sunday candle that must not count
+    days = [Candle(f"{d} 00:00:00", 100 + i - 0.5, 100 + i + 1, 100 + i - 1, 100 + i)
+            for i, d in enumerate(weekdays(300))]  # fmt: skip
+    days.append(Candle("2026-11-01 00:00:00", 399, 399.1, 398.9, 399))  # a Sunday
+    row = school.picture({"XAU/USD": sorted(days, key=lambda c: c.start)}, "2026-11-24")["XAU/USD"]
     assert row["prezzo"] == 399
     assert row["variazione_pct"]["1g"] == pytest.approx((399 / 398 - 1) * 100, abs=0.01)
     assert row["variazione_pct"]["250g"] == pytest.approx((399 / 149 - 1) * 100, abs=0.01)
     assert row["atr14"] == pytest.approx(2.0)  # the range, wider than the move from the last close
     assert row["media50"] == pytest.approx(374.5) and row["distanza_media50_pct"] > 0
     assert row["max_20g"] == 400 and row["min_20g"] == 379
+
+
+def test_a_candle_the_feed_got_wrong_is_dropped():
+    series = {"values": [
+        {"datetime": "2026-11-23", "open": "0.585", "high": "0.588", "low": "0.583", "close": "0.586"},
+        {"datetime": "2026-11-20", "open": "0.584", "high": "1.71632", "low": "0.582", "close": "0.585"},
+        {"datetime": "2026-11-19", "open": "0.583", "high": "0.582", "low": "0.580", "close": "0.584"},
+        {"datetime": "2026-11-18", "open": "0.582", "high": "0.586", "low": "0.581", "close": "0.584"},
+    ]}  # fmt: skip
+    assert [c.start[:10] for c in school._candles(series, "NZD/USD")] == ["2026-11-18", "2026-11-23"]
+    crash = {"values": [{"datetime": "2026-01-30", "open": "105.6", "high": "106.0", "low": "73.5", "close": "80.2"}]}
+    assert len(school._candles(crash, "SLV")) == 1  # a real 30% day of silver stays

@@ -23,8 +23,9 @@ dell'attività programmata.
 
 1. Nella copia del repository Andrex998/Argo prendi la versione aggiornata della scuola:
    `git fetch origin claude/beautiful-feynman-6mv3m5 && git checkout FETCH_HEAD -- fx-school`.
-   Se la copia del repository non c'è, aggiungilo con lo strumento `add_repo` e clonalo
-   come ti dice.
+   Se la copia del repository non c'è, clonala con
+   `git clone --branch claude/beautiful-feynman-6mv3m5 --depth 1 https://github.com/Andrex998/Argo`
+   (oppure aggiungi il repository con `add_repo`, se hai lo strumento).
 2. Scegli una cartella di lavoro temporanea, qui chiamata `LAVORO`. Il motore è
    `fx-school/school.py` e gira con `python3`, senza pacchetti.
 3. Se non vedi lo strumento `ArtifactData`, caricalo con ToolSearch. Tutte le letture e le
@@ -35,8 +36,8 @@ dell'attività programmata.
 1. Prendi la data di oggi in Italia con `TZ=Europe/Rome date +%F`. Nel file
    `fx-school/programma.json` trova il giorno con quella data. Ti servono `giorno` (il
    numero), `settimana`, `tipo`, `operazioni` (true se oggi si opera) e `tema`.
-2. Dopo il 4/1/2027 la scuola è finita: spegni l'attività programmata con `update_trigger`
-   (l'id del messaggio, `enabled: false`) e fermati. Prima del 24/11/2026, fermati.
+2. Dopo il 4/1/2027 la scuola è finita: spegni l'attività programmata e fermati (vedi il
+   punto 9). Prima del 24/11/2026, fermati.
 3. Leggi `diario/<oggi>`. Se esiste con `stato: "completo"`, la giornata è già fatta:
    fermati.
 
@@ -74,7 +75,10 @@ cose:
   quadro dei mercati;
 - la biblioteca della scuola, `fx-school/biblioteca.md`, se c'è.
 
-Cerca e leggi davvero 2-4 fonti serie, con al massimo 5 ricerche. Poi scrivi:
+Cerca e leggi davvero 2-4 fonti serie, con al massimo 5 ricerche. Se una pagina non si apre
+perché la rete della sessione la blocca, lavora con i riassunti della ricerca e scrivi che
+quella fonte l'hai letta solo in sintesi: mai inventare un numero. Vale anche per gli
+allievi. Poi scrivi:
 - `titolo`;
 - `testo`: 250-450 parole in Markdown;
 - `compito`: un compito preciso per oggi;
@@ -217,8 +221,13 @@ stato del motore.
 
 ## 9. L'ultimo giorno
 
-Dopo aver salvato il diploma, spegni l'attività programmata con `update_trigger`: l'id che
-trovi nel messaggio d'avvio e `enabled: false`. La scuola si ferma lì.
+Dopo aver salvato il diploma, spegni l'attività programmata con `update_trigger`. Usa l'id
+che trovi nel messaggio d'avvio (`trigger_id`) e `enabled: false`. La scuola si ferma lì.
+
+Se lo strumento `update_trigger` non c'è, metti nell'`avviso` di `scuola/stato`: «La scuola
+è finita: spegnete l'attività programmata Mini Scuola Forex». Lo stesso vale per ogni
+giorno dopo il 4/1/2027 in cui la sessione parte ancora. In quei giorni non fare
+nient'altro.
 
 ## Quanto deve costare una giornata
 

@@ -128,15 +128,27 @@ def _get(params: dict, wait: float = 62.0) -> dict:
     raise PriceError("Twelve Data: troppe richieste anche dopo un minuto")
 
 
-def _candles(series: dict) -> list[Candle]:
+def _sane(c: Candle, widest: float) -> bool:
+    """False for a candle the data feed got wrong: a price that is not positive, a high
+    or low that does not contain the open and close, or a range wider than `widest` (a
+    share of the close) that no real day of that market reaches. One bad high (NZD/USD at
+    1.716, three times its price) must not close a position or skew the averages; a real
+    crash day (SLV swung 30% on 30/1/2026) must stay."""
+    body_low, body_high = min(c.open, c.close), max(c.open, c.close)
+    slack = 1e-6 * c.close
+    return 0 < c.low <= body_low + slack and body_high - slack <= c.high and c.high - c.low <= widest * c.close
+
+
+def _candles(series: dict, symbol: str) -> list[Candle]:
     if not isinstance(series, dict) or series.get("status") == "error" or "values" not in series:
         raise PriceError(f"serie non valida: {str(series)[:160]}")
+    widest = 0.6 if symbol in ("XAU/USD", "SLV") else 0.2  # metals swing far more than currencies
     candles = []
     for v in series["values"]:
         start = v["datetime"] if len(v["datetime"]) > 10 else v["datetime"] + " 00:00:00"
         candles.append(Candle(start, float(v["open"]), float(v["high"]), float(v["low"]),
                               float(v["close"])))  # fmt: skip
-    return sorted(candles, key=lambda c: c.start)
+    return sorted((c for c in candles if _sane(c, widest)), key=lambda c: c.start)
 
 
 def fetch(symbols: list[str], interval: str = "1h", size: int = 48,
@@ -152,7 +164,7 @@ def fetch(symbols: list[str], interval: str = "1h", size: int = 48,
                   "timezone": "UTC"}  # fmt: skip
         body = _get(params)
         for symbol in group:
-            out[symbol] = _candles(body if len(group) == 1 else body.get(symbol, {}))
+            out[symbol] = _candles(body if len(group) == 1 else body.get(symbol, {}), symbol)
     return out
 
 
@@ -203,9 +215,12 @@ def _digits(price: float) -> int:
 def picture(candles: dict[str, list[Candle]], today: str) -> dict:
     """Where each market stands on daily candles: its moves over 1, 5, 20, 60 and 250
     days in %, its average daily range (ATR 14), its 50 and 200 day averages, and the
-    highs and lows it made. The last candle is still forming if it is today's."""
+    highs and lows it made. The last candle is still forming if it is today's. Saturday
+    and Sunday candles (a few quiet hours before the week opens) are left out, so that
+    n days means n trading days and the quiet hours do not shrink the average range."""
     out = {}
-    for symbol, cs in candles.items():
+    for symbol, all_days in candles.items():
+        cs = [c for c in all_days if _at(c.start).weekday() < 5]
         if len(cs) < 2:
             continue
         closes = [c.close for c in cs]
