@@ -1,0 +1,417 @@
+{
+ "inizio": "2026-11-24",
+ "fine": "2027-01-04",
+ "orario": "08:23",
+ "settimane": [
+  {
+   "settimana": 1,
+   "titolo": "La mappa dei fattori",
+   "scopo": "Cosa muove davvero valute, oro e argento. Alla fine ogni allievo ha la sua mappa, con il peso che dà a ogni fattore."
+  },
+  {
+   "settimana": 2,
+   "titolo": "Notizie e calendario",
+   "scopo": "Quali notizie spostano i prezzi, quando escono, cosa si aspetta il mercato e quanto dura l'effetto."
+  },
+  {
+   "settimana": 3,
+   "titolo": "Come si muovono i prezzi",
+   "scopo": "Trend, carry, ritorno alla media, posizionamento, correlazioni: cosa dicono gli studi su decenni di dati."
+  },
+  {
+   "settimana": 4,
+   "titolo": "Rischio e mestiere",
+   "scopo": "Leva, stop, dimensione delle posizioni, correlazione tra posizioni, psicologia, rischio di rovina."
+  },
+  {
+   "settimana": 5,
+   "titolo": "La propria strategia",
+   "scopo": "Ognuno scrive una strategia con regole precise, la prova sugli anni passati e la difende davanti al Preside."
+  },
+  {
+   "settimana": 6,
+   "titolo": "Gara finale ed esame",
+   "scopo": "Ogni allievo opera solo con la sua strategia. Poi l'esame finale e il diploma."
+  }
+ ],
+ "giorni": [
+  {
+   "giorno": 1,
+   "data": "2026-11-24",
+   "giorno_settimana": "martedì",
+   "settimana": 1,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Banche centrali e tassi d'interesse: Fed, BCE, Banca del Giappone, Banca d'Inghilterra, BNS, banche di Australia, Canada e Nuova Zelanda. Differenziali di tasso e aspettative."
+  },
+  {
+   "giorno": 2,
+   "data": "2026-11-25",
+   "giorno_settimana": "mercoledì",
+   "settimana": 1,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Inflazione, crescita, occupazione, bilancia commerciale: i dati che spostano le aspettative sui tassi."
+  },
+  {
+   "giorno": 3,
+   "data": "2026-11-26",
+   "giorno_settimana": "giovedì",
+   "settimana": 1,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Il dollaro (indice DXY), il clima di rischio (risk-on e risk-off), le valute rifugio (yen, franco) e quelle delle materie prime (dollaro australiano, canadese, neozelandese). Oggi New York è chiusa per il Ringraziamento."
+  },
+  {
+   "giorno": 4,
+   "data": "2026-11-27",
+   "giorno_settimana": "venerdì",
+   "settimana": 1,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "L'oro: tassi reali (rendimento dei TIPS), dollaro, acquisti delle banche centrali, flussi degli ETF, crisi e guerre, domanda da Cina e India."
+  },
+  {
+   "giorno": 5,
+   "data": "2026-11-28",
+   "giorno_settimana": "sabato",
+   "settimana": 1,
+   "tipo": "studio",
+   "operazioni": false,
+   "tema": "L'argento: legame con l'oro, domanda industriale (pannelli solari, elettronica, auto), offerta delle miniere, deficit di mercato, rapporto oro/argento, volatilità. Mercato chiuso: niente operazioni."
+  },
+  {
+   "giorno": 6,
+   "data": "2026-11-29",
+   "giorno_settimana": "domenica",
+   "settimana": 1,
+   "tipo": "compito",
+   "operazioni": false,
+   "tema": "Ogni allievo scrive la sua mappa dei fattori, con un peso per ciascuno. Prima pagella del Preside."
+  },
+  {
+   "giorno": 7,
+   "data": "2026-11-30",
+   "giorno_settimana": "lunedì",
+   "settimana": 2,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Il calendario economico: quali dati contano, a che ora escono, il consenso degli analisti e la sorpresa."
+  },
+  {
+   "giorno": 8,
+   "data": "2026-12-01",
+   "giorno_settimana": "martedì",
+   "settimana": 2,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Le riunioni delle banche centrali: comunicati, conferenze stampa, \"dot plot\", toni da falco e da colomba."
+  },
+  {
+   "giorno": 9,
+   "data": "2026-12-02",
+   "giorno_settimana": "mercoledì",
+   "settimana": 2,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Lavoro e inflazione negli Stati Uniti (NFP, CPI, PCE) e il loro effetto sul dollaro e sull'oro."
+  },
+  {
+   "giorno": 10,
+   "data": "2026-12-03",
+   "giorno_settimana": "giovedì",
+   "settimana": 2,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Politica, elezioni, dazi, guerre, sanzioni: come le notizie geopolitiche arrivano ai prezzi e quanto durano."
+  },
+  {
+   "giorno": 11,
+   "data": "2026-12-04",
+   "giorno_settimana": "venerdì",
+   "settimana": 2,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Operare attorno agli eventi: prima (posizioni ridotte), durante (spread larghi), dopo (la reazione vera). Studi di evento."
+  },
+  {
+   "giorno": 12,
+   "data": "2026-12-05",
+   "giorno_settimana": "sabato",
+   "settimana": 2,
+   "tipo": "ripasso",
+   "operazioni": false,
+   "tema": "Interrogazione sulla settimana. Mercato chiuso: niente operazioni."
+  },
+  {
+   "giorno": 13,
+   "data": "2026-12-06",
+   "giorno_settimana": "domenica",
+   "settimana": 2,
+   "tipo": "compito",
+   "operazioni": false,
+   "tema": "Ogni allievo scrive le sue regole per le notizie. Pagella."
+  },
+  {
+   "giorno": 14,
+   "data": "2026-12-07",
+   "giorno_settimana": "lunedì",
+   "settimana": 3,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Trend e momentum nel forex e nei metalli: cosa dicono gli studi su decenni di dati."
+  },
+  {
+   "giorno": 15,
+   "data": "2026-12-08",
+   "giorno_settimana": "martedì",
+   "settimana": 3,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Carry trade: guadagnare la differenza dei tassi, e quando crolla (fuga dal rischio)."
+  },
+  {
+   "giorno": 16,
+   "data": "2026-12-09",
+   "giorno_settimana": "mercoledì",
+   "settimana": 3,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Ritorno alla media, eccessi, livelli tondi, massimi e minimi precedenti."
+  },
+  {
+   "giorno": 17,
+   "data": "2026-12-10",
+   "giorno_settimana": "giovedì",
+   "settimana": 3,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Stagionalità e posizionamento: il rapporto COT della CFTC, la folla dei piccoli trader, i grandi speculatori."
+  },
+  {
+   "giorno": 18,
+   "data": "2026-12-11",
+   "giorno_settimana": "venerdì",
+   "settimana": 3,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Correlazioni tra mercati: dollaro e oro, oro e argento, yen e borse, dollaro australiano e materie prime, tassi e valute."
+  },
+  {
+   "giorno": 19,
+   "data": "2026-12-12",
+   "giorno_settimana": "sabato",
+   "settimana": 3,
+   "tipo": "ripasso",
+   "operazioni": false,
+   "tema": "Interrogazione sulla settimana. Mercato chiuso: niente operazioni."
+  },
+  {
+   "giorno": 20,
+   "data": "2026-12-13",
+   "giorno_settimana": "domenica",
+   "settimana": 3,
+   "tipo": "compito",
+   "operazioni": false,
+   "tema": "Ogni allievo sceglie le due idee che gli sembrano più solide e spiega perché. Pagella."
+  },
+  {
+   "giorno": 21,
+   "data": "2026-12-14",
+   "giorno_settimana": "lunedì",
+   "settimana": 4,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Pip, lotti, valore di un movimento, leva: cosa rischia davvero una posizione."
+  },
+  {
+   "giorno": 22,
+   "data": "2026-12-15",
+   "giorno_settimana": "martedì",
+   "settimana": 4,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Dove mettere lo stop: volatilità (ATR), livelli, tempo. Dimensione in base al rischio."
+  },
+  {
+   "giorno": 23,
+   "data": "2026-12-16",
+   "giorno_settimana": "mercoledì",
+   "settimana": 4,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Correlazione tra posizioni: dieci trade sul dollaro sono un trade solo."
+  },
+  {
+   "giorno": 24,
+   "data": "2026-12-17",
+   "giorno_settimana": "giovedì",
+   "settimana": 4,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Psicologia: paura, avidità, vendetta dopo una perdita. Il diario di trading."
+  },
+  {
+   "giorno": 25,
+   "data": "2026-12-18",
+   "giorno_settimana": "venerdì",
+   "settimana": 4,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Aspettativa matematica, percentuale di vincite, rapporto rischio/rendimento, rischio di rovina."
+  },
+  {
+   "giorno": 26,
+   "data": "2026-12-19",
+   "giorno_settimana": "sabato",
+   "settimana": 4,
+   "tipo": "ripasso",
+   "operazioni": false,
+   "tema": "Interrogazione sulla settimana. Mercato chiuso: niente operazioni."
+  },
+  {
+   "giorno": 27,
+   "data": "2026-12-20",
+   "giorno_settimana": "domenica",
+   "settimana": 4,
+   "tipo": "compito",
+   "operazioni": false,
+   "tema": "Ogni allievo scrive il suo regolamento personale di rischio. Pagella."
+  },
+  {
+   "giorno": 28,
+   "data": "2026-12-21",
+   "giorno_settimana": "lunedì",
+   "settimana": 5,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Ognuno scrive la sua strategia con regole precise: segnale, entrata, uscita, dimensione."
+  },
+  {
+   "giorno": 29,
+   "data": "2026-12-22",
+   "giorno_settimana": "martedì",
+   "settimana": 5,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "La prova sugli anni passati con i dati giornalieri (comando history del motore): regole scelte su un periodo, verificate su un altro mai visto."
+  },
+  {
+   "giorno": 30,
+   "data": "2026-12-23",
+   "giorno_settimana": "mercoledì",
+   "settimana": 5,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Costi, spread, slittamento: quanto resta del risultato."
+  },
+  {
+   "giorno": 31,
+   "data": "2026-12-24",
+   "giorno_settimana": "giovedì",
+   "settimana": 5,
+   "tipo": "lezione",
+   "operazioni": true,
+   "tema": "Il Preside fa da avversario: cerca i punti deboli di ogni strategia. Vigilia di Natale: mercato sottile."
+  },
+  {
+   "giorno": 32,
+   "data": "2026-12-25",
+   "giorno_settimana": "venerdì",
+   "settimana": 5,
+   "tipo": "studio",
+   "operazioni": false,
+   "tema": "Natale, mercato chiuso: correzioni, ultima prova, decisione. La strategia entra in gara o torna in laboratorio."
+  },
+  {
+   "giorno": 33,
+   "data": "2026-12-26",
+   "giorno_settimana": "sabato",
+   "settimana": 5,
+   "tipo": "ripasso",
+   "operazioni": false,
+   "tema": "Interrogazione sulla settimana. Mercato chiuso: niente operazioni."
+  },
+  {
+   "giorno": 34,
+   "data": "2026-12-27",
+   "giorno_settimana": "domenica",
+   "settimana": 5,
+   "tipo": "compito",
+   "operazioni": false,
+   "tema": "Presentazione finale delle strategie. Pagella."
+  },
+  {
+   "giorno": 35,
+   "data": "2026-12-28",
+   "giorno_settimana": "lunedì",
+   "settimana": 6,
+   "tipo": "gara",
+   "operazioni": true,
+   "tema": "Gara: ogni allievo opera solo con la sua strategia e spiega ogni scelta."
+  },
+  {
+   "giorno": 36,
+   "data": "2026-12-29",
+   "giorno_settimana": "martedì",
+   "settimana": 6,
+   "tipo": "gara",
+   "operazioni": true,
+   "tema": "Gara: ogni allievo opera solo con la sua strategia e spiega ogni scelta."
+  },
+  {
+   "giorno": 37,
+   "data": "2026-12-30",
+   "giorno_settimana": "mercoledì",
+   "settimana": 6,
+   "tipo": "gara",
+   "operazioni": true,
+   "tema": "Gara: ogni allievo opera solo con la sua strategia e spiega ogni scelta."
+  },
+  {
+   "giorno": 38,
+   "data": "2026-12-31",
+   "giorno_settimana": "giovedì",
+   "settimana": 6,
+   "tipo": "gara",
+   "operazioni": true,
+   "tema": "Gara, San Silvestro: mercato sottile, spread larghi. È una lezione anche quella."
+  },
+  {
+   "giorno": 39,
+   "data": "2027-01-01",
+   "giorno_settimana": "venerdì",
+   "settimana": 6,
+   "tipo": "studio",
+   "operazioni": false,
+   "tema": "Capodanno, mercato chiuso: il bilancio della gara."
+  },
+  {
+   "giorno": 40,
+   "data": "2027-01-02",
+   "giorno_settimana": "sabato",
+   "settimana": 6,
+   "tipo": "esame",
+   "operazioni": false,
+   "tema": "Esame finale, prima parte: il Preside interroga su tutto il programma."
+  },
+  {
+   "giorno": 41,
+   "data": "2027-01-03",
+   "giorno_settimana": "domenica",
+   "settimana": 6,
+   "tipo": "esame",
+   "operazioni": false,
+   "tema": "Esame finale, seconda parte: l'analisi completa di un mercato a scelta del Preside. Ultima pagella."
+  },
+  {
+   "giorno": 42,
+   "data": "2027-01-04",
+   "giorno_settimana": "lunedì",
+   "settimana": 6,
+   "tipo": "diploma",
+   "operazioni": false,
+   "tema": "Ultimo giorno: niente nuove posizioni, si chiude tutto ai prezzi del giorno. Diploma: ragionamento, disciplina e risultati, in quest'ordine."
+  }
+ ]
+}
