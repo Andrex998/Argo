@@ -401,6 +401,24 @@ Cosa dice:
 
 Rifallo tu: `uv run python research/riskier.py`.
 
+### La biblioteca (24/11/2026)
+
+Otto lettori hanno studiato le fonti pubbliche serie sul trading: trend, momentum tra
+monete, funding e carry, sentiment, ritorno alla media, macro e notizie, rischio,
+stagionalità. Poi un Preside le ha messe insieme in `research/biblioteca.md`. Le letture
+complete, con le fonti, sono in `research/biblioteca-letture.md`. In breve:
+- reggono il trend su settimane e mesi, la dimensione legata alla volatilità e il carry,
+  che però è un'assicurazione contro i crolli;
+- sulle cripto il momentum tra monete, il ritorno alla media a breve e il sentiment
+  spariscono dopo i costi;
+- il nostro +108,5% dipende quasi tutto dall'anno di ribasso. Nei primi due anni, senza
+  le 2 operazioni migliori, il desk è vicino a zero.
+
+La biblioteca propone dieci esami, in ordine. Il primo chiede se il vantaggio sta nella
+rottura di volume o solo nello stare dalla parte di BTC, contro entrate a caso con la
+stessa gestione. I numeri della letteratura vengono da abstract ed estratti: vanno
+ricontrollati prima di diventare parametri.
+
 ### Quattro storici brevi (Kraken e BingX)
 
 Prima del test lungo, il 18/11/2026 il desk è stato rigiocato su quattro storici brevi,
