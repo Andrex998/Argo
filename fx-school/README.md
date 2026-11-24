@@ -71,10 +71,11 @@ Le fa rispettare il motore:
 
 ## Costi e come fermarla
 
-Ogni giornata usa l'abbonamento Claude, come i desk di trading. Più o meno vale come tre
-conversazioni di media lunghezza. Per fermare la scuola basta spegnere l'attività
-programmata "Mini Scuola Forex" su claude.ai, oppure chiederlo a Claude. Dopo il 4/1/2027
-si spegne da sola.
+Ogni giornata usa l'abbonamento Claude, come i desk di trading: il primo giorno è durato
+dieci minuti. Per fermare la scuola basta spegnere l'attività programmata "Mini Scuola
+Forex" su claude.ai, oppure chiederlo a Claude. Dopo il diploma del 4/1/2027 va spenta a
+mano, perché le sessioni del mattino non hanno lo strumento per farlo: dal 5 gennaio la
+pagina lo ricorda, e le sessioni che partono ancora si fermano subito.
 
 ## Prove
 
