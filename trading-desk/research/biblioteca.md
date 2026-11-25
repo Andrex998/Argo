@@ -350,6 +350,38 @@ Vicini per l'altopiano: soglie 5 e 15. Variante: solo long.
 
 **Ruolo atteso.** Controllo (prova di un mito); diversificazione solo se passa
 
+### E11 · Trend lento su valute, oro e argento (le regole di E02 su un'altra classe di attivi)
+
+Famiglia: Trend lento (momentum nel tempo). Forza delle prove: **A forte in letteratura, da verificare sui nostri dati**.
+
+Scritto il 25/11/2026, prima di guardare i dati, per la fusione del 4/1/2027 tra la scuola forex e la scuola cripto. Se passa, diventa il portafoglio a regole del Macro e del Tecnico quando entrano nella Scuola Cripto. Se non passa, i due entrano con il solo portafoglio a giudizio.
+
+Il trend nel tempo è la strategia più documentata della biblioteca su valute e materie prime: Moskowitz, Ooi e Pedersen 2012; Hurst, Ooi e Pedersen 2017, un secolo di dati. Dopo il 2010 sulle valute è stato più debole. Questo esame non sceglie niente sui dati: usa le regole di E02, già scritte, su mercati nuovi.
+
+**Regole esatte.**
+
+- **I mercati.** I 9 della scuola forex: EUR/USD, GBP/USD, AUD/USD, NZD/USD, USD/JPY, USD/CHF, USD/CAD, XAU/USD e SLV (al posto dell'argento).
+- **I dati.** Candele giornaliere di Twelve Data, la stessa fonte della scuola: fino a 5.000 giorni di borsa per mercato.
+- **Il segnale.** s = la media dei segni dei rendimenti a 5, 10, 20, 40 e 80 giorni di borsa (1, 2, 4, 8 e 16 settimane), da -1 a +1. Long e short: sulle valute uno short è il long dell'altra moneta.
+- **I pesi.** Peso di un mercato = s × (0,10 / N) / vol60, dove N è il numero di mercati con 120 giorni di storia e vol60 la volatilità annua degli ultimi 60 rendimenti giornalieri.
+- **I limiti.** Al massimo 0,5 volte il capitale su un mercato e 3 volte in tutto.
+- **Quando si decide.** Ogni venerdì alla chiusura, con esecuzione alla chiusura stessa. Un peso cambia solo se il nuovo si allontana di oltre il 25% da quello tenuto.
+- **I costi.** Su ogni cambio, gli spread della scuola forex (`MARKETS` in `fx-school/school.py`) più uno slittamento uguale allo spread. Gli interessi del rollover sono esclusi e vanno dichiarati come limite.
+
+**Il placebo.** 1.000 serie con gli stessi pesi in valore assoluto e i segni del segnale estratti a caso ogni venerdì.
+
+**Superato se:**
+1. **Il rendimento.** Dopo i costi, su tutto il periodo, lo Sharpe è almeno 0,3 ed è positivo in almeno il 60% degli anni solari completi.
+2. **Il placebo.** Lo Sharpe batte il 95° percentile del placebo.
+3. **Senza il mercato migliore.** Il rendimento resta positivo.
+4. **Gli ultimi 5 anni.** Il rendimento resta positivo anche lì.
+
+Basta un criterio mancato per non passare.
+
+**Cosa la smentirebbe.** Ognuno dei criteri mancati è una smentita. In particolare: un risultato che vive solo prima del 2010 o di un mercato solo, oppure che non batte i segni a caso, dice che il trend qui è solo una storia dei libri.
+
+**Ruolo atteso.** Portafoglio a regole del Macro e del Tecnico nella Scuola Cripto, dopo la fusione.
+
 ## Il protocollo d'esame
 
 PROTOCOLLO D'ESAME. Vale per tutti, compreso il sistema attuale.
