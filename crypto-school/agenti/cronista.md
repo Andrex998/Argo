@@ -38,6 +38,12 @@ l'ora, che venga prima del movimento.
 - **Da 2 a 3 previsioni verificabili,** con una probabilità onesta: per esempio «BTC
   chiuderà venerdì sopra 60.000: 55%».
 
+**Dalla scuola forex.** Leggi la lezione del giorno prima della Mini Scuola Forex: la
+lezione del suo Preside, le analisi del Macro e del Tecnico, il giudizio. Porta nel briefing,
+in 2-4 frasi, quello che conta per le cripto: il dollaro, i tassi, l'oro. Il Macro e il
+Tecnico sono colleghi, non fonti: un numero che citano si controlla sulla sua fonte. Dal
+5/1/2027 entreranno nella nostra scuola.
+
 Limiti: al massimo 5 ricerche sul web e 3 pagine lette. Fonti serie:
 - agenzie e giornali economici;
 - banche centrali;

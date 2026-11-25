@@ -32,5 +32,9 @@ Il file `programma.json` contiene gli stessi giorni, con le date, per la session
 | 11 | 8/2–14/2 | Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza | Scettico, Cronista, Preside | I social e gli influencer anticipano il prezzo; Una strategia famosa rende come nel libro |
 | 12 | 15/2–21/2 | Bilancio del trimestre: regole contro giudizio | Preside, Falco, Tartaruga, Spazzino, Ragioniere | Una strategia che vince il 90% delle volte è una miniera |
 
+**La fusione.** Il 4/1/2027 la Mini Scuola Forex finisce con il diploma. Dal 5/1/2027 il
+Macro e il Tecnico entrano nella Scuola Cripto, e resta una sola scuola
+([FUSIONE.md](FUSIONE.md)).
+
 Gli scrutini sono il 7/12/2026, il 4/1/2027 e l'1/2/2027. Al primo i dati sono ancora pochi: il
 Preside cambia un limite di rischio solo per una mancanza di disciplina.
