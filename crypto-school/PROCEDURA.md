@@ -572,18 +572,21 @@ stato del motore.
 
 ## 11. La fine del trimestre
 
-Dopo aver salvato l'ultimo giorno, spegni le quattro attività programmate con
+Dopo aver salvato l'ultimo giorno, spegni le sei attività programmate con
 `update_trigger` e `enabled: false`:
 - Scuola Cripto;
 - Scuola Cripto · recupero;
 - Scuola Cripto · palestra;
-- Scuola Cripto · sera.
+- Scuola Cripto · sera;
+- Scuola Cripto · revisione;
+- Sentinella delle scuole.
 
 L'id dell'attività che ti ha avviato è nel messaggio d'avvio, insieme agli altri.
 
 Se lo strumento `update_trigger` non c'è, metti nell'`avviso` di `classe/stato`: «Il
 trimestre è finito: spegnete le attività programmate Scuola Cripto, Scuola Cripto ·
-recupero, Scuola Cripto · palestra e Scuola Cripto · sera». Lo stesso vale per ogni
+recupero, Scuola Cripto · palestra, Scuola Cripto · sera, Scuola Cripto · revisione e
+Sentinella delle scuole». Lo stesso vale per ogni
 giorno dopo il 21/2/2027 in cui la sessione parte ancora: in quei giorni non fare
 nient'altro.
 

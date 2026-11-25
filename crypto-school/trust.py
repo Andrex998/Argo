@@ -195,4 +195,5 @@ def lights(today: str, curves: dict[str, dict[str, float]], trades: dict[str, in
                 "giorni_verdi_per_una_prova_reale": READY_DAYS}  # fmt: skip
     cash = {"rendimento_pct": 0.0, "calo_massimo_pct": 0.0}
     return {"giorno": today, "portafogli": out, "giudizio_contro_regola": gaps,
-            "benchmark": {"btc_tenuto": btc, "contanti": cash}, "criteri": criteria}  # fmt: skip
+            "benchmark": {"btc_tenuto": {**btc, "curva": dict(sorted(btc_curve.items()))}, "contanti": cash},
+            "criteri": criteria}  # fmt: skip
