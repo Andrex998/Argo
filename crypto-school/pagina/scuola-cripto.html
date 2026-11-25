@@ -22,6 +22,7 @@
   --gain: #006300;
   --loss: #c62f2f;
   --alarm: #fbeaea;
+  --amber: #c58a00;
   --focus: #2a78d6;
   --c-preside: #b8243a;
   --c-falco: #257de0;
@@ -41,7 +42,7 @@
   :root:not([data-theme="light"]) {
     --paper: #17201c; --sheet: #1c2722; --grid: #212c27; --ink: #e8ede7; --ink-2: #b7c2bb;
     --muted: #8d9991; --rule: #2f3b35; --wash: #223029; --pen: #f28b96; --gain: #35b54a;
-    --loss: #f07272; --alarm: #3a2527; --focus: #6aa6ef;
+    --loss: #f07272; --alarm: #3a2527; --amber: #e5b43c; --focus: #6aa6ef;
     --c-preside: #ef6a6b; --c-falco: #3d93f0; --c-tartaruga: #22b83c; --c-spazzino: #ef7a3c;
     --c-ragioniere: #dca21c; --c-guardiano: #19b496; --c-cronista: #e8649f; --c-scettico: #9d8cf1;
     --c-motore: #b7c2bb; color-scheme: dark;
@@ -50,7 +51,7 @@
 :root[data-theme="dark"] {
   --paper: #17201c; --sheet: #1c2722; --grid: #212c27; --ink: #e8ede7; --ink-2: #b7c2bb;
   --muted: #8d9991; --rule: #2f3b35; --wash: #223029; --pen: #f28b96; --gain: #35b54a;
-  --loss: #f07272; --alarm: #3a2527; --focus: #6aa6ef;
+  --loss: #f07272; --alarm: #3a2527; --amber: #e5b43c; --focus: #6aa6ef;
   --c-preside: #ef6a6b; --c-falco: #3d93f0; --c-tartaruga: #22b83c; --c-spazzino: #ef7a3c;
   --c-ragioniere: #dca21c; --c-guardiano: #19b496; --c-cronista: #e8649f; --c-scettico: #9d8cf1;
   --c-motore: #b7c2bb; color-scheme: dark;
@@ -380,6 +381,52 @@ table.coins th[aria-sort] { color: var(--ink); }
 .rules-grid li b { color: var(--ink); }
 footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
 
+/* il semaforo e la fiducia */
+.trust { font-size: .86rem; color: var(--ink-2); max-width: 100%; overflow-wrap: anywhere; }
+.trust b { color: var(--ink); font-weight: 600; }
+.trust .ok { color: var(--gain); font-weight: 600; }
+.trust.broken { color: var(--loss); background: var(--alarm); border: 1px solid var(--loss); border-radius: 8px; padding: 4px 10px; justify-self: start; }
+.trust.broken b { color: var(--loss); }
+.calm { background: var(--wash); border-radius: 10px; padding: 12px 16px; color: var(--ink-2); margin-bottom: 16px; display: grid; gap: 4px; }
+.calm b { color: var(--ink); }
+.lights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.light-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.light { border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.light-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.light-head b { font-size: .95rem; }
+.light.c-grigio .light-head b { color: var(--muted); font-weight: 600; }
+.lamp { display: inline-flex; gap: 3px; padding: 3px 4px; border-radius: 999px; border: 1px solid var(--rule); background: var(--paper); }
+.lamp i { width: 11px; height: 11px; border-radius: 50%; background: var(--rule); display: inline-block; }
+.lamp i.on.l-r { background: var(--loss); }
+.lamp i.on.l-y { background: var(--amber); }
+.lamp i.on.l-g { background: var(--gain); }
+.reasons { margin: 0; padding-left: 1.1em; font-size: .84rem; color: var(--ink-2); display: grid; gap: 2px; }
+.meters { display: grid; gap: 6px; font-size: .8rem; color: var(--ink-2); }
+.meters > div { display: grid; gap: 3px; }
+.meter { display: block; height: 6px; border-radius: 3px; background: var(--wash); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--ink-2); border-radius: 3px; }
+.meter.green i { background: var(--gain); }
+.crit { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: .8rem; color: var(--ink-2); }
+.crit li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 4px; }
+.crit-h { font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: -4px; }
+.crit .y { color: var(--gain); font-weight: 700; }
+.crit .n { color: var(--muted); font-weight: 700; }
+.verdict-chip { display: inline-block; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--ink-2); font-size: .8rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.verdict-chip.aggiunge { border-color: var(--gain); color: var(--gain); }
+.verdict-chip.toglie { border-color: var(--loss); color: var(--loss); }
+.trust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .9rem; }
+.checklist > li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; }
+.checklist .mark { font-weight: 700; }
+.checklist > li.ok .mark { color: var(--gain); }
+.checklist > li.ko .mark { color: var(--loss); }
+.fp { font-family: var(--font-num); font-size: .8rem; overflow-wrap: anywhere; word-break: break-all; color: var(--ink-2); }
+.seal { display: grid; gap: 6px; font-size: .88rem; border: 1px dashed var(--rule); border-radius: 8px; padding: 8px 12px; }
+.seal.bad { border: 1px solid var(--loss); background: var(--alarm); }
+.seal .ok { color: var(--gain); font-weight: 600; }
+.seal .ko { color: var(--loss); font-weight: 600; }
+.ln.btc { border-top: 2px dotted var(--muted); }
+
 /* la palestra, la sera, gli ordini cambiati */
 .gym-days { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .gym-days button { border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 999px; padding: 3px 11px; font-size: .84rem; cursor: pointer; }
@@ -409,6 +456,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
 .ev-agent { border-left: 3px solid var(--who); padding-left: 12px; display: grid; gap: 6px; align-content: start; min-width: 0; }
 
 @media (max-width: 900px) {
+  .lights, .trust-grid { grid-template-columns: minmax(0, 1fr); }
   .gyms { grid-template-columns: minmax(0, 1fr); }
   .week { grid-template-columns: minmax(0, 1fr); }
   .week-name { padding-top: 0; }
@@ -430,7 +478,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   .righe li { grid-template-columns: minmax(0, 1fr); }
   .fund { gap: 10px 20px; }
   .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .vs { grid-template-columns: minmax(0, 1fr); }
+  .vs, .light-pair { grid-template-columns: minmax(0, 1fr); }
   .kvs.small div { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -444,6 +492,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     <h1>Scuola Cripto</h1>
     <p class="lede">Otto agenti di intelligenza artificiale studiano le criptovalute per tre mesi. Quattro di loro operano, e ognuno ha due portafogli da 10.000 USDT finti: uno segue la sua regola scritta, l'altro il suo giudizio. La differenza tra i due dice se il giudizio vale qualcosa. Ogni mattina alle 07:00 c'è la riunione.</p>
     <div class="status" id="status"><span class="chip">Carico i dati della scuola…</span></div>
+    <p class="trust" id="trust" hidden></p>
   </div>
 </header>
 
@@ -497,6 +546,13 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       <div class="section-head"><h2 id="t-portafogli">I portafogli</h2><p class="muted" id="wallets-at"></p></div>
       <div class="fund" id="fund"><p class="muted">Carico i portafogli…</p></div>
       <div class="wallets" id="wallets"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-semaforo">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-semaforo">Il semaforo</h2><p class="muted" id="semaforo-at"></p></div>
+      <div id="semaforo"><p class="muted">Carico il semaforo…</p></div>
     </div>
   </section>
 
@@ -575,7 +631,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
             <li><b>Gli agenti non sono coscienti</b> e non imparano da soli: ricordano solo quello che è scritto nei quaderni e nei verbali.</li>
             <li><b>Il paper trading non è il conto vero:</b> mancano lo slittamento dei crolli veri, gli ordini non eseguiti e il rischio dell'exchange.</li>
             <li>Ogni previsione ha una probabilità e una scadenza, e il motore la verifica sulla chiusura giornaliera vera. Così si misura quanto ognuno si sbaglia.</li>
-            <li>I soldi sono finti: nessun ordine arriva a un exchange.</li>
+            <li>I soldi sono finti: nessun ordine arriva a un exchange. Solo dopo 365 giorni di semaforo verde di fila si può pensare a una piccola prova con soldi veri, e la decisione resta solo tua.</li>
           </ul>
         </div>
       </div>
@@ -617,6 +673,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   const SERA_RIGHE = ["Cosa è successo", "Cosa si è deciso", "Cosa guardare domattina"];
 
   const S = { programma: null, classe: null, giudizio: null, regole: null, live: null, sera: null, memoria: {}, verbali: {}, palestre: {}, gymSel: null, got: {}, errors: {},
+              revisioni: {}, chain: { state: "loading" },
               selected: null, picked: false, slow: false, unavailable: false, coinSort: { key: "rank", dir: 1 } };
   let db = null, vUnsub = null, vDate = null;
   const $ = (id) => document.getElementById(id);
@@ -979,9 +1036,11 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       fundEl.innerHTML = `
         <div class="fig"><h4>Il fondo della scuola, 8 portafogli</h4><span class="v">${fmt(total, 2)} <small>USDT</small></span><p><span class="num ${tone(total - start)}">${pct((total / start - 1) * 100)}</span> sugli ${fmt(start, 0)} iniziali</p></div>
         <div class="fig"><h4>Tutto il giudizio contro tutte le regole</h4><span class="v ${tone(gapSum)}">${fmt(gapSum, 2, true)} <small>USDT</small></span><p>${gaps.length ? (gapSum > 0.5 ? "Insieme, i quattro giudizi fanno meglio delle regole." : gapSum < -0.5 ? "Insieme, i quattro giudizi fanno peggio delle regole." : "Per ora giudizio e regole sono pari.") : ""}</p></div>
+        ${(() => { const B = obj(S.semaforo) && obj(S.semaforo.benchmark) && obj(S.semaforo.benchmark.btc_tenuto); return B && isNum(toNum(B.rendimento_pct)) ? `<div class="fig"><h4>Chi avesse tenuto BTC</h4><span class="v ${tone(toNum(B.rendimento_pct))}">${pct(toNum(B.rendimento_pct))}</span><p>dall'inizio, con un calo massimo del ${pct(toNum(B.calo_massimo_pct), 2, false)}; i contanti fanno 0%</p></div>` : ""; })()}
         ${best.length ? `<div class="fig"><h4>Chi aggiunge di più</h4><span class="v" style="font-size:1.15rem">${whom(best[0].n)} <span class="num ${tone(best[0].gap)}">${fmt(best[0].gap, 0, true)}</span></span><p>chi toglie di più: ${whom(best[best.length - 1].n)} <span class="num ${tone(best[best.length - 1].gap)}">${fmt(best[best.length - 1].gap, 0, true)}</span></p></div>` : ""}`;
     }
     chartW = chartWidth();
+    btcBench = btcPoints();
     el.innerHTML = T.map((t) => walletCard(t, started)).join("");
     for (const t of T) {
       const fig = el.querySelector(`[data-chart="${t.n}"]`);
@@ -1005,8 +1064,8 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
         <div class="twin"><h4>A giudizio</h4><span class="v">${fmt(jv, 2)}</span><span class="s num ${tone(jv - CAPITAL)}">${pct((jv / CAPITAL - 1) * 100)} da 10.000</span></div>
       </div>
       <figure class="block" style="margin:0" data-chart="${n}">
-        <div class="chart-legend"><span><i class="ln rules"></i>a regole</span><span><i class="ln"></i>a giudizio</span><span class="muted">la riga piena segna i 10.000 di partenza</span></div>
-        ${twinChart(n, rp, jp, chartW)}
+        <div class="chart-legend"><span><i class="ln rules"></i>a regole</span><span><i class="ln"></i>a giudizio</span>${btcBench.length ? `<span><i class="ln btc"></i>BTC tenuto</span>` : ""}<span class="muted">la riga piena: i 10.000 di partenza, come i contanti</span></div>
+        ${twinChart(n, rp, jp, chartW, btcBench)}
       </figure>
       <div class="block"><h4>Posizioni aperte a giudizio (${npos} su 4)</h4>${judgTable(w, prices)}</div>
       <div class="block"><h4>Posizioni aperte a regole (${arr(r && r.open).length})</h4>${rulesTable(n, r, prices)}</div>
@@ -1083,9 +1142,264 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     return out.length ? `<ul class="lines">${out.map((x) => `<li>${x}</li>`).join("")}</ul>` : `<p class="muted">Nessun dettaglio dal motore.</p>`;
   }
 
+  // ---- trust: the sealed register, the traffic lights, the monthly auditor ---------------------------
+  const short = (h) => String(h || "").slice(0, 12);
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const momentTxt = (m) => (m === "sera" ? "sera" : "mattina");
+  const dayMonth = (iso) => (isoDay(String(iso || "")) ? new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(dayDate(isoDay(String(iso)))) : "?");
+  const sealWhen = (e) => `del ${dayMonth(e && e.data)}, ${momentTxt(e && e.momento)}`;
+  const monthName = (m) => new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(m + "-15T12:00:00Z"));
+  // every fingerprint is SHA-256 of `precedente|testo`, the text hashed exactly as stored
+  async function verifyChain(reg) {
+    const entries = arr(reg && reg.giorni);
+    const subtle = window.crypto && window.crypto.subtle;
+    if (!subtle || typeof TextEncoder === "undefined") return { state: "nocrypto", n: entries.length, entries };
+    const enc = new TextEncoder();
+    let previous = "inizio";
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      const fail = { state: "broken", n: entries.length, entries, broken: i, at: obj(e) ? e : {} };
+      if (!obj(e) || typeof e.testo !== "string" || e.precedente !== previous) return fail;
+      const buf = await subtle.digest("SHA-256", enc.encode(`${previous}|${e.testo}`));
+      const hex = Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+      if (hex !== String(e.sigillo || "").toLowerCase()) return fail;
+      previous = e.sigillo;
+    }
+    return { state: "ok", n: entries.length, entries, broken: -1, last: entries.length ? previous : "" };
+  }
+  let chainFor;
+  function ensureChain() {
+    const reg = S.registro;
+    if (reg === chainFor) return;
+    chainFor = reg;
+    if (reg === undefined) { S.chain = { state: "loading" }; return; }
+    if (!obj(reg) || !arr(reg.giorni).length) { S.chain = { state: "empty", n: 0, entries: [] }; return; }
+    S.chain = { state: "checking", n: arr(reg.giorni).length };
+    verifyChain(reg).then(
+      (res) => { if (chainFor === reg) { S.chain = res; soon(); } },
+      () => { if (chainFor === reg) { S.chain = { state: "nocrypto", n: arr(reg.giorni).length, entries: arr(reg.giorni) }; soon(); } }
+    );
+  }
+  function renderTrust() {
+    const el = $("trust");
+    if (S.unavailable) { el.hidden = true; return; }
+    const c = S.chain || { state: "loading" };
+    el.hidden = false;
+    el.classList.toggle("broken", c.state === "broken");
+    el.innerHTML = c.state === "loading" ? `<b>Registro sigillato:</b> carico il registro…`
+      : c.state === "checking" ? `<b>Registro sigillato:</b> ricalcolo ${plural(c.n, "impronta", "impronte")}…`
+        : c.state === "empty" ? `<b>Registro sigillato:</b> la prima impronta arriva con la prima riunione sigillata.`
+          : c.state === "nocrypto" ? `<b>Registro sigillato:</b> ${plural(c.n, "riunione", "riunioni")} · questo browser non sa ricalcolare le impronte, quindi la catena non è stata ricontrollata.`
+            : c.state === "broken" ? `<b>Registro sigillato: catena rotta alla riunione ${esc(sealWhen(c.at))} ✗</b> · le impronte da lì in poi non tornano`
+              : `<b>Registro sigillato:</b> ${plural(c.n, "riunione", "riunioni")}, <span class="ok">catena integra ✓</span> · ultima impronta <span class="num" title="${esc(c.last)}">${esc(short(c.last))}…</span>`;
+  }
+  function sealEntry(date, moment) {
+    const entries = arr(S.registro && S.registro.giorni);
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (obj(entries[i]) && entries[i].data === date && (entries[i].momento || "mattina") === moment) return { e: entries[i], i };
+    }
+    return null;
+  }
+  function sealedList(testo) {
+    let t = null;
+    try { t = JSON.parse(testo); } catch (err) { t = null; }
+    if (!obj(t)) return `<p class="muted">Il testo sigillato non si legge.</p>`;
+    const orders = obj(t.ordini) || {};
+    const fills = arr(t.esecuzioni).filter(obj);
+    const preds = arr(t.previsioni).filter(obj);
+    const caps = obj(t.capitali);
+    const who = Object.keys(orders).filter((w) => NAMES[w]);
+    const fillTxt = (f) => [f.event, f.side, f.symbol || f.id].filter(Boolean).join(" ") + (f.event === "aperta" && isNum(f.entry) ? ` a ${price(f.entry)}` : "")
+      + (isNum(f.exit) ? ` a ${price(f.exit)}` : "") + (isNum(f.pnl) ? `, ${usd(f.pnl, true)}` : "") + (f.reason ? `: ${human(f.reason)}` : "");
+    return `<div class="block"><p class="muted" style="font-size:.84rem">Sigillato con i prezzi del ${esc(romeTime(t.ora) || "—")}. Il testo esatto è nel registro, e chiunque può ricalcolarne l'impronta.</p>
+      <h4>Gli ordini</h4>${who.length ? `<ul class="lines">${who.map((w) => `<li>${whom(w)} ${arr(orders[w]).length ? esc(arr(orders[w]).map(orderText).join(" · ")) : `<span class="muted">nessun ordine</span>`}</li>`).join("")}</ul>` : `<p class="muted">Nessun ordine.</p>`}
+      <h4>Cosa ha eseguito il motore</h4>${fills.length ? `<ul class="lines">${fills.map((f) => `<li>${NAMES[f.wallet] ? whom(f.wallet) + " " : ""}${esc(fillTxt(f))}</li>`).join("")}</ul>` : `<p class="muted">Nessuna esecuzione.</p>`}
+      ${t.momento === "sera" ? "" : `<h4>Le previsioni</h4>${preds.length ? `<ul class="lines">${preds.map((x) => `<li>${NAMES[whoOf(x.id)] ? whom(whoOf(x.id)) + " " : ""}${esc(predText(x))}</li>`).join("")}</ul>` : `<p class="muted">Nessuna previsione.</p>`}`}
+      ${caps ? `<h4>I capitali</h4><ul class="lines">${TRADERS.filter((n) => obj(caps[n])).map((n) => `<li>${whom(n)} a regole <span class="num">${fmt(toNum(caps[n].regole), 2)}</span> · a giudizio <span class="num">${fmt(toNum(caps[n].giudizio), 2)}</span></li>`).join("")}</ul>` : ""}
+    </div>`;
+  }
+  function sealBlock(reg, date, moment) {
+    reg = obj(reg);
+    if (!reg || !reg.sigillo) return "";
+    const found = sealEntry(date, moment);
+    const c = S.chain || { state: "loading" };
+    let status, bad = false;
+    if (c.state === "loading" || c.state === "checking") status = `<span class="muted">ricalcolo la catena…</span>`;
+    else if (!found) { status = `<span class="ko">✗ non è nel registro</span>`; bad = true; }
+    else if (found.e.sigillo !== reg.sigillo) { status = `<span class="ko">✗ diversa da quella del registro</span>`; bad = true; }
+    else if (c.state === "broken" && found.i >= c.broken) { status = `<span class="ko">✗ ${found.i === c.broken ? "la catena si rompe proprio qui" : `la catena è rotta prima, alla riunione ${esc(sealWhen(c.at))}`}</span>`; bad = true; }
+    else if (c.state === "ok" || c.state === "broken") status = `<span class="ok">✓ ricalcolata: torna con la catena</span>`;
+    else status = `<span class="muted">non ricontrollata in questo browser</span>`;
+    return `<div class="seal${bad ? " bad" : ""}"><p><b>Il sigillo ${moment === "sera" ? "della sera" : "della riunione"}</b> · impronta <span class="num" title="${esc(reg.sigillo)}">${esc(short(reg.sigillo))}…</span> · ${status}</p>${found ? `<details data-k="seal-${esc(date)}-${moment}"><summary>Cosa è stato sigillato</summary>${sealedList(found.e.testo)}<p class="fp">${esc(found.e.sigillo)}</p></details>` : ""}</div>`;
+  }
+  function registerCard() {
+    const c = S.chain || { state: "loading" };
+    const entries = arr(c.entries || (S.registro && S.registro.giorni)).filter(obj);
+    const head = c.state === "ok" ? `<p><span class="up" style="font-weight:600">Catena integra ✓</span> · ${plural(c.n, "riunione sigillata", "riunioni sigillate")}</p>`
+      : c.state === "broken" ? `<div class="seal bad"><p><b>Catena rotta alla riunione ${esc(sealWhen(c.at))} ✗</b></p><p>Le impronte da lì in poi non tornano: qualcosa nel passato della scuola è stato cambiato dopo il sigillo.</p></div>`
+        : c.state === "empty" ? `<p class="muted">Nessuna riunione sigillata ancora.</p>`
+          : c.state === "nocrypto" ? `<p class="muted">Questo browser non sa ricalcolare le impronte.</p>` : `<p class="muted">Ricalcolo la catena…</p>`;
+    const last = entries.slice(-5).reverse();
+    return `<article class="sheet"><h3>Il registro sigillato</h3>${head}
+      ${last.length ? `<ul class="checklist">${last.map((e) => { const i = entries.indexOf(e); const bad = c.state === "broken" && i >= c.broken; const ok = c.state === "ok" || (c.state === "broken" && i < c.broken); return `<li class="${bad ? "ko" : ok ? "ok" : ""}"><span class="mark">${bad ? "✗" : ok ? "✓" : "·"}</span><span>${esc(cap(dayMonth(e.data)))}, ${esc(momentTxt(e.momento))} · <span class="fp">${esc(short(e.sigillo))}…</span></span></li>`; }).join("")}</ul>` : ""}
+      ${c.state === "ok" && c.last ? `<div class="block"><h4>L'ultima impronta, per intero</h4><p class="fp">${esc(c.last)}</p></div>` : ""}
+      <p class="muted" style="font-size:.84rem">Dopo ogni riunione il motore sigilla le decisioni appena prese: ordini, esecuzioni, previsioni con le probabilità, capitali. Ogni impronta contiene quella di prima, quindi cambiare il passato romperebbe la catena. Questa pagina ricalcola tutte le impronte ogni volta che si apre; ogni mese il revisore manda l'ultima sul tuo telefono, come ricevuta.</p>
+    </article>`;
+  }
+  function auditMonths() {
+    const out = [];
+    const now = romeToday().date;
+    let y = 2026, m = 11;
+    const cy = +now.slice(0, 4), cm = +now.slice(5, 7);
+    do { out.push(`${y}-${String(m).padStart(2, "0")}`); m += 1; if (m > 12) { m = 1; y += 1; } } while (y < cy || (y === cy && m <= cm));
+    return out;
+  }
+  const auditWatched = new Set();
+  function watchAudits() {
+    if (!db) return;
+    for (const m of auditMonths()) {
+      if (auditWatched.has(m)) continue;
+      auditWatched.add(m);
+      db.doc("revisione/" + m).onSnapshot(
+        (snap) => { S.revisioni[m] = snap.exists ? snap.data() : null; soon(); },
+        () => { S.revisioni[m] = null; soon(); }
+      );
+    }
+  }
+  function auditCard() {
+    const months = auditMonths();
+    const have = months.filter((m) => obj(S.revisioni[m]));
+    if (!have.length) {
+      const loading = months.some((m) => S.revisioni[m] === undefined);
+      return `<article class="sheet"><h3>Revisione esterna</h3><p>${loading ? "Carico la revisione…" : romeToday().date < "2026-12-02" ? "La prima revisione è il 2 dicembre." : "La revisione del mese non è ancora arrivata."}</p><p class="muted" style="font-size:.84rem">Il 2 di ogni mese un revisore esterno, che non partecipa alle riunioni e non si fida di niente di quello che la scuola scrive, rifà tutti i conti dai dati grezzi di BingX e dice se tornano.</p></article>`;
+    }
+    const m = have[have.length - 1], R = S.revisioni[m];
+    const checks = arr(R.controlli).filter(obj);
+    const problems = isNum(toNum(R.problemi)) ? toNum(R.problemi) : checks.filter((c) => c.esito !== "ok").length;
+    const entries = arr(S.chain && S.chain.entries);
+    const inChain = R.ultimo_sigillo && S.chain && ["ok", "broken"].includes(S.chain.state) ? entries.some((e) => obj(e) && e.sigillo === R.ultimo_sigillo) : null;
+    return `<article class="sheet"><h3>Revisione esterna · ${esc(monthName(m))}</h3>
+      <p class="muted" style="font-size:.86rem">Fatta il ${esc(romeTime(R.ora) || dayMonth(R.data))}. Rifà i conti dai dati grezzi di BingX e non si fida di niente di quello che la scuola scrive.</p>
+      ${R.stato && R.stato !== "completo" ? `<p class="notice">Questa revisione non è stata completata.</p>` : ""}
+      <p><b>${plural(checks.length, "controllo", "controlli")}, ${plural(problems, "problema", "problemi")}</b></p>
+      <ul class="checklist">${checks.map((c) => `<li class="${c.esito === "ok" ? "ok" : "ko"}"><span class="mark">${c.esito === "ok" ? "✓" : "✗"}</span><span>${esc(cap(c.controllo))}${c.esito !== "ok" && arr(c.dettagli).length ? `<ul class="lines">${arr(c.dettagli).map((x) => `<li>${obj(x) ? kvLine(x) : esc(valTxt(x))}</li>`).join("")}</ul>` : ""}</span></li>`).join("")}</ul>
+      ${R.ultimo_sigillo ? `<p style="font-size:.86rem">L'ultima impronta che ha controllato: <span class="num" title="${esc(R.ultimo_sigillo)}">${esc(short(R.ultimo_sigillo))}…</span>${isNum(toNum(R.sigilli)) ? `, su ${plural(toNum(R.sigilli), "riunione sigillata", "riunioni sigillate")}` : ""}${inChain === true ? ` · <span class="up">✓ è nella catena di oggi</span>` : inChain === false ? ` · <span class="down">✗ non è nella catena di oggi</span>` : ""}</p>` : ""}
+      ${R.commento ? `<div class="block"><h4>Il commento del revisore</h4><div class="prose">${md(R.commento)}</div></div>` : ""}
+    </article>`;
+  }
+  // the traffic lights
+  function criteriaOf(F) {
+    const k = (F && obj(F.criteri)) || {};
+    return { days: toNum(k.giorni_minimi) ?? 180, trades: toNum(k.operazioni_minime) ?? 100, drop: toNum(k.calo_massimo_pct) ?? 20, ready: toNum(k.giorni_verdi_per_una_prova_reale) ?? 365 };
+  }
+  const lamp = (c) => `<span class="lamp" aria-hidden="true"><i class="l-r${c === "rosso" ? " on" : ""}"></i><i class="l-y${c === "giallo" ? " on" : ""}"></i><i class="l-g${c === "verde" ? " on" : ""}"></i></span>`;
+  const meter = (value, of, green) => `<span class="meter${green ? " green" : ""}"><i style="width:${((isNum(value) ? Math.max(0, Math.min(1, value / of)) : 0) * 100).toFixed(1)}%"></i></span>`;
+  function lightCard(kind, L, K, btc) {
+    if (!obj(L)) return `<div class="light c-grigio"><div class="light-head">${lamp("")}<b>nessun dato</b><span class="muted">${esc(kind)}</span></div></div>`;
+    const c = ["grigio", "rosso", "giallo", "verde"].includes(L.colore) ? L.colore : "grigio";
+    const days = toNum(L.giorni), trades = toNum(L.operazioni), streak = toNum(L.giorni_verdi) || 0;
+    const btcRc = btc ? toNum(btc.rendimento_su_calo) : null;
+    const rc = toNum(L.rendimento_su_calo);
+    const checks = [
+      [(days ?? 0) >= K.days || (trades ?? 0) >= K.trades, `campione completo: ${K.days} giorni o ${K.trades} operazioni`],
+      [isNum(L.rendimento_pct) && L.rendimento_pct > 0, `guadagna più dei contanti: ${pct(L.rendimento_pct)}`],
+      [isNum(L.annuo_basso90_pct) && L.annuo_basso90_pct > 0, `si distingue dal caso: l'anno, nel caso peggiore al 90%, fa ${pct(L.annuo_basso90_pct)}`],
+      [isNum(L.calo_massimo_pct) && L.calo_massimo_pct <= K.drop, `cala al massimo del ${small(K.drop)}%: il suo calo massimo è ${pct(L.calo_massimo_pct, 2, false)}`],
+      [isNum(rc) && (!isNum(btcRc) || rc > btcRc), `per unità di calo rende più di BTC tenuto: ${fmt(rc, 2)}${isNum(btcRc) ? ` contro ${fmt(btcRc, 2)}` : ""}`],
+    ];
+    const money = L.pronto_per_una_prova_reale
+      ? `<p style="font-size:.84rem"><b>${streak} giorni di verde di fila.</b> Secondo i criteri si può pensare a una piccola prova con soldi veri; la decisione resta solo tua.</p>`
+      : `<span>${streak > 0 ? `verde da ${plural(streak, "giorno", "giorni")} di fila` : "mai verde finora"} · ne servono ${K.ready}</span>${meter(streak, K.ready, true)}`;
+    return `<div class="light c-${c}">
+      <div class="light-head">${lamp(c)}<b>${esc(c === "grigio" ? "grigio, troppo presto" : c)}</b><span class="muted">${esc(kind)}</span></div>
+      <ul class="reasons">${arr(L.motivi).map((x) => `<li>${esc(cap(human(x)))}</li>`).join("")}</ul>
+      <div class="meters">
+        <div><span>giorni di dati: <b class="num">${esc(days ?? "—")}</b> su ${K.days}</span>${meter(days, K.days)}</div>
+        <div><span>operazioni chiuse: <b class="num">${esc(trades ?? "—")}</b> su ${K.trades}</span>${meter(trades, K.trades)}</div>
+      </div>
+      <p class="crit-h">I criteri del verde, sui numeri di oggi</p>
+      <ul class="crit" aria-label="I criteri del verde, sui numeri di oggi">${checks.map(([ok, t]) => `<li><span class="${ok ? "y" : "n"}">${ok ? "✓" : "○"}</span><span>${esc(t)}</span></li>`).join("")}</ul>
+      <div class="meters"><div>${money}</div></div>
+    </div>`;
+  }
+  function intervalBar(g) {
+    const iv = arr(g.intervallo90_al_giorno).map(toNum), mean = toNum(g.al_giorno);
+    if (iv.length !== 2 || !iv.every(isNum) || !isNum(mean)) return "";
+    const m = Math.max(Math.abs(iv[0]), Math.abs(iv[1]), Math.abs(mean), 0.01) * 1.15;
+    const W = 320, x = (v) => 12 + ((v + m) / (2 * m)) * (W - 24);
+    const col = g.verdetto === "aggiunge" ? "var(--gain)" : g.verdetto === "toglie" ? "var(--loss)" : "var(--ink-2)";
+    return `<svg class="gauge" viewBox="0 0 ${W} 34" role="img" aria-label="${esc(`Al 90% tra ${fmt(iv[0], 2, true)} e ${fmt(iv[1], 2, true)} USDT al giorno`)}">
+      <line x1="${x(0).toFixed(1)}" x2="${x(0).toFixed(1)}" y1="3" y2="23" stroke="var(--ink-2)" stroke-width="1.2"/>
+      <line x1="${x(iv[0]).toFixed(1)}" x2="${x(iv[1]).toFixed(1)}" y1="13" y2="13" stroke="${col}" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="${x(mean).toFixed(1)}" cy="13" r="5" fill="${col}" stroke="var(--sheet)" stroke-width="2"/>
+      <text x="${x(0).toFixed(1)}" y="32" text-anchor="middle">0</text>
+    </svg>`;
+  }
+  function verdictBlock(g) {
+    if (!obj(g)) return `<p class="muted">Il confronto tra giudizio e regola compare quando ci sono abbastanza giorni.</p>`;
+    const v = ["aggiunge", "toglie"].includes(g.verdetto) ? g.verdetto : "non si sa ancora";
+    const iv = arr(g.intervallo90_al_giorno).map(toNum);
+    const line = v === "aggiunge" ? "Il suo giudizio aggiunge alla regola: al 90% il guadagno al giorno sta tutto sopra lo zero."
+      : v === "toglie" ? "Il suo giudizio toglie alla regola: al 90% sta tutto sotto lo zero. La cosa onesta è seguire la regola."
+        : "Non si sa ancora: al 90% l'intervallo contiene lo zero, quindi la differenza può essere fortuna.";
+    return `<div class="block"><h4>Il giudizio contro la regola</h4>
+      <p><span class="verdict-chip ${v === "non si sa ancora" ? "" : v}">${esc(v)}</span> <span class="num ${tone(toNum(g.differenza))}">${fmt(toNum(g.differenza), 2, true)} USDT</span> <span class="muted">in ${esc(g.giorni ?? "—")} giorni</span></p>
+      ${isNum(toNum(g.al_giorno)) ? `<p class="muted" style="font-size:.84rem">In media ${fmt(toNum(g.al_giorno), 2, true)} USDT al giorno${iv.length === 2 && iv.every(isNum) ? `; al 90% tra ${fmt(iv[0], 2, true)} e ${fmt(iv[1], 2, true)}` : ""}.</p>` : ""}
+      ${intervalBar(g)}
+      <p style="font-size:.86rem">${esc(line)}</p>
+    </div>`;
+  }
+  function criteriaCard(K) {
+    return `<article class="sheet"><h3>I criteri, scritti prima di ogni risultato</h3>
+      <ul class="reasons" style="font-size:.88rem;gap:6px">
+        <li><b>Grigio:</b> troppo presto, meno di ${K.days} giorni di dati e meno di ${K.trades} operazioni chiuse.</li>
+        <li><b>Rosso:</b> un calo oltre il ${small(K.drop)}% dal massimo, o una perdita con il campione completo.</li>
+        <li><b>Verde:</b> con il campione completo guadagna più dei contanti, il guadagno si distingue dal caso al 90%, cala al massimo del ${small(K.drop)}% e per unità di calo rende più di BTC tenuto.</li>
+        <li><b>Giallo:</b> tutto il resto.</li>
+      </ul>
+      <p style="font-size:.88rem">Solo dopo ${K.ready} giorni di verde di fila, il «veterano» della biblioteca, si può pensare a una piccola prova con soldi veri. La decisione resta solo tua: il semaforo non promette niente.</p>
+    </article>`;
+  }
+  function benchCard(F) {
+    const B = obj(F.benchmark) || {}, btc = obj(B.btc_tenuto), cash = obj(B.contanti) || {};
+    return `<article class="sheet"><h3>I termini di paragone</h3>
+      ${btc ? `<dl class="kvs small"><div><dt>BTC tenuto dall'inizio</dt><dd><span class="num ${tone(toNum(btc.rendimento_pct))}">${pct(toNum(btc.rendimento_pct))}</span>, calo massimo <span class="num">${pct(toNum(btc.calo_massimo_pct), 2, false)}</span>, rendimento su calo <span class="num">${fmt(toNum(btc.rendimento_su_calo), 2)}</span>${isNum(toNum(btc.giorni)) ? ` <span class="muted">(${esc(btc.giorni)} giorni)</span>` : ""}</dd></div>
+        <div><dt>I contanti</dt><dd><span class="num">${pct(toNum(cash.rendimento_pct) ?? 0)}</span>, nessun calo</dd></div></dl>` : `<p class="muted">I termini di paragone arrivano con il semaforo.</p>`}
+      <p class="muted" style="font-size:.84rem">Nei grafici dei portafogli BTC tenuto è la linea a puntini, e i contanti sono la riga dei 10.000 di partenza. Un portafoglio vale qualcosa solo se fa meglio di tutti e due, a parità di calo.</p>
+    </article>`;
+  }
+  function renderSemaforo() {
+    const el = $("semaforo"), atEl = $("semaforo-at");
+    atEl.textContent = "";
+    if (S.unavailable) { el.innerHTML = `<p class="muted">Il semaforo compare quando apri la pagina da claude.ai.</p>`; return; }
+    const F = obj(S.semaforo);
+    const K = criteriaOf(F);
+    const trust = `<h3 style="margin:18px 0 10px">Perché fidarsi dei risultati</h3><div class="trust-grid">${registerCard()}${auditCard()}</div>`;
+    if (!F || !obj(F.portafogli)) {
+      el.innerHTML = `<div class="calm"><p>${S.got.semaforo ? `Il semaforo si accende con la prima riunione del motore. Ogni portafoglio parte grigio: all'inizio è troppo presto per giudicare.` : "Carico il semaforo…"}</p></div><div class="trust-grid">${criteriaCard(K)}</div>${trust}`;
+      return;
+    }
+    if (F.giorno) atEl.textContent = `Sui dati fino a ${longDay(F.giorno)}`;
+    const P = F.portafogli, G = obj(F.giudizio_contro_regola) || {};
+    const btc = obj(F.benchmark) && obj(F.benchmark.btc_tenuto);
+    const colours = Object.values(P).filter(obj).map((x) => x.colore);
+    const allGrey = colours.length > 0 && colours.every((c) => c === "grigio");
+    const intro = allGrey
+      ? `<div class="calm"><p><b>Per ora tutti i semafori sono grigi: è troppo presto.</b> Un portafoglio si giudica solo dopo ${K.days} giorni di dati o ${K.trades} operazioni chiuse. Il grigio non è un errore: vuol dire che non si sa ancora.</p><p>Solo dopo ${K.ready} giorni di verde di fila si può pensare a una piccola prova con soldi veri, e la decisione resta solo tua.</p></div>`
+      : `<p class="theme" style="margin-bottom:12px">Ogni portafoglio ha un colore, deciso da criteri scritti prima di ogni risultato. Solo dopo ${K.ready} giorni di verde di fila si può pensare a una piccola prova con soldi veri, e la decisione resta solo tua.</p>`;
+    const cards = TRADERS.map((n) => `<article class="wallet k-${n}" aria-label="${esc(NAMES[n])}: il semaforo"><div class="who"><i class="key" aria-hidden="true"></i><div><h3>${esc(NAMES[n])}</h3></div></div>
+      <div class="light-pair">${lightCard("a regole", P[`${n}_regole`], K, btc)}${lightCard("a giudizio", P[`${n}_giudizio`], K, btc)}</div>
+      ${verdictBlock(G[n])}</article>`).join("");
+    el.innerHTML = intro + `<div class="lights">${cards}</div><div class="trust-grid" style="margin-top:16px">${benchCard(F)}${criteriaCard(K)}</div>` + trust;
+  }
+  function btcPoints() {
+    const F = obj(S.semaforo), b = F && obj(F.benchmark) && obj(F.benchmark.btc_tenuto);
+    return Object.entries((b && obj(b.curva)) || {}).filter(([d, v]) => isoDay(d) && isNum(v)).map(([date, value]) => ({ date, value })).sort(sortDates);
+  }
+
   // ---- the twin curves ------------------------------------------------------------------------
   const charts = {};
-  let chartW = 520, resizeT = null;
+  let chartW = 520, resizeT = null, btcBench = [];
   function chartWidth() {
     const w = $("wallets").clientWidth;
     if (!w) return 520;
@@ -1104,15 +1418,15 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
     return out;
   }
-  function twinChart(n, rp, jp, W = 520) {
+  function twinChart(n, rp, jp, W = 520, bp = []) {
     const dates = [...new Set([...rp, ...jp].map((p) => p.date))].sort();
     if (dates.length < 2) {
       charts[n] = null;
       return `<p class="muted chart-empty">${dates.length ? `La curva compare dal secondo giorno: per ora c'è solo ${esc(longDay(dates[0]))}.` : "La curva parte con la prima riunione."}</p>`;
     }
-    const H = 180, ml = 48, mr = 108, mt = 12, mb = 24;
-    const rmap = new Map(rp.map((p) => [p.date, p.value])), jmap = new Map(jp.map((p) => [p.date, p.value]));
-    const vals = [...rp, ...jp].map((p) => p.value).concat([CAPITAL]);
+    const H = 196, ml = 48, mr = 108, mt = 12, mb = 24;
+    const rmap = new Map(rp.map((p) => [p.date, p.value])), jmap = new Map(jp.map((p) => [p.date, p.value])), bmap = new Map(bp.map((p) => [p.date, p.value]));
+    const vals = [...rp, ...jp].map((p) => p.value).concat([CAPITAL], dates.map((d) => bmap.get(d)).filter(isNum));
     let lo = Math.min(...vals), hi = Math.max(...vals);
     const pad = Math.max((hi - lo) * 0.12, CAPITAL * 0.004);
     lo -= pad; hi += pad;
@@ -1128,20 +1442,23 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       dates.forEach((dt, i) => { const v = map.get(dt); if (isNum(v)) { d += `${d ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`; last = { x: x(i), y: y(v), v }; } });
       return { d, last };
     };
-    const R = pathOf(rmap), J = pathOf(jmap);
+    const R = pathOf(rmap), J = pathOf(jmap), Bt = pathOf(bmap);
     const ends = [];
     let marks = "";
+    if (Bt.d) { marks += `<path d="${Bt.d}" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="1.5 3.5" stroke-linecap="round"/><circle cx="${Bt.last.x.toFixed(1)}" cy="${Bt.last.y.toFixed(1)}" r="3.5" fill="var(--muted)" stroke="var(--sheet)" stroke-width="2"/>`; ends.push({ name: "BTC", ...Bt.last }); }
     if (R.d) { marks += `<path d="${R.d}" fill="none" stroke="var(--ink-2)" stroke-width="1.8" stroke-dasharray="5 4" stroke-linejoin="round"/><circle cx="${R.last.x.toFixed(1)}" cy="${R.last.y.toFixed(1)}" r="4" fill="var(--ink-2)" stroke="var(--sheet)" stroke-width="2"/>`; ends.push({ name: "regole", ...R.last }); }
     if (J.d) { marks += `<path d="${J.d}" fill="none" stroke="var(--who)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${J.last.x.toFixed(1)}" cy="${J.last.y.toFixed(1)}" r="4.5" fill="var(--who)" stroke="var(--sheet)" stroke-width="2"/>`; ends.push({ name: "giudizio", ...J.last }); }
     ends.sort((a, b) => a.y - b.y);
-    if (ends.length === 2 && ends[1].y - ends[0].y < 15) { const mid = (ends[0].y + ends[1].y) / 2; ends[0].ly = mid - 7.5; ends[1].ly = mid + 7.5; }
+    for (let i = 1; i < ends.length; i++) { const prev = ends[i - 1].ly ?? ends[i - 1].y; if ((ends[i].ly ?? ends[i].y) - prev < 14) ends[i].ly = prev + 14; }
+    const over = ends.length ? (ends[ends.length - 1].ly ?? ends[ends.length - 1].y) - (H - mb + 2) : 0;
+    if (over > 0) for (const e of ends) e.ly = (e.ly ?? e.y) - over;
     const labels = ends.map((e) => {
       const ly = e.ly ?? e.y;
       const leader = Math.abs(ly - e.y) > 1 ? `<line x1="${(e.x + 6).toFixed(1)}" y1="${e.y.toFixed(1)}" x2="${W - mr + 2}" y2="${ly.toFixed(1)}" stroke="var(--rule)" stroke-width="1"/>` : "";
       return `${leader}<text class="end" x="${W - mr + 6}" y="${(ly + 4).toFixed(1)}">${e.name} ${esc(fmt(e.v, 0))}</text>`;
     }).join("");
-    charts[n] = { dates, rmap, jmap, x, W, mt, mb, H };
-    return `<div class="chart-box"><svg viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${esc(NAMES[n])}: il capitale a regole e a giudizio giorno per giorno, partenza 10.000 USDT">
+    charts[n] = { dates, rmap, jmap, bmap, x, W, mt, mb, H };
+    return `<div class="chart-box"><svg viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${esc(NAMES[n])}: il capitale a regole e a giudizio giorno per giorno, partenza 10.000 USDT${Bt.d ? ", con BTC tenuto per confronto" : ""}">
       ${grid}${base}${xl}${marks}${labels}
       <line class="cross" x1="0" x2="0" y1="${mt}" y2="${H - mb}" stroke="var(--ink-2)" stroke-width="1" visibility="hidden"/>
       <rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="transparent"/>
@@ -1157,7 +1474,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       const cx = c.x(i), d = c.dates[i];
       cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
       const rv = c.rmap.get(d), jv = c.jmap.get(d);
-      tip.innerHTML = `<div class="t-date">${esc(longDay(d))}</div>${row("A regole", fmt(rv, 2))}${row("A giudizio", fmt(jv, 2))}${row("Giudizio meno regola", isNum(rv) && isNum(jv) ? fmt(jv - rv, 2, true) : "—", isNum(rv) && isNum(jv) ? tone(jv - rv) : "")}`;
+      tip.innerHTML = `<div class="t-date">${esc(longDay(d))}</div>${row("A regole", fmt(rv, 2))}${row("A giudizio", fmt(jv, 2))}${row("Giudizio meno regola", isNum(rv) && isNum(jv) ? fmt(jv - rv, 2, true) : "—", isNum(rv) && isNum(jv) ? tone(jv - rv) : "")}${c.bmap && isNum(c.bmap.get(d)) ? row("BTC tenuto", fmt(c.bmap.get(d), 2)) : ""}`;
       tip.hidden = false;
       const r = svg.getBoundingClientRect(), scale = r.width / c.W;
       const left = cx * scale + 12, maxLeft = box.clientWidth - tip.offsetWidth - 4;
@@ -1643,7 +1960,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       ${perAgent.map(([k, v]) => `<div class="block"><h4>${esc(["righe", "agenti", "imparato"].includes(k) ? "Cosa ha imparato ognuno, e cosa deve ancora imparare" : keyName(k))}</h4><ul class="lines">${Object.entries(v).map(([w, t]) => `<li>${whom(w)} ${esc(valTxt(t))}</li>`).join("")}</ul></div>`).join("")}
     </article>`;
   }
-  function eveningMeetingCard(E) {
+  function eveningMeetingCard(E, date) {
     E = full(E);
     if (!E) return "";
     const P = obj(E.posizioni) || {};
@@ -1661,6 +1978,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     };
     return `<article class="sheet k-guardiano"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>La riunione della sera</h3><span class="turn">${E.ora ? `alle ${esc(romeClock(E.ora))}, ` : ""}dopo l'allarme del controllo della sera</span></div>
       ${arr(E.motivi).length ? `<ul class="alarms">${arr(E.motivi).map((x) => alarmItem(x, "alarm")).join("")}</ul>` : ""}
+      ${sealBlock(E.registro, date, "sera")}
       ${full(E.numeri) ? `<dl class="kvs">${eveningRows(E.numeri).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>` : ""}
       ${night.length ? `<div class="block"><h4>Dalla mattina: stop e target</h4>${night.map((e) => `<div class="event">${NAMES[e.wallet] ? whom(e.wallet) : ""}${eventLine(e)}</div>`).join("")}</div>` : ""}
       <div class="v-grid">
@@ -1717,7 +2035,8 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     const meta = `<p class="muted" style="font-size:.84rem">${d.scritto ? `Verbale salvato il ${esc(romeTime(d.scritto))}` : ""}${d.mercati_ora ? ` · prezzi delle ${esc(romeTime(d.mercati_ora))}` : ""}</p>`;
     const unmatched = arr(d.eventi_ordini).filter((e) => obj(e) && !TRADERS.includes(e.wallet));
     const capitals = capitalsCard(d);
-    el.innerHTML = head + `<div class="v-stack">${notice}${meta}
+    keepOpen(el, head + `<div class="v-stack">${notice}${meta}
+      ${sealBlock(d.registro, d.data, "mattina")}
       ${capitals ? `<div class="v-grid">${nightCard(d.eventi_notte)}${capitals}</div>` : nightCard(d.eventi_notte)}
       ${briefingCard(d.briefing, d)}
       <div><h3 style="margin-bottom:10px">Le posizioni, scritte in privato</h3><div class="v-grid">${TRADERS.map((w) => positionCard(w, P[w], d)).join("")}</div></div>
@@ -1725,9 +2044,9 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       ${unmatched.length ? `<article class="sheet"><h3>Altri esiti del motore</h3>${unmatched.map((e) => `<div class="event">${eventLine(e)}</div>`).join("")}</article>` : ""}
       ${closingCard(d)}
       ${councilCard(d.consiglio)}${scrutinyCard(d.scrutinio)}${endCard(d.fine)}
-      ${eveningMeetingCard(d.sera)}
+      ${eveningMeetingCard(d.sera, d.data)}
       ${verifiedCard(d.previsioni_verificate)}
-    </div>`;
+    </div>`);
   }
 
   // ---- the 36 coins --------------------------------------------------------------------------------
@@ -2965,7 +3284,9 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       if (want && want !== S.selected) { S.selected = want; watchVerbale(want); }
     }
     watchGyms();
-    for (const f of [renderStatus, renderRegister, renderWallets, renderRisk, renderMinds, renderGym, renderVerbale, renderCoins, aula.sync]) {
+    watchAudits();
+    ensureChain();
+    for (const f of [renderStatus, renderTrust, renderRegister, renderWallets, renderSemaforo, renderRisk, renderMinds, renderGym, renderVerbale, renderCoins, aula.sync]) {
       try { f(); } catch (e) { console.warn("Scuola Cripto:", f.name, e); }
     }
   }
@@ -2997,6 +3318,8 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     watch("motore/regole", "regole");
     watch("live/ora", "live");
     watch("classe/sera", "sera");
+    watch("classe/registro", "registro");
+    watch("classe/semaforo", "semaforo");
     for (const who of CAST) {
       db.doc("memoria/" + who).onSnapshot(
         (snap) => { S.memoria[who] = snap.exists ? snap.data() : null; soon(); },
