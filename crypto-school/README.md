@@ -20,7 +20,8 @@ del desk, senza memecoin. I soldi sono finti: 10.000 USDT per portafoglio.
 
 ## Due portafogli per agente
 
-Ogni agente con un portafoglio ne ha due, partiti insieme il 26/11/2026:
+Ogni agente con un portafoglio ne ha due, partiti insieme il 26/11/2026 (la sera prima c'è
+la riunione di accoglienza, senza ordini):
 - **Il portafoglio a regole.** Segue la strategia scritta ed esaminata nella biblioteca.
   Il codice lo rifà ogni giorno dall'inizio della scuola sui dati di BingX, quindi nessuno
   lo può toccare.

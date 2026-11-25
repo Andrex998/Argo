@@ -1,7 +1,8 @@
 # Il programma della Scuola Cripto
 
-Il primo trimestre, dal 26/11/2026 al 21/2/2027: 88 riunioni del mattino, una al giorno.
-Le cripto si scambiano sempre, anche nei festivi, quindi la riunione c'è tutti i giorni.
+Il primo trimestre, dal 26/11/2026 al 21/2/2027: 88 riunioni del mattino, una al giorno, più
+la riunione di accoglienza della sera del 25/11. Le cripto si scambiano sempre, anche nei
+festivi, quindi la riunione c'è tutti i giorni.
 
 Ogni giorno ha il suo tipo:
 - **riunione:** la riunione normale delle 07:00, al massimo una ventina di minuti;
@@ -9,14 +10,15 @@ Ogni giorno ha il suo tipo:
   lettura della biblioteca e al massimo 2 ipotesi nuove;
 - **scrutinio,** il primo lunedì del mese: il consiglio più le pagelle del mese e il rischio massimo
   che il Preside assegna a ogni portafoglio a giudizio;
-- **accoglienza,** il primo giorno: ognuno si presenta;
+- **accoglienza,** il 25/11 sera (giorno 0): ognuno si presenta e fa le prime previsioni,
+  senza ordini. I portafogli partono il 26/11;
 - **fine,** l'ultimo giorno: il bilancio del trimestre.
 
 Il file `programma.json` contiene gli stessi giorni, con le date, per la sessione del mattino e per la pagina.
 
 | Settimana | Date | Tema | Protagonisti | Miti da smontare |
 | --- | --- | --- | --- | --- |
-| 0 | 26/11–29/11 | Accoglienza: chi siamo, le nostre regole e come si misura un errore | Preside, Falco, Tartaruga, Spazzino, Ragioniere, Guardiano, Cronista, Scettico | Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli |
+| 0 | 25/11–29/11 | Accoglienza: chi siamo, le nostre regole e come si misura un errore | Preside, Falco, Tartaruga, Spazzino, Ragioniere, Guardiano, Cronista, Scettico | Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli |
 | 1 | 30/11–6/12 | Il trend: rotture di volume e segno dei rendimenti | Falco, Tartaruga | Gli indicatori magici dei social; Il trend following è morto; Il totale dei 3 anni dice tutto |
 | 2 | 7/12–13/12 | Il rischio: stop, dimensione, volatilità obiettivo e Kelly | Guardiano, Falco | Puntare di più fa crescere più in fretta (Kelly pieno); Lo stop protegge sempre; La volatilità obiettivo aumenta sempre il rendimento |
 | 3 | 14/12–20/12 | Il funding e il carry: chi paga e perché | Ragioniere, Guardiano | Il cash and carry sul funding è reddito passivo senza rischio; Funding allo 0,01% vuol dire long affollati |

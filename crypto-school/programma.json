@@ -1,12 +1,12 @@
 {
- "inizio": "2026-11-26",
+ "inizio": "2026-11-25",
  "fine": "2027-02-21",
  "giorni": [
   {
-   "data": "2026-11-26",
-   "giorno": 1,
+   "data": "2026-11-25",
+   "giorno": 0,
    "settimana": 0,
-   "giorno_settimana": "giovedì",
+   "giorno_settimana": "mercoledì",
    "tipo": "accoglienza",
    "tema": "Accoglienza: chi siamo, le nostre regole e come si misura un errore",
    "protagonisti": [
@@ -21,7 +21,30 @@
    ],
    "miti": [
     "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
-   ]
+   ],
+   "operazioni": false
+  },
+  {
+   "data": "2026-11-26",
+   "giorno": 1,
+   "settimana": 0,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Accoglienza: chi siamo, le nostre regole e come si misura un errore",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere",
+    "guardiano",
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-11-27",
@@ -42,7 +65,8 @@
    ],
    "miti": [
     "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-11-28",
@@ -63,7 +87,8 @@
    ],
    "miti": [
     "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-11-29",
@@ -84,7 +109,8 @@
    ],
    "miti": [
     "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-11-30",
@@ -101,7 +127,8 @@
     "Gli indicatori magici dei social",
     "Il trend following è morto",
     "Il totale dei 3 anni dice tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-01",
@@ -118,7 +145,8 @@
     "Gli indicatori magici dei social",
     "Il trend following è morto",
     "Il totale dei 3 anni dice tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-02",
@@ -135,7 +163,8 @@
     "Gli indicatori magici dei social",
     "Il trend following è morto",
     "Il totale dei 3 anni dice tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-03",
@@ -152,7 +181,8 @@
     "Gli indicatori magici dei social",
     "Il trend following è morto",
     "Il totale dei 3 anni dice tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-04",
@@ -169,7 +199,8 @@
     "Gli indicatori magici dei social",
     "Il trend following è morto",
     "Il totale dei 3 anni dice tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-05",
@@ -186,7 +217,8 @@
     "Gli indicatori magici dei social",
     "Il trend following è morto",
     "Il totale dei 3 anni dice tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-06",
@@ -203,7 +235,8 @@
     "Gli indicatori magici dei social",
     "Il trend following è morto",
     "Il totale dei 3 anni dice tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-07",
@@ -220,7 +253,8 @@
     "Puntare di più fa crescere più in fretta (Kelly pieno)",
     "Lo stop protegge sempre",
     "La volatilità obiettivo aumenta sempre il rendimento"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-08",
@@ -237,7 +271,8 @@
     "Puntare di più fa crescere più in fretta (Kelly pieno)",
     "Lo stop protegge sempre",
     "La volatilità obiettivo aumenta sempre il rendimento"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-09",
@@ -254,7 +289,8 @@
     "Puntare di più fa crescere più in fretta (Kelly pieno)",
     "Lo stop protegge sempre",
     "La volatilità obiettivo aumenta sempre il rendimento"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-10",
@@ -271,7 +307,8 @@
     "Puntare di più fa crescere più in fretta (Kelly pieno)",
     "Lo stop protegge sempre",
     "La volatilità obiettivo aumenta sempre il rendimento"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-11",
@@ -288,7 +325,8 @@
     "Puntare di più fa crescere più in fretta (Kelly pieno)",
     "Lo stop protegge sempre",
     "La volatilità obiettivo aumenta sempre il rendimento"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-12",
@@ -305,7 +343,8 @@
     "Puntare di più fa crescere più in fretta (Kelly pieno)",
     "Lo stop protegge sempre",
     "La volatilità obiettivo aumenta sempre il rendimento"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-13",
@@ -322,7 +361,8 @@
     "Puntare di più fa crescere più in fretta (Kelly pieno)",
     "Lo stop protegge sempre",
     "La volatilità obiettivo aumenta sempre il rendimento"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-14",
@@ -338,7 +378,8 @@
    "miti": [
     "Il cash and carry sul funding è reddito passivo senza rischio",
     "Funding allo 0,01% vuol dire long affollati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-15",
@@ -354,7 +395,8 @@
    "miti": [
     "Il cash and carry sul funding è reddito passivo senza rischio",
     "Funding allo 0,01% vuol dire long affollati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-16",
@@ -370,7 +412,8 @@
    "miti": [
     "Il cash and carry sul funding è reddito passivo senza rischio",
     "Funding allo 0,01% vuol dire long affollati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-17",
@@ -386,7 +429,8 @@
    "miti": [
     "Il cash and carry sul funding è reddito passivo senza rischio",
     "Funding allo 0,01% vuol dire long affollati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-18",
@@ -402,7 +446,8 @@
    "miti": [
     "Il cash and carry sul funding è reddito passivo senza rischio",
     "Funding allo 0,01% vuol dire long affollati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-19",
@@ -418,7 +463,8 @@
    "miti": [
     "Il cash and carry sul funding è reddito passivo senza rischio",
     "Funding allo 0,01% vuol dire long affollati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-20",
@@ -434,7 +480,8 @@
    "miti": [
     "Il cash and carry sul funding è reddito passivo senza rischio",
     "Funding allo 0,01% vuol dire long affollati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-21",
@@ -450,7 +497,8 @@
    "miti": [
     "Dopo una grande cascata di liquidazioni il fondo è fatto",
     "Mediare al ribasso, la martingala e i grid bot sono sicuri"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-22",
@@ -466,7 +514,8 @@
    "miti": [
     "Dopo una grande cascata di liquidazioni il fondo è fatto",
     "Mediare al ribasso, la martingala e i grid bot sono sicuri"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-23",
@@ -482,7 +531,8 @@
    "miti": [
     "Dopo una grande cascata di liquidazioni il fondo è fatto",
     "Mediare al ribasso, la martingala e i grid bot sono sicuri"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-24",
@@ -498,7 +548,8 @@
    "miti": [
     "Dopo una grande cascata di liquidazioni il fondo è fatto",
     "Mediare al ribasso, la martingala e i grid bot sono sicuri"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-25",
@@ -514,7 +565,8 @@
    "miti": [
     "Dopo una grande cascata di liquidazioni il fondo è fatto",
     "Mediare al ribasso, la martingala e i grid bot sono sicuri"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-26",
@@ -530,7 +582,8 @@
    "miti": [
     "Dopo una grande cascata di liquidazioni il fondo è fatto",
     "Mediare al ribasso, la martingala e i grid bot sono sicuri"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-27",
@@ -546,7 +599,8 @@
    "miti": [
     "Dopo una grande cascata di liquidazioni il fondo è fatto",
     "Mediare al ribasso, la martingala e i grid bot sono sicuri"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-28",
@@ -563,7 +617,8 @@
     "Entra appena esce il CPI o l'NFP",
     "Bitcoin protegge dall'inflazione ed è oro digitale",
     "I flussi ETF di oggi dicono dove andrà BTC domani"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-29",
@@ -580,7 +635,8 @@
     "Entra appena esce il CPI o l'NFP",
     "Bitcoin protegge dall'inflazione ed è oro digitale",
     "I flussi ETF di oggi dicono dove andrà BTC domani"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-30",
@@ -597,7 +653,8 @@
     "Entra appena esce il CPI o l'NFP",
     "Bitcoin protegge dall'inflazione ed è oro digitale",
     "I flussi ETF di oggi dicono dove andrà BTC domani"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2026-12-31",
@@ -614,7 +671,8 @@
     "Entra appena esce il CPI o l'NFP",
     "Bitcoin protegge dall'inflazione ed è oro digitale",
     "I flussi ETF di oggi dicono dove andrà BTC domani"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-01",
@@ -631,7 +689,8 @@
     "Entra appena esce il CPI o l'NFP",
     "Bitcoin protegge dall'inflazione ed è oro digitale",
     "I flussi ETF di oggi dicono dove andrà BTC domani"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-02",
@@ -648,7 +707,8 @@
     "Entra appena esce il CPI o l'NFP",
     "Bitcoin protegge dall'inflazione ed è oro digitale",
     "I flussi ETF di oggi dicono dove andrà BTC domani"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-03",
@@ -665,7 +725,8 @@
     "Entra appena esce il CPI o l'NFP",
     "Bitcoin protegge dall'inflazione ed è oro digitale",
     "I flussi ETF di oggi dicono dove andrà BTC domani"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-04",
@@ -681,7 +742,8 @@
    "miti": [
     "Uno Sharpe sopra 2 vuol dire soldi sicuri",
     "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-05",
@@ -697,7 +759,8 @@
    "miti": [
     "Uno Sharpe sopra 2 vuol dire soldi sicuri",
     "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-06",
@@ -713,7 +776,8 @@
    "miti": [
     "Uno Sharpe sopra 2 vuol dire soldi sicuri",
     "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-07",
@@ -729,7 +793,8 @@
    "miti": [
     "Uno Sharpe sopra 2 vuol dire soldi sicuri",
     "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-08",
@@ -745,7 +810,8 @@
    "miti": [
     "Uno Sharpe sopra 2 vuol dire soldi sicuri",
     "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-09",
@@ -761,7 +827,8 @@
    "miti": [
     "Uno Sharpe sopra 2 vuol dire soldi sicuri",
     "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-10",
@@ -777,7 +844,8 @@
    "miti": [
     "Uno Sharpe sopra 2 vuol dire soldi sicuri",
     "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-11",
@@ -792,7 +860,8 @@
    ],
    "miti": [
     "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-12",
@@ -807,7 +876,8 @@
    ],
    "miti": [
     "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-13",
@@ -822,7 +892,8 @@
    ],
    "miti": [
     "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-14",
@@ -837,7 +908,8 @@
    ],
    "miti": [
     "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-15",
@@ -852,7 +924,8 @@
    ],
    "miti": [
     "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-16",
@@ -867,7 +940,8 @@
    ],
    "miti": [
     "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-17",
@@ -882,7 +956,8 @@
    ],
    "miti": [
     "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-18",
@@ -898,7 +973,8 @@
    "miti": [
     "Il momentum tra le cripto rende il 3% a settimana",
     "Nelle cripto tutto torna indietro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-19",
@@ -914,7 +990,8 @@
    "miti": [
     "Il momentum tra le cripto rende il 3% a settimana",
     "Nelle cripto tutto torna indietro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-20",
@@ -930,7 +1007,8 @@
    "miti": [
     "Il momentum tra le cripto rende il 3% a settimana",
     "Nelle cripto tutto torna indietro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-21",
@@ -946,7 +1024,8 @@
    "miti": [
     "Il momentum tra le cripto rende il 3% a settimana",
     "Nelle cripto tutto torna indietro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-22",
@@ -962,7 +1041,8 @@
    "miti": [
     "Il momentum tra le cripto rende il 3% a settimana",
     "Nelle cripto tutto torna indietro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-23",
@@ -978,7 +1058,8 @@
    "miti": [
     "Il momentum tra le cripto rende il 3% a settimana",
     "Nelle cripto tutto torna indietro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-24",
@@ -994,7 +1075,8 @@
    "miti": [
     "Il momentum tra le cripto rende il 3% a settimana",
     "Nelle cripto tutto torna indietro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-25",
@@ -1010,7 +1092,8 @@
    "miti": [
     "Battere BTC in rendimento è l'unico obiettivo",
     "Più veloce è meglio"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-26",
@@ -1026,7 +1109,8 @@
    "miti": [
     "Battere BTC in rendimento è l'unico obiettivo",
     "Più veloce è meglio"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-27",
@@ -1042,7 +1126,8 @@
    "miti": [
     "Battere BTC in rendimento è l'unico obiettivo",
     "Più veloce è meglio"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-28",
@@ -1058,7 +1143,8 @@
    "miti": [
     "Battere BTC in rendimento è l'unico obiettivo",
     "Più veloce è meglio"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-29",
@@ -1074,7 +1160,8 @@
    "miti": [
     "Battere BTC in rendimento è l'unico obiettivo",
     "Più veloce è meglio"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-30",
@@ -1090,7 +1177,8 @@
    "miti": [
     "Battere BTC in rendimento è l'unico obiettivo",
     "Più veloce è meglio"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-01-31",
@@ -1106,7 +1194,8 @@
    "miti": [
     "Battere BTC in rendimento è l'unico obiettivo",
     "Più veloce è meglio"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-01",
@@ -1123,7 +1212,8 @@
    "miti": [
     "Il rapporto long/short dice dove va il prezzo",
     "Con avidità estrema si va short, con paura estrema si compra tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-02",
@@ -1140,7 +1230,8 @@
    "miti": [
     "Il rapporto long/short dice dove va il prezzo",
     "Con avidità estrema si va short, con paura estrema si compra tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-03",
@@ -1157,7 +1248,8 @@
    "miti": [
     "Il rapporto long/short dice dove va il prezzo",
     "Con avidità estrema si va short, con paura estrema si compra tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-04",
@@ -1174,7 +1266,8 @@
    "miti": [
     "Il rapporto long/short dice dove va il prezzo",
     "Con avidità estrema si va short, con paura estrema si compra tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-05",
@@ -1191,7 +1284,8 @@
    "miti": [
     "Il rapporto long/short dice dove va il prezzo",
     "Con avidità estrema si va short, con paura estrema si compra tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-06",
@@ -1208,7 +1302,8 @@
    "miti": [
     "Il rapporto long/short dice dove va il prezzo",
     "Con avidità estrema si va short, con paura estrema si compra tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-07",
@@ -1225,7 +1320,8 @@
    "miti": [
     "Il rapporto long/short dice dove va il prezzo",
     "Con avidità estrema si va short, con paura estrema si compra tutto"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-08",
@@ -1242,7 +1338,8 @@
    "miti": [
     "I social e gli influencer anticipano il prezzo",
     "Una strategia famosa rende come nel libro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-09",
@@ -1259,7 +1356,8 @@
    "miti": [
     "I social e gli influencer anticipano il prezzo",
     "Una strategia famosa rende come nel libro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-10",
@@ -1276,7 +1374,8 @@
    "miti": [
     "I social e gli influencer anticipano il prezzo",
     "Una strategia famosa rende come nel libro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-11",
@@ -1293,7 +1392,8 @@
    "miti": [
     "I social e gli influencer anticipano il prezzo",
     "Una strategia famosa rende come nel libro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-12",
@@ -1310,7 +1410,8 @@
    "miti": [
     "I social e gli influencer anticipano il prezzo",
     "Una strategia famosa rende come nel libro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-13",
@@ -1327,7 +1428,8 @@
    "miti": [
     "I social e gli influencer anticipano il prezzo",
     "Una strategia famosa rende come nel libro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-14",
@@ -1344,7 +1446,8 @@
    "miti": [
     "I social e gli influencer anticipano il prezzo",
     "Una strategia famosa rende come nel libro"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-15",
@@ -1362,7 +1465,8 @@
    ],
    "miti": [
     "Una strategia che vince il 90% delle volte è una miniera"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-16",
@@ -1380,7 +1484,8 @@
    ],
    "miti": [
     "Una strategia che vince il 90% delle volte è una miniera"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-17",
@@ -1398,7 +1503,8 @@
    ],
    "miti": [
     "Una strategia che vince il 90% delle volte è una miniera"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-18",
@@ -1416,7 +1522,8 @@
    ],
    "miti": [
     "Una strategia che vince il 90% delle volte è una miniera"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-19",
@@ -1434,7 +1541,8 @@
    ],
    "miti": [
     "Una strategia che vince il 90% delle volte è una miniera"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-20",
@@ -1452,7 +1560,8 @@
    ],
    "miti": [
     "Una strategia che vince il 90% delle volte è una miniera"
-   ]
+   ],
+   "operazioni": true
   },
   {
    "data": "2027-02-21",
@@ -1470,7 +1579,8 @@
    ],
    "miti": [
     "Una strategia che vince il 90% delle volte è una miniera"
-   ]
+   ],
+   "operazioni": true
   }
  ],
  "settimane": [

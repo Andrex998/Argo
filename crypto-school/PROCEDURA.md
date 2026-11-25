@@ -125,11 +125,14 @@ Le regole del quaderno:
    `crypto-school/programma.json` trova, nella lista `giorni`, il giorno con quella data.
    Ti servono:
    - `giorno`, il numero;
-   - `settimana`, `tipo`, `tema`, `protagonisti` e `miti`.
+   - `settimana`, `tipo`, `tema`, `protagonisti` e `miti`;
+   - `operazioni`: true se oggi si possono dare ordini.
 
    Il `tipo` è uno di questi: accoglienza, riunione, consiglio, scrutinio, fine.
+   L'accoglienza è il giorno 0, la sera del 25/11: ognuno si presenta e fa le prime
+   previsioni, senza ordini. I portafogli partono il 26/11.
 2. **Prima e dopo il trimestre.**
-   - Prima del 26/11/2026, fermati.
+   - Prima del 25/11/2026, fermati.
    - Dopo il 21/2/2027 il trimestre è finito: vedi il punto 11 e fermati.
 3. Leggi `riunione/<oggi>`. Se esiste con `stato: "completo"`, la riunione è già fatta:
    fermati.
@@ -143,7 +146,7 @@ Le regole del quaderno:
    - Leggi `motore/giudizio` e `motore/oi` con `out_dir` dentro `LAVORO`, e annota le loro
      versioni.
    - Copia i file salvati in `LAVORO/stato.json` e `LAVORO/oi.json`.
-   - Se `motore/giudizio` non esiste (il primo giorno), crea lo stato con
+   - Se `motore/giudizio` non esiste (all'accoglienza), crea lo stato con
      `MOTORE new LAVORO/stato.json 2026-11-26`.
    - Se `motore/oi` non esiste, non creare niente: il motore parte da un registro vuoto.
 3. **I conti della notte.** Lancia `MOTORE mark LAVORO/stato.json LAVORO/oi.json > LAVORO/mark.json`.
@@ -227,7 +230,7 @@ Il **lunedì** (consiglio e scrutinio) il Cronista aggiunge alla risposta:
 - `lettura`, una lettura dalla biblioteca, nella forma `{"titolo": "...", "testo": "100-200 parole"}`;
 - `ipotesi`, al massimo 2, nella forma `[{"nome": "...", "regola": "...", "dati": "...", "smentita": "..."}]`.
 
-Il **primo giorno** aggiunge `chi_sono`: 80-150 parole su come ragiona e dove può
+Nel **giorno di accoglienza** aggiunge `chi_sono`: 80-150 parole su come ragiona e dove può
 sbagliare.
 
 ## 5. Le posizioni, in privato
@@ -298,13 +301,14 @@ Le regole per tutti:
     oppure 1% nei giorni di allarme o per decisione del Preside);
   - al massimo 4 posizioni, una per moneta.
 
-  Non fare niente è una scelta valida, e va spiegata.
+  Non fare niente è una scelta valida, e va spiegata. Nel giorno di accoglienza `ordini` è
+  vuoto.
 
 **Nei giorni speciali** ogni agente aggiunge dei campi:
 - **il lunedì:** `settimana`, 3 righe su cosa ha fatto il codice, cosa ha fatto lui con il
   giudizio e la differenza in dollari. Il Guardiano mette qui il confronto dei gemelli.
   Ogni agente riscrive anche `chi_sono`, in 80-150 parole;
-- **il primo giorno:** `chi_sono`.
+- **nel giorno di accoglienza:** `chi_sono`.
 
 Se una risposta non è JSON valido, chiedila di nuovo una volta con SendMessage. Se è
 ancora rotta, salva il testo come `intervento` e nessun ordine.
@@ -377,7 +381,7 @@ frase.
 
 ## 8. Gli ordini
 
-Solo se i prezzi ci sono (punto 3):
+Solo se oggi `operazioni` è true e i prezzi ci sono (punto 3):
 1. **Diretta**, fase `ordini`, attore `motore`: "Eseguo gli ordini a giudizio".
 2. Scrivi `LAVORO/ordini.json`, nella forma
    `{"falco": [...], "tartaruga": [...], "spazzino": [...], "ragioniere": [...]}`, con gli
@@ -450,7 +454,7 @@ Scrivi `LAVORO/verbale.json` così:
 
 ```json
 {
-  "data": "2026-11-26", "giorno": 1, "settimana": 0, "tipo": "accoglienza", "tema": "...",
+  "data": "2026-11-26", "giorno": 1, "settimana": 0, "tipo": "riunione", "tema": "...",
   "stato": "completo", "avviso": "", "scritto": "2026-11-26 06:31:00",
   "mercati_ora": "2026-11-26 05:49:10", "titolo": "...",
   "briefing": {},
@@ -491,7 +495,7 @@ Prima di salvarle, aggiungi a ogni previsione (di tutti):
 - `errori`: gli errori di oggi, aumentando `volte` se c'erano già;
 - `previsioni`: in fondo, le nuove;
 - `autovoti`: in fondo, l'autovoto di oggi accanto ai tuoi voti;
-- `chi_sono`: quando l'agente l'ha riscritto (il primo giorno e il lunedì);
+- `chi_sono`: quando l'agente l'ha riscritto (all'accoglienza e il lunedì);
 - `aggiornato`: l'ora UTC.
 
 Il tuo quaderno (`memoria/preside`) riceve:
@@ -500,7 +504,7 @@ Il tuo quaderno (`memoria/preside`) riceve:
 
 Niente previsioni e niente autovoti per te.
 
-**Lo stato della classe.** Leggi `classe/stato` e annota la `version` (al primo giorno non
+**Lo stato della classe.** Leggi `classe/stato` e annota la `version` (all'accoglienza non
 esiste). Preparane la nuova versione in `LAVORO/classe-stato.json`:
 - `giorno` e `data` di oggi;
 - `aggiornato`, l'ora UTC;
