@@ -18,6 +18,26 @@ personaggi, tutti agenti IA:
 I prezzi sono quelli veri dei contratti perpetui di BingX, sulle 36 monete della ricerca
 del desk, senza memecoin. I soldi sono finti: 10.000 USDT per portafoglio.
 
+La pagina **Scuola Cripto** mostra tutto:
+- l'aula in 3D, in diretta durante le riunioni e in replica il resto del giorno;
+- i portafogli, regole contro giudizio;
+- il rischio, i quaderni, i verbali e le monete.
+
+È qui: https://claude.ai/artifact/WEB5jaWNy37UBRKYuscQne. Il sorgente è in
+[pagina/scuola-cripto.html](pagina/scuola-cripto.html).
+
+Quattro attività programmate fanno girare la scuola, tutte con l'ora italiana:
+
+| Attività | Quando | Cosa fa |
+| --- | --- | --- |
+| Scuola Cripto | ogni giorno alle 06:47 | la riunione del mattino ([PROCEDURA.md](PROCEDURA.md)) |
+| Scuola Cripto · recupero | ogni giorno alle 13:17 | la riunione, solo se quella del mattino non c'è stata |
+| Scuola Cripto · palestra | la domenica alle 11:13 | la palestra ([PALESTRA.md](PALESTRA.md)) |
+| Scuola Cripto · sera | ogni giorno alle 20:41 | il controllo della sera ([SERA.md](SERA.md)) |
+
+Le sessioni avviate dalle attività non possono spegnerle da sole: alla fine del trimestre
+vanno spente a mano, e la pagina lo ricorda.
+
 ## Due portafogli per agente
 
 Ogni agente con un portafoglio ne ha due, partiti insieme il 26/11/2026 (la sera prima c'è
