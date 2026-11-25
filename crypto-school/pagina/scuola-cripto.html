@@ -96,7 +96,7 @@ button { font: inherit; color: inherit; }
 .k-motore { --who: var(--c-motore); }
 .key { width: 22px; height: 4px; border-radius: 2px; flex: none; display: inline-block; background: var(--who, var(--ink-2)); }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; background: var(--who, var(--ink-2)); }
-.whom { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; white-space: nowrap; }
+.whom { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; white-space: nowrap; font-family: var(--font-head); }
 
 /* testata */
 .top { padding-block: 28px 18px; }
@@ -118,7 +118,7 @@ section { padding-block: 18px; }
 .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 12px; }
 .section-head .muted { font-size: .9rem; }
 .sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 12px; min-width: 0; align-content: start; }
-.block { display: grid; gap: 6px; min-width: 0; }
+.block { display: grid; gap: 6px; min-width: 0; align-content: start; }
 .speaker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .speaker .turn { font-size: .8rem; color: var(--muted); }
 .lines { display: grid; gap: 4px; font-size: .88rem; color: var(--ink-2); margin: 0; padding: 0; list-style: none; }
@@ -284,8 +284,8 @@ td.hot, .hot { color: var(--loss); font-weight: 600; }
 .stat p { font-size: .86rem; color: var(--ink-2); }
 .risk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
 .alarms { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.alarms li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font-size: .9rem; }
-.alarms li > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.alarms li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: baseline; font-size: .9rem; }
+.alarms li > span:last-child { overflow-wrap: anywhere; }
 .tag.alarm { border-color: var(--loss); color: var(--loss); background: var(--alarm); }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .pill { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--rule); font-size: .84rem; color: var(--ink-2); }
@@ -312,7 +312,7 @@ td.hot, .hot { color: var(--loss); font-weight: 600; }
 .calib .ax { stroke: var(--rule); stroke-width: 1; }
 .calib .ideal { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
 .calib-note { font-size: .78rem; }
-.sum-table td:first-child { white-space: nowrap; }
+.sum-table td, .sum-table th, .risk-table td:first-child, td.id { white-space: nowrap; }
 .self-up { color: var(--loss); }
 .minds-sum { margin-bottom: 16px; }
 
@@ -324,12 +324,12 @@ td.hot, .hot { color: var(--loss); font-weight: 600; }
 .v-stack { display: grid; gap: 16px; }
 .v-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .prose { font-family: var(--font-read); font-size: 1rem; line-height: 1.6; max-width: 70ch; overflow-wrap: anywhere; }
+.prose :where(p, ul, ol, blockquote, h1, h2, h3, h4, table) { margin: 0; }
 .prose > * + * { margin-top: .6em; }
-.prose p, .prose ul, .prose ol { margin: 0; }
 .prose ul, .prose ol { padding-left: 1.3em; }
 .prose li + li { margin-top: .25em; }
 .prose h1, .prose h2, .prose h3, .prose h4 { font-family: var(--font-head); font-size: 1rem; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ink); }
-.prose blockquote { margin: 0; padding-left: 12px; border-left: 2px solid var(--rule); color: var(--ink-2); }
+.prose blockquote { padding-left: 12px; border-left: 2px solid var(--rule); color: var(--ink-2); }
 .prose code { font-family: var(--font-num); font-size: .9em; }
 .prose table { display: block; overflow-x: auto; font-family: var(--font-head); }
 .news { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
@@ -580,6 +580,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
   const $ = (id) => document.getElementById(id);
   const arr = (v) => Array.isArray(v) ? v : [];
   const obj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const full = (v) => obj(v) && Object.keys(v).length ? v : null;
 
   // ---- formatting: numbers the Italian way ------------------------------------------------
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -707,7 +708,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     const t = human(s);
     const m = t.match(/^([A-ZÀ-Ü]{3,}):\s*(.*)$/s);
     const label = m ? m[1] : kind === "note" ? "nota" : "allarme";
-    return `<li><span class="tag ${kind === "note" ? "" : "alarm"}">${esc(label)}</span><span>${esc(m ? m[2] : t)}</span></li>`;
+    return `<li><span class="tag ${kind === "note" ? "" : "alarm"}">${esc(label)}</span><span>${esc(cap(m ? m[2] : t))}</span></li>`;
   }
 
   // ---- the school's calendar ----------------------------------------------------------------
@@ -734,7 +735,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
   }
 
   // ---- status line ----------------------------------------------------------------------------
-  const chip = (html, cls = "") => `<span class="chip ${cls}">${html}</span>`;
+  const chip = (html, cls = "", dot = false) => `<span class="chip ${cls}">${dot ? `<span class="live-dot" aria-hidden="true"></span>` : ""}<span>${html}</span></span>`;
   function renderStatus() {
     const el = $("status");
     if (S.unavailable) {
@@ -760,7 +761,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
           const next = all.find((g) => g.data > today.data);
           out.push(chip(`Riunione di oggi fatta${next ? ` · la prossima è ${esc(longDay(next.data))} alle ${MEETING}` : ""}`));
         } else if (liveNow()) {
-          out.push(chip(`<span class="live-dot" aria-hidden="true"></span><strong>Riunione in corso</strong>: guardala nell'aula`));
+          out.push(chip(`<strong>Riunione in corso</strong>: guardala nell'aula`, "", true));
         } else if (today.tipo === "accoglienza") {
           out.push(chip("L'accoglienza è stasera: ognuno si presenta, senza ordini"));
         } else if (now.minutes < 7 * 60) {
@@ -799,7 +800,8 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
         const partial = h && h.stato && h.stato !== "completo";
         const cls = ["day", "t-" + g.tipo, h ? "done" : "", partial ? "partial" : "", g.data === today ? "today" : ""].filter(Boolean).join(" ");
         const style = i === 0 && firstCol > 1 ? ` style="grid-column-start:${firstCol}"` : "";
-        const label = `Giorno ${g.giorno}, ${longDay(g.data)}: ${KIND[g.tipo] || g.tipo}${h ? (partial ? ", svolta ma incompleta" : ", svolta") : ""}${h && h.titolo ? ". " + h.titolo : ""}`;
+        const caps = h && obj(h.capitali) ? Object.values(h.capitali).filter(obj).map((c) => toNum(c.giudizio) - toNum(c.regole)).filter(isNum) : [];
+        const label = `Giorno ${g.giorno}, ${longDay(g.data)}: ${KIND[g.tipo] || g.tipo}${h ? (partial ? ", svolta ma incompleta" : ", svolta") : ""}${h && h.titolo ? ". " + h.titolo : ""}${caps.length ? `. Giudizio meno regole: ${fmt(caps.reduce((a, b) => a + b, 0), 2, true)} USDT` : ""}`;
         return `<button type="button" class="${cls}"${style} data-date="${esc(g.data)}" aria-pressed="${g.data === S.selected}" aria-label="${esc(label)}" title="${esc(label)}"><span class="n">${esc(g.giorno)}</span><span class="d">${esc(dm(g.data))}</span>${KMARK[g.tipo] ? `<span class="k" aria-hidden="true">${KMARK[g.tipo]}</span>` : ""}</button>`;
       }).join("");
       const cast = arr(w.protagonisti).map((k) => NAMES[k] || k);
@@ -882,6 +884,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
         <div class="fig"><h4>Tutto il giudizio contro tutte le regole</h4><span class="v ${tone(gapSum)}">${fmt(gapSum, 2, true)} <small>USDT</small></span><p>${gaps.length ? (gapSum > 0.5 ? "Insieme, i quattro giudizi fanno meglio delle regole." : gapSum < -0.5 ? "Insieme, i quattro giudizi fanno peggio delle regole." : "Per ora giudizio e regole sono pari.") : ""}</p></div>
         ${best.length ? `<div class="fig"><h4>Chi aggiunge di più</h4><span class="v" style="font-size:1.15rem">${whom(best[0].n)} <span class="num ${tone(best[0].gap)}">${fmt(best[0].gap, 0, true)}</span></span><p>chi toglie di più: ${whom(best[best.length - 1].n)} <span class="num ${tone(best[best.length - 1].gap)}">${fmt(best[best.length - 1].gap, 0, true)}</span></p></div>` : ""}`;
     }
+    chartW = chartWidth();
     el.innerHTML = T.map((t) => walletCard(t, started)).join("");
     for (const t of T) {
       const fig = el.querySelector(`[data-chart="${t.n}"]`);
@@ -891,7 +894,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
   function walletCard(t, started) {
     const { n, w, r, rp, jp, rules, judg, gap, prices } = t;
     const rv = isNum(rules) ? rules : CAPITAL, jv = isNum(judg) ? judg : CAPITAL;
-    const verdict = !isNum(gap) ? (started ? "La differenza compare quando ci sono tutti e due i portafogli." : "La differenza compare con la prima riunione.")
+    const verdict = !isNum(gap) ? (!started ? "La differenza compare con la prima riunione." : !isNum(rules) ? "Il motore rifà la regola dalla prima riunione: la differenza compare allora." : "Il portafoglio a giudizio non è ancora nel motore.")
       : Math.abs(gap) < 0.5 ? "Per ora giudizio e regola sono pari."
         : gap > 0 ? "Il suo giudizio fa meglio della sua regola."
           : "Il suo giudizio fa peggio della sua regola: la cosa onesta sarebbe seguirla.";
@@ -906,7 +909,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       </div>
       <figure class="block" style="margin:0" data-chart="${n}">
         <div class="chart-legend"><span><i class="ln rules"></i>a regole</span><span><i class="ln"></i>a giudizio</span><span class="muted">la riga piena segna i 10.000 di partenza</span></div>
-        ${twinChart(n, rp, jp)}
+        ${twinChart(n, rp, jp, chartW)}
       </figure>
       <div class="block"><h4>Posizioni aperte a giudizio (${npos} su 4)</h4>${judgTable(w, prices)}</div>
       <div class="block"><h4>Posizioni aperte a regole (${arr(r && r.open).length})</h4>${rulesTable(n, r, prices)}</div>
@@ -924,7 +927,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     return `<div class="table-scroll"><table class="tight"><thead><tr><th>Id</th><th>Moneta</th><th>Lato</th><th class="num">Entrata</th><th class="num">Stop</th><th class="num">Target</th><th class="num">Unità</th><th class="num">Ora</th><th class="num" title="Ai prezzi di ora, senza costi e funding">Risultato</th></tr></thead><tbody>${ps.map((p) => {
       const now = isNum(prices[p.symbol]) ? prices[p.symbol] : null;
       const pnl = isNum(now) && isNum(p.units) && isNum(p.entry) ? sign(p.side) * p.units * (now - p.entry) : null;
-      return `<tr><td class="muted">${esc(p.id)}</td><td><b>${esc(p.symbol)}</b></td><td>${side(p.side)}</td><td class="num">${price(p.entry)}</td><td class="num">${price(p.stop)}</td><td class="num">${isNum(p.target) ? price(p.target) : "—"}</td><td class="num">${qty(p.units)}</td><td class="num">${price(now)}</td><td class="num ${tone(pnl)}">${fmt(pnl, 2, true)}</td></tr>`;
+      return `<tr><td class="muted id">${esc(p.id)}</td><td><b>${esc(p.symbol)}</b></td><td>${side(p.side)}</td><td class="num">${price(p.entry)}</td><td class="num">${price(p.stop)}</td><td class="num">${isNum(p.target) ? price(p.target) : "—"}</td><td class="num">${qty(p.units)}</td><td class="num">${price(now)}</td><td class="num ${tone(pnl)}">${fmt(pnl, 2, true)}</td></tr>`;
     }).join("")}</tbody></table></div>`;
   }
   function rulesTable(n, r, prices) {
@@ -985,6 +988,18 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
 
   // ---- the twin curves ------------------------------------------------------------------------
   const charts = {};
+  let chartW = 520, resizeT = null;
+  function chartWidth() {
+    const w = $("wallets").clientWidth;
+    if (!w) return 520;
+    const cols = matchMedia("(max-width: 900px)").matches ? 1 : 2;
+    const pad = matchMedia("(max-width: 560px)").matches ? 30 : 38;
+    return Math.max(280, Math.min(620, Math.round((w - (cols - 1) * 16) / cols - pad)));
+  }
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => { if (chartWidth() !== chartW) renderWallets(); }, 200);
+  });
   function niceTicks(lo, hi, n) {
     const span = hi - lo, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
     const step = [1, 2, 2.5, 5, 10].map((f) => f * mag).find((s) => span / s <= n) || 10 * mag;
@@ -992,10 +1007,13 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
     return out;
   }
-  function twinChart(n, rp, jp) {
+  function twinChart(n, rp, jp, W = 520) {
     const dates = [...new Set([...rp, ...jp].map((p) => p.date))].sort();
-    if (!dates.length) { charts[n] = null; return `<p class="muted chart-empty">La curva parte con la prima riunione.</p>`; }
-    const W = 520, H = 180, ml = 50, mr = 112, mt = 12, mb = 24;
+    if (dates.length < 2) {
+      charts[n] = null;
+      return `<p class="muted chart-empty">${dates.length ? `La curva compare dal secondo giorno: per ora c'è solo ${esc(longDay(dates[0]))}.` : "La curva parte con la prima riunione."}</p>`;
+    }
+    const H = 180, ml = 48, mr = 108, mt = 12, mb = 24;
     const rmap = new Map(rp.map((p) => [p.date, p.value])), jmap = new Map(jp.map((p) => [p.date, p.value]));
     const vals = [...rp, ...jp].map((p) => p.value).concat([CAPITAL]);
     let lo = Math.min(...vals), hi = Math.max(...vals);
@@ -1077,7 +1095,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     $("rischio-at").textContent = g ? `Dal verbale di ${longDay(g.data)}` : "";
     if (!g) { el.innerHTML = `<p class="muted">${S.unavailable ? "I numeri del Guardiano compaiono quando apri la pagina da claude.ai." : "I numeri del Guardiano compaiono con il programma della scuola."}</p>`; return; }
     if (d === undefined) { el.innerHTML = `<p class="muted">Carico i numeri del Guardiano…</p>`; return; }
-    const R = d && obj(d.rischio), Q = d && obj(d.quadro), M = Q && obj(Q.mercato);
+    const R = d && full(d.rischio), Q = d && full(d.quadro), M = Q && full(Q.mercato);
     if (!R && !M) {
       const future = g.data > romeToday().date;
       el.innerHTML = `<div class="sheet empty"><p>${d ? "In questo verbale il motore non ha scritto i numeri del rischio." : future ? `I numeri del Guardiano arrivano con la riunione di ${esc(longDay(g.data))}.` : "Per questo giorno non c'è il verbale, quindi nemmeno i numeri del Guardiano."}</p><p class="muted">Qui compaiono gli allarmi, il fondo della scuola, il rischio di ognuno degli 8 portafogli e lo stato del mercato.</p></div>`;
@@ -1115,7 +1133,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     const P = R && obj(R.portafogli);
     if (P) {
       const keys = TRADERS.flatMap((n) => [`${n}_regole`, `${n}_giudizio`]).filter((k) => obj(P[k]));
-      table = `<div class="sheet"><h3>Il rischio di ogni portafoglio</h3><div class="table-scroll"><table class="tight"><thead><tr><th>Portafoglio</th><th class="num">Capitale</th><th class="num" title="Quanto è sotto il suo massimo">Calo dal massimo</th><th class="num" title="Valore delle posizioni sul capitale">Esposizione lorda</th><th class="num" title="Long meno short, pesati per il beta verso BTC">Netta (beta)</th><th class="num" title="Quanto si perde se tutti gli stop long scattano">Rischio long</th><th class="num" title="Quanto si perde se tutti gli stop short scattano">Rischio short</th><th class="num">Volatilità</th><th class="num">Posizioni</th></tr></thead><tbody>${keys.map((k) => {
+      table = `<div class="sheet"><h3>Il rischio di ogni portafoglio</h3><div class="table-scroll"><table class="tight risk-table"><thead><tr><th>Portafoglio</th><th class="num">Capitale</th><th class="num" title="Quanto è sotto il suo massimo">Calo dal massimo</th><th class="num" title="Valore delle posizioni sul capitale">Esposizione lorda</th><th class="num" title="Long meno short, pesati per il beta verso BTC">Netta (beta)</th><th class="num" title="Quanto si perde se tutti gli stop long scattano">Rischio long</th><th class="num" title="Quanto si perde se tutti gli stop short scattano">Rischio short</th><th class="num">Volatilità</th><th class="num">Posizioni</th></tr></thead><tbody>${keys.map((k) => {
         const p = P[k], [n, kind] = k.split("_");
         const hotDrop = isNum(p.calo_pct) && p.calo_pct <= -15;
         const hotGross = kind === "giudizio" && isNum(p.lorda_pct) && p.lorda_pct > 250;
@@ -1381,7 +1399,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     return `<article class="sheet judgement"><h3 class="pen">Il bilancio del trimestre</h3>
       ${f.testo ? `<div class="prose">${md(f.testo)}</div>` : ""}
       ${f.pagella ? `<div class="block"><h4>La pagella finale</h4>${pagellaTable(f.pagella)}</div>` : ""}
-      ${perAgent.map(([k, v]) => `<div class="block"><h4>${esc(keyName(k))}</h4><ul class="lines">${Object.entries(v).map(([w, t]) => `<li>${whom(w)} ${esc(valTxt(t))}</li>`).join("")}</ul></div>`).join("")}
+      ${perAgent.map(([k, v]) => `<div class="block"><h4>${esc(["righe", "agenti", "imparato"].includes(k) ? "Cosa ha imparato ognuno, e cosa deve ancora imparare" : keyName(k))}</h4><ul class="lines">${Object.entries(v).map(([w, t]) => `<li>${whom(w)} ${esc(valTxt(t))}</li>`).join("")}</ul></div>`).join("")}
     </article>`;
   }
   function capitalsCard(d) {
@@ -1461,7 +1479,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
   function renderCoins() {
     const el = $("monete"), atEl = $("monete-at");
     const d = S.verbali[S.selected];
-    const q = d && obj(d.quadro) && obj(d.quadro.monete);
+    const q = d && full(d.quadro) && full(d.quadro.monete);
     const prices = (S.giudizio && S.giudizio.prices) || {};
     if (!q) {
       const have = COINS.filter((s) => isNum(prices[s]));
@@ -1501,7 +1519,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
   const FASE = {
     inizio: "si comincia", motore: "il motore fa i conti", briefing: "il briefing del Cronista",
     posizioni: "le posizioni, in privato", domande: "le domande dello Scettico", risposte: "le risposte",
-    ordini: "gli ordini", chiusura: "la chiusura del Preside", fine: "riunione salvata",
+    ordini: "gli ordini", chiusura: "la chiusura del Preside", fine: "riunione salvata", sera: "la riunione della sera",
   };
   const orderText = (o) => !obj(o) ? "" : o.action === "close" ? `chiudo ${o.id}`
     : `${o.side || ""} ${String(o.symbol || "").toUpperCase()}, stop ${level(o.stop)}${o.target != null && o.target !== "" ? ", target " + level(o.target) : ""}, rischio ${small(toNum(o.risk_pct) ?? 1)}%`;
@@ -1685,12 +1703,16 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       const done = held().map((x) => x.data).sort();
       const idx = done.indexOf(sel);
       dayEl.textContent = L ? `Riunione ${L.giorno ?? ""} · in diretta` : g ? `Giorno ${g.giorno} · ${dm(g.data)}` : "";
+      dayEl.hidden = !dayEl.textContent;
       $("aula-prev").disabled = !!L || (idx < 0 ? !done.some((x) => x < sel) : idx <= 0);
       $("aula-next").disabled = !!L || (idx < 0 ? !done.some((x) => x > sel) : idx >= done.length - 1);
+      $("aula-restart").disabled = !!L;
       liveEl.innerHTML = L
-        ? `<span class="live-dot" aria-hidden="true"></span><strong>In diretta</strong> · ${esc(FASE[L.fase] || L.fase || "")} · aggiornata alle ${esc(romeTime(L.ora))}`
+        ? `<span class="live-dot" aria-hidden="true"></span><span><strong>In diretta</strong> · ${esc(FASE[L.fase] || L.fase || "")} · aggiornata alle ${esc(romeTime(L.ora))}</span>`
         : d ? `Replica della riunione di ${esc(longDay(d.data || sel))}, con le loro parole.`
-          : S.unavailable ? "L'aula si anima quando apri la pagina da claude.ai." : g ? `In attesa della riunione. La prossima è alle ${MEETING}.` : "Carico l'aula…";
+          : S.unavailable ? "L'aula si anima quando apri la pagina da claude.ai."
+            : g ? `In attesa della riunione. La prossima è alle ${MEETING}.`
+              : S.got.programma ? "L'aula si anima con la riunione di accoglienza." : "Carico l'aula…";
       if (next === key) return;
       key = next;
       items = [];
@@ -2119,17 +2141,28 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
           // the shell on the back, with its plates
           const shell = new T.Mesh(new T.SphereGeometry(0.34, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), lam(0x3c6e47));
           shell.rotation.x = -Math.PI / 2;
-          shell.scale.set(1.15, 0.8, 1.25);
+          shell.scale.set(1.3, 0.8, 1.25);
           shell.position.set(0, 1.04, -0.13);
           body.add(shell);
           const rim = new T.Mesh(new T.TorusGeometry(0.34, 0.04, 6, 18), lam(0x8a6a3a));
-          rim.scale.set(1.15, 1.25, 1);
+          rim.scale.set(1.3, 1.25, 1);
           rim.position.set(0, 1.04, -0.13);
           body.add(rim);
+          // the plastron in front, so the turtle shows from the front too
+          const plastron = new T.Mesh(new T.SphereGeometry(0.25, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), lam(0xd6c47a));
+          plastron.rotation.x = Math.PI / 2;
+          plastron.scale.set(0.95, 0.32, 1.15);
+          plastron.position.set(0, 1.02, 0.17);
+          body.add(plastron);
+          for (const yy of [0.9, 1.02, 1.14]) {
+            const seam = new T.Mesh(geoBox(0.3, 0.012, 0.01), lam(0x8a6a3a));
+            seam.position.set(0, yy, 0.255);
+            body.add(seam);
+          }
           const plate = new T.CylinderGeometry(0.075, 0.075, 0.03, 6);
           for (const [th, ph] of [[0, 0], [0.9, 0.6], [0.9, 2.2], [0.9, 3.8], [0.9, 5.4]]) {
             const local = new T.Vector3(Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)).multiplyScalar(0.34);
-            const p = new T.Vector3(local.x * 1.15, local.z * 1.25, -local.y * 0.8);
+            const p = new T.Vector3(local.x * 1.3, local.z * 1.25, -local.y * 0.8);
             const m = new T.Mesh(plate, lam(0x5d8f4c));
             m.position.set(p.x, 1.04 + p.y, -0.13 + p.z);
             m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), p.clone().normalize());
@@ -2147,7 +2180,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
           const band = cyl(0.045, 0.045, 0.05, lam(0x6b3d1f), 8);
           band.position.y = 0.27;
           broom.add(band);
-          broom.position.set(0.42, 0, 0.12);
+          broom.position.set(-0.42, 0, 0.12);
           broom.rotation.z = 0.08;
           g.add(broom);
           for (const yy of [0.95, 1.15]) {
@@ -2205,8 +2238,8 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
           const edge = new T.Mesh(new T.TorusGeometry(0.24, 0.018, 6, 24), lam(0x0f9e80));
           edge.rotation.y = Math.PI / 2;
           shield.add(edge);
-          shield.position.set(-0.1, -0.38, 0.03);
-          armL.add(shield);
+          shield.position.set(0.1, -0.38, 0.03);
+          armR.add(shield);
           const helmet = new T.Mesh(new T.SphereGeometry(0.215, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2.1), lam(0x9aa5ad));
           helmet.position.y = 0.03;
           head.add(helmet);
@@ -2364,7 +2397,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
           l = -swing * 0.8;
           r = swing * 0.8;
         } else if (a.speaking) {
-          if (a.key === "guardiano") { l = -1.3; r = -0.5 + Math.sin(t * 4) * 0.25; }
+          if (a.key === "guardiano") { r = -1.3; l = -0.5 + Math.sin(t * 4) * 0.25; }
           else if (a.key === "scettico") { l = -0.15; r = -1.7 + Math.sin(t * 3) * 0.08; }
           else if (a.key === "cronista") { l = -0.6 + Math.sin(t * 4) * 0.25; r = -1.2; }
           else if (a.key === "ragioniere") { l = -0.9; r = -0.7 + Math.sin(t * 4) * 0.3; }
