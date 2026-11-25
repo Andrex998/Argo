@@ -19,6 +19,29 @@ dell'attività programmata.
 - Se qualcosa si rompe non inventare. Salva comunque il diario del giorno con
   `stato: "incompleto"` e un `avviso` che spiega cosa è mancato.
 
+## La diretta
+
+La pagina ha un'aula in 3D che mostra la giornata mentre la fai. La tiene aggiornata il
+documento `live/ora`. Nei momenti indicati con **Diretta** nei punti qui sotto, riscrivilo
+con `set`. Usa come `if_version` la versione che ti ha restituito la scrittura precedente;
+la prima volta leggila con `get`, oppure crea il documento se non esiste.
+
+```json
+{"data": "2026-11-26", "giorno": 3, "fase": "studio", "attore": "macro",
+ "testo": "Il Macro studia il dollaro nel giorno del Ringraziamento",
+ "ora": "2026-11-26 07:31:02",
+ "log": [{"ora": "...", "fase": "...", "attore": "...", "testo": "..."}]}
+```
+
+I campi:
+- `fase`: inizio, prezzi, lezione, studio, parla, ordini, giudizio oppure fine;
+- `attore`: preside, macro, tecnico oppure motore;
+- `testo`: una frase breve e concreta su cosa succede adesso, al massimo 160 caratteri;
+- `ora`: l'ora UTC, nella forma "AAAA-MM-GG HH:MM:SS";
+- `log`: gli stessi aggiornamenti della giornata, in ordine, al massimo gli ultimi 30.
+
+Se una scrittura della diretta non riesce, vai avanti: conta la giornata, non la diretta.
+
 ## 1. Prepara il lavoro
 
 1. Nella copia del repository Andrex998/Argo prendi la versione aggiornata della scuola:
@@ -40,10 +63,13 @@ dell'attività programmata.
    punto 9). Prima del 24/11/2026, fermati.
 3. Leggi `diario/<oggi>`. Se esiste con `stato: "completo"`, la giornata è già fatta:
    fermati.
+4. **Diretta**, fase `inizio`, attore `preside`: "La giornata N comincia: <il tema in
+   breve>".
 
 ## 3. I conti del motore, prima della lezione
 
-1. Leggi `motore/stato` con `out_dir` dentro `LAVORO`. Il file salvato è lo stato del
+1. **Diretta**, fase `prezzi`, attore `motore`: "Leggo i prezzi e controllo stop e target".
+   Poi leggi `motore/stato` con `out_dir` dentro `LAVORO`. Il file salvato è lo stato del
    motore. Copialo in `LAVORO/stato.json` e annota la `version` del documento.
 2. Lancia `python3 fx-school/school.py mark LAVORO/stato.json > LAVORO/mark.json`. Il
    comando:
@@ -53,7 +79,8 @@ dell'attività programmata.
    - apre gli ordini su SLV che aspettavano New York;
    - registra il capitale di oggi.
 
-   I suoi `events` sono gli `eventi_notte` del diario.
+   I suoi `events` sono gli `eventi_notte` del diario. **Diretta**, fase `prezzi`,
+   attore `motore`: cosa è successo nella notte, in una frase.
 3. Lancia `python3 fx-school/school.py picture > LAVORO/quadro.json`. È il quadro
    giornaliero di ogni mercato:
    - variazioni a 1, 5, 20, 60 e 250 giorni;
@@ -68,8 +95,8 @@ dell'attività programmata.
 
 ## 4. La lezione del Preside (sei tu)
 
-Leggi `fx-school/preside.md` e diventa il Preside. Per la lezione di oggi parti da tre
-cose:
+Leggi `fx-school/preside.md` e diventa il Preside. **Diretta**, fase `lezione`, attore
+`preside`: "Preparo la lezione su ...". Per la lezione di oggi parti da tre cose:
 - il tema del programma;
 - quello che è successo ieri e stanotte: il diario di ieri, gli eventi del motore, il
   quadro dei mercati;
@@ -86,7 +113,7 @@ allievi. Poi scrivi:
 - `fonti`: `[{"titolo": ..., "url": "https://..."}]`.
 
 Nei giorni d'esame la lezione è la traccia dell'esame. L'ultimo giorno è la cerimonia del
-diploma.
+diploma. **Diretta**, fase `lezione`: il titolo e la domanda del giorno.
 
 ## 5. Gli allievi parlano, uno dopo l'altro
 
@@ -95,7 +122,9 @@ legge l'analisi di oggi del primo e gli risponde. Chi parla per primo risponde a
 di ieri del compagno.
 
 Per ognuno lancia un agente separato (strumento Agent, tipo general-purpose), uno alla
-volta. Nel suo messaggio metti, per intero:
+volta. **Diretta** prima di lanciarlo, fase `studio`, attore l'allievo: "Il Macro studia
+...". **Diretta** quando ha risposto, fase `parla`, attore l'allievo: la prima frase della
+sua analisi e quanti ordini propone. Nel suo messaggio metti, per intero:
 1. il testo del suo file, `fx-school/allievi/macro.md` o `fx-school/allievi/tecnico.md`;
 2. data, numero del giorno, tipo del giorno, tema del programma, e se oggi si può operare;
 3. la lezione del Preside di oggi;
@@ -141,8 +170,10 @@ rotta, salva il testo come analisi e nessun ordine.
 ## 6. Gli ordini
 
 Solo se oggi `operazioni` è true e i prezzi ci sono:
-1. scrivi `LAVORO/ordini.json` come `{"macro": [...], "tecnico": [...]}`;
-2. lancia
+1. **Diretta**, fase `ordini`, attore `motore`: "Eseguo gli ordini"; dopo il comando, gli
+   esiti in una frase;
+2. scrivi `LAVORO/ordini.json` come `{"macro": [...], "tecnico": [...]}`;
+3. lancia
    `python3 fx-school/school.py execute LAVORO/stato.json LAVORO/ordini.json > LAVORO/execute.json`.
 
 Il motore fa rispettare le regole da solo. Un ordine fuori regola torna `respinto`, con il
@@ -154,7 +185,8 @@ ordine `close` per ognuna, così il risultato finale è in contanti.
 
 ## 7. Il giudizio del Preside
 
-Leggi analisi, risposte, ordini ed esiti. Poi scrivi il `giudizio`: 150-350 parole in
+**Diretta**, fase `giudizio`, attore `preside`: "Correggo e do i voti". Leggi analisi,
+risposte, ordini ed esiti. Poi scrivi il `giudizio`: 150-350 parole in
 Markdown e due voti da 1 a 10 per allievo.
 - `ragionamento`.
 - `disciplina`: stop sensati, rischio rispettato, coerenza tra analisi e ordini, fonti
@@ -214,6 +246,8 @@ Salva i tre documenti con un solo `batch` di ArtifactData:
   punto 3;
 - `set` di `scuola/stato` da `LAVORO/scuola-stato.json`, con `if_version` la versione
   letta.
+
+Dopo il batch, **Diretta**, fase `fine`, attore `preside`: "Giornata N salvata: <titolo>".
 
 Il batch può essere rifiutato perché un documento è cambiato nel frattempo. In quel caso
 rileggi quel documento e rifai solo la sua scrittura: non sovrascrivere mai alla cieca lo

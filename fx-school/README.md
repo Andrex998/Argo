@@ -12,6 +12,18 @@ e opera su prezzi veri:
 Il registro, i wallet, le lezioni, le discussioni e i voti si vedono nella pagina
 **Mini Scuola Forex**: https://claude.ai/artifact/QtyCJLLCpSXNeRFUFjM4qs
 
+In cima alla pagina c'è **l'aula in 3D**, con il Preside, il Macro e il Tecnico come
+personaggi:
+- camminano tra la cattedra, i banchi, la biblioteca e il terminale del motore;
+- si siedono, leggono, scrivono alla lavagna e parlano in fumetti, con le loro parole del
+  diario;
+- accanto all'aula scorre la conversazione completa.
+
+Durante la lezione del mattino l'aula va **in diretta**: la sessione scrive a ogni passo
+cosa sta facendo, nel documento `live/ora`. Il resto del giorno l'aula rimette in scena la
+giornata scelta nel registro. Il sorgente della pagina è in
+[pagina/scuola-forex.html](pagina/scuola-forex.html).
+
 ## Una giornata
 
 Ogni giorno alle 08:23, ora italiana, un'attività programmata avvia una sessione di Claude
