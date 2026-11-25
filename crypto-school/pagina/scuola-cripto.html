@@ -1,0 +1,2663 @@
+<title>Scuola Cripto</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Titillium+Web:wght@400;600;700&display=swap">
+<style>
+/* Layout: lo stesso quaderno a quadretti della scuola forex. In alto l'aula in 3D con la
+   riunione del mattino, poi il registro degli 89 giorni, i quattro banchi con i due
+   portafogli gemelli (regola contro giudizio), i numeri del Guardiano, i quaderni degli
+   otto personaggi, il verbale del giorno, le 36 monete e le regole. Ogni personaggio ha il
+   suo colore, sempre accanto al suo nome. Di notte il quaderno diventa una lavagna. */
+:root {
+  --paper: #fbfbf8;
+  --sheet: #ffffff;
+  --grid: #e7edf5;
+  --ink: #15233a;
+  --ink-2: #47526a;
+  --muted: #677085;
+  --rule: #d6dde8;
+  --wash: #eef2f8;
+  --pen: #b8243a;
+  --gain: #006300;
+  --loss: #c62f2f;
+  --alarm: #fbeaea;
+  --focus: #2a78d6;
+  --c-preside: #b8243a;
+  --c-falco: #257de0;
+  --c-tartaruga: #128a2b;
+  --c-spazzino: #ef6a26;
+  --c-ragioniere: #d99400;
+  --c-guardiano: #00a383;
+  --c-cronista: #db5a93;
+  --c-scettico: #6a4ce2;
+  --c-motore: #47526a;
+  --font-head: "Titillium Web", "Segoe UI", system-ui, sans-serif;
+  --font-read: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-num: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #17201c; --sheet: #1c2722; --grid: #212c27; --ink: #e8ede7; --ink-2: #b7c2bb;
+    --muted: #8d9991; --rule: #2f3b35; --wash: #223029; --pen: #f28b96; --gain: #35b54a;
+    --loss: #f07272; --alarm: #3a2527; --focus: #6aa6ef;
+    --c-preside: #ef6a6b; --c-falco: #3d93f0; --c-tartaruga: #22b83c; --c-spazzino: #ef7a3c;
+    --c-ragioniere: #dca21c; --c-guardiano: #19b496; --c-cronista: #e8649f; --c-scettico: #9d8cf1;
+    --c-motore: #b7c2bb; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #17201c; --sheet: #1c2722; --grid: #212c27; --ink: #e8ede7; --ink-2: #b7c2bb;
+  --muted: #8d9991; --rule: #2f3b35; --wash: #223029; --pen: #f28b96; --gain: #35b54a;
+  --loss: #f07272; --alarm: #3a2527; --focus: #6aa6ef;
+  --c-preside: #ef6a6b; --c-falco: #3d93f0; --c-tartaruga: #22b83c; --c-spazzino: #ef7a3c;
+  --c-ragioniere: #dca21c; --c-guardiano: #19b496; --c-cronista: #e8649f; --c-scettico: #9d8cf1;
+  --c-motore: #b7c2bb; color-scheme: dark;
+}
+
+body {
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font: 15px/1.55 var(--font-head);
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3, h4 { font-family: var(--font-head); line-height: 1.15; text-wrap: balance; margin: 0; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.12rem; font-weight: 600; }
+h4 { font-size: .76rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+p { margin: 0; }
+a { color: inherit; text-underline-offset: 2px; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.muted { color: var(--muted); }
+.up { color: var(--gain); }
+.down { color: var(--loss); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* the cast: every colour sits next to a name */
+.k-preside { --who: var(--c-preside); }
+.k-falco { --who: var(--c-falco); }
+.k-tartaruga { --who: var(--c-tartaruga); }
+.k-spazzino { --who: var(--c-spazzino); }
+.k-ragioniere { --who: var(--c-ragioniere); }
+.k-guardiano { --who: var(--c-guardiano); }
+.k-cronista { --who: var(--c-cronista); }
+.k-scettico { --who: var(--c-scettico); }
+.k-motore { --who: var(--c-motore); }
+.key { width: 22px; height: 4px; border-radius: 2px; flex: none; display: inline-block; background: var(--who, var(--ink-2)); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; background: var(--who, var(--ink-2)); }
+.whom { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; white-space: nowrap; }
+
+/* testata */
+.top { padding-block: 28px 18px; }
+.top .wrap { display: grid; gap: 10px; }
+.eyebrow { font-size: .76rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.top h1 { font-size: clamp(2.1rem, 5vw, 3.2rem); font-weight: 700; letter-spacing: -.01em; }
+.lede { max-width: 64ch; color: var(--ink-2); font-size: 1.02rem; }
+.status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  background: var(--sheet); border: 1px solid var(--rule); font-size: .88rem; color: var(--ink-2); max-width: 100%;
+}
+.chip strong, .chip b { color: var(--ink); font-weight: 600; }
+.chip.warn { border-color: var(--loss); }
+.chip.warn b { color: var(--loss); }
+.notice { padding: 10px 14px; border: 1px solid var(--loss); background: var(--sheet); border-radius: 8px; color: var(--ink-2); }
+
+section { padding-block: 18px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 12px; }
+.section-head .muted { font-size: .9rem; }
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.block { display: grid; gap: 6px; min-width: 0; }
+.speaker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.speaker .turn { font-size: .8rem; color: var(--muted); }
+.lines { display: grid; gap: 4px; font-size: .88rem; color: var(--ink-2); margin: 0; padding: 0; list-style: none; }
+.empty { display: grid; gap: 6px; color: var(--ink-2); }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: .86rem; color: var(--ink-2); }
+.facts b { color: var(--ink); font-weight: 600; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.read { font-family: var(--font-read); font-size: .98rem; line-height: 1.55; overflow-wrap: anywhere; }
+details > summary { cursor: pointer; color: var(--ink-2); font-size: .88rem; }
+details[open] > summary { margin-bottom: 6px; }
+
+/* tables */
+.table-scroll { overflow-x: auto; min-width: 0; }
+table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; vertical-align: bottom; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+th.num { font-family: var(--font-head); }
+table.tight td, table.tight th { padding: 5px 6px; }
+.side { display: inline-block; white-space: nowrap; padding: 1px 7px; border-radius: 999px; font-size: .74rem; font-weight: 600; border: 1px solid var(--rule); }
+.side.long::before { content: "▲ "; color: var(--gain); }
+.side.short::before { content: "▼ "; color: var(--loss); }
+td.hot, .hot { color: var(--loss); font-weight: 600; }
+
+/* tags in the minutes */
+.tag { display: inline-block; font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
+.tag.ok { border-color: var(--gain); color: var(--gain); }
+.tag.no { border-color: var(--loss); color: var(--loss); }
+.event { font-size: .88rem; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.event > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.order { font-size: .88rem; padding: 7px 0; border-top: 1px solid var(--rule); display: grid; gap: 3px; }
+.order .why { color: var(--ink-2); }
+
+/* the grades in red pen */
+.voti { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.voto { display: inline-flex; align-items: center; gap: 6px; font-size: .86rem; color: var(--ink-2); }
+.voto i {
+  font-style: normal; font-family: var(--font-hand); font-weight: 700; font-size: 1.45rem; line-height: 1;
+  color: var(--pen); width: 34px; height: 34px; display: inline-grid; place-items: center;
+  border: 2px solid var(--pen); border-radius: 50% 46% 52% 48%;
+}
+.voti.self .voto i { color: var(--ink-2); border-color: var(--ink-2); }
+.pen { font-family: var(--font-hand); color: var(--pen); font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.thought { font-family: var(--font-read); font-style: italic; color: var(--ink-2); border: 1px dashed var(--rule); border-radius: 10px; padding: 8px 12px; }
+
+/* l'aula in 3D */
+.aula { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: stretch; }
+.stage { position: relative; height: clamp(380px, 64vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); background: var(--sheet); min-width: 0; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stage canvas:active { cursor: grabbing; }
+.aula-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.nametag, .bubble { position: absolute; left: 0; top: 0; will-change: transform; }
+.nametag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 6px; border-radius: 999px; background: var(--sheet); color: var(--ink); font-size: .74rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); white-space: nowrap; z-index: 1; border: 1px solid var(--who, var(--rule)); }
+.nametag .tag-act { color: var(--muted); font-weight: 400; }
+.nametag .tag-grades em { font-style: normal; font-family: var(--font-hand); font-weight: 700; color: var(--pen); font-size: 1.05rem; line-height: 1; margin-left: 4px; }
+.nametag.speaking { box-shadow: 0 0 0 2px var(--who), 0 2px 8px rgba(0, 0, 0, .18); }
+.aula-overlay.compact .nametag { font-size: .66rem; padding: 1px 6px 1px 5px; gap: 4px; }
+.aula-overlay.compact .tag-act { display: none; }
+.aula-overlay.compact .nametag .tag-grades em { font-size: .92rem; margin-left: 2px; }
+.bubble { max-width: min(310px, 76%); padding: 7px 11px 8px; border-radius: 12px; background: var(--sheet); color: var(--ink); border: 2px solid var(--who, var(--rule)); box-shadow: 0 6px 18px rgba(0, 0, 0, .2); font: 13px/1.42 var(--font-read); z-index: 2; }
+.bubble::after { content: ""; position: absolute; left: var(--tail, 50%); bottom: -8px; width: 12px; height: 12px; background: var(--sheet); border-right: 2px solid var(--who, var(--rule)); border-bottom: 2px solid var(--who, var(--rule)); transform: translateX(-50%) rotate(45deg); }
+.bubble b { display: block; font: 600 .66rem/1.2 var(--font-head); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.aula-overlay.compact .bubble { font-size: 12px; padding: 6px 9px 7px; }
+.stage-bar { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; pointer-events: none; z-index: 3; }
+.stage-bar > * { pointer-events: auto; }
+.ctl { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ctl button { border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 999px; padding: 5px 11px; font-size: .8rem; cursor: pointer; }
+.ctl button:hover { border-color: var(--ink-2); }
+.ctl button:disabled { opacity: .45; cursor: default; }
+.aula-day { font-size: .8rem; color: var(--ink-2); background: var(--sheet); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 10px; }
+.feed { display: flex; flex-direction: column; min-width: 0; max-height: clamp(380px, 64vh, 620px); background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; }
+.feed h3 { padding: 12px 14px 8px; border-bottom: 1px solid var(--rule); }
+.feed ol { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; min-height: 0; }
+.msg button { display: grid; gap: 3px; width: 100%; text-align: left; padding: 8px 9px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; color: var(--ink); font: inherit; }
+.msg button:hover { background: var(--wash); }
+.msg[data-state="next"] { opacity: .45; }
+.msg[data-state="now"] button { background: var(--wash); box-shadow: inset 3px 0 0 var(--who, var(--rule)); }
+.msg-head { display: flex; align-items: center; gap: 6px; font-size: .78rem; flex-wrap: wrap; }
+.msg-head span { color: var(--muted); }
+.msg-text { font: .9rem/1.45 var(--font-read); overflow-wrap: anywhere; }
+.msg-empty { padding: 12px; color: var(--muted); }
+.aula-live { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; color: var(--ink-2); }
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--loss); flex: none; display: inline-block; }
+@media (prefers-reduced-motion: no-preference) { .live-dot { animation: pulse 1.8s ease-out infinite; } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(198, 47, 47, .5); } 100% { box-shadow: 0 0 0 10px rgba(198, 47, 47, 0); } }
+.stage.no3d { display: grid; place-items: center; height: auto; min-height: 220px; padding-bottom: 64px; }
+.no3d-note { max-width: 40ch; text-align: center; color: var(--ink-2); padding: 18px; display: grid; gap: 6px; }
+.no3d-note b { font-size: 1.05rem; color: var(--ink); }
+
+/* registro */
+.registro { display: grid; gap: 10px; }
+.week { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 6px 14px; align-items: start; }
+.week-name { font-size: .84rem; color: var(--ink-2); padding-top: 4px; line-height: 1.35; }
+.week-name b { display: block; color: var(--ink); font-weight: 600; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.day {
+  position: relative; display: grid; justify-items: start; gap: 0; padding: 5px 7px 6px; min-height: 50px;
+  border: 1px solid var(--rule); border-radius: 6px; background: transparent; cursor: pointer; text-align: left; color: var(--muted);
+}
+.day .n { font-family: var(--font-num); font-weight: 500; font-size: .95rem; }
+.day .d { font-size: .74rem; white-space: nowrap; }
+.day .k { position: absolute; top: 4px; right: 5px; font-size: .62rem; font-weight: 700; letter-spacing: .04em; line-height: 1; padding: 2px 3px; border-radius: 3px; border: 1px solid currentColor; }
+.day.t-scrutinio .k, .day.t-fine .k, .day.t-accoglienza .k { color: var(--pen); }
+.day.t-scrutinio, .day.t-fine, .day.t-accoglienza { border-width: 2px; }
+.wd { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-left: 7px; }
+.day.done { background-color: var(--sheet); color: var(--ink); border-color: var(--ink-2); }
+.day.partial { border-style: dashed; border-color: var(--loss); }
+.day.today { box-shadow: 0 0 0 2px var(--pen); }
+.day[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.day[aria-pressed="true"] .k { color: var(--paper); }
+.day:hover { border-color: var(--ink); }
+.legend-row { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .82rem; color: var(--muted); }
+.legend-row span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 16px; height: 12px; border: 1px solid var(--rule); border-radius: 3px; display: inline-block; }
+.sw.done { background: var(--sheet); border-color: var(--ink-2); }
+.sw.partial { border-style: dashed; border-color: var(--loss); }
+.sw.today { box-shadow: 0 0 0 2px var(--pen); }
+.sw-k { font-size: .62rem; font-weight: 700; padding: 1px 3px; border: 1px solid currentColor; border-radius: 3px; line-height: 1; }
+
+/* i portafogli */
+.fund { display: flex; flex-wrap: wrap; gap: 10px 32px; align-items: baseline; padding: 14px 18px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; margin-bottom: 16px; }
+.fund .fig { display: grid; gap: 2px; }
+.fund .fig .v { font-family: var(--font-num); font-size: 1.45rem; font-weight: 500; letter-spacing: -.01em; }
+.fund .fig .v small { font-size: .8rem; color: var(--muted); font-weight: 400; }
+.fund .fig p { font-size: .84rem; color: var(--ink-2); }
+.wallets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.wallet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.who { display: flex; align-items: center; gap: 10px; }
+.who h3 { font-size: 1.3rem; }
+.who p { color: var(--ink-2); font-size: .88rem; }
+.gapfig { display: grid; gap: 2px; padding: 10px 12px; border-radius: 8px; background: var(--wash); }
+.gapfig .gap { font-family: var(--font-num); font-size: clamp(1.7rem, 4vw, 2.2rem); font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
+.gapfig .gap small { font-size: .85rem; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+.gapfig p { font-size: .88rem; color: var(--ink-2); }
+.twins { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.twin { border-top: 3px solid var(--who); padding-top: 6px; display: grid; gap: 1px; min-width: 0; }
+.twin.rules { border-top: 3px dashed var(--ink-2); }
+.twin .v { font-family: var(--font-num); font-size: 1.22rem; font-weight: 500; }
+.twin .s { font-size: .84rem; }
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.chart-box { position: relative; }
+.chart-box svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-box svg text { font-family: var(--font-num); font-size: 11px; fill: var(--muted); }
+.chart-box svg text.end { fill: var(--ink-2); font-size: 11.5px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .82rem; color: var(--ink-2); }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ln { width: 22px; height: 0; border-top: 2px solid var(--who); display: inline-block; }
+.ln.rules { border-top: 2px dashed var(--ink-2); }
+.chart-empty { padding: 18px 0; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px;
+  padding: 7px 10px; font-size: .8rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .14); min-width: 160px; z-index: 2;
+}
+.tip .t-date { color: var(--muted); font-size: .74rem; margin-bottom: 2px; }
+.tip .t-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tip .t-row b { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink); }
+.tip .t-row span { color: var(--muted); }
+
+/* il rischio */
+.risk-top { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.stat .v { font-family: var(--font-num); font-size: 1.7rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.15; }
+.stat .v small { font-size: .82rem; color: var(--muted); font-weight: 400; }
+.stat p { font-size: .86rem; color: var(--ink-2); }
+.risk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.alarms { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.alarms li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font-size: .9rem; }
+.alarms li > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.tag.alarm { border-color: var(--loss); color: var(--loss); background: var(--alarm); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--rule); font-size: .84rem; color: var(--ink-2); }
+.pill b { font-size: .72rem; letter-spacing: .06em; color: var(--ink); }
+.pill.on { border-color: var(--loss); background: var(--alarm); color: var(--loss); }
+.pill.on b { color: var(--loss); }
+.pill.na { border-style: dashed; color: var(--muted); }
+.kvs { display: grid; gap: 6px; margin: 0; }
+.kvs div { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 2px 12px; font-size: .88rem; }
+.kvs dt { color: var(--muted); }
+.kvs dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+
+/* consapevolezza */
+.minds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.mind { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.mind ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: .88rem; color: var(--ink-2); }
+.mind .prose { font-size: .95rem; }
+.calib-row { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 10px 18px; align-items: start; }
+.kv { display: grid; gap: 3px; font-size: .88rem; color: var(--ink-2); }
+.kv b { color: var(--ink); font-family: var(--font-num); font-weight: 500; }
+.verdict { font-size: .88rem; padding: 2px 0; }
+.calib svg { width: 100%; max-width: 260px; height: auto; display: block; }
+.calib text { font: 10px var(--font-num); fill: var(--muted); }
+.calib .ax { stroke: var(--rule); stroke-width: 1; }
+.calib .ideal { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.calib-note { font-size: .78rem; }
+.sum-table td:first-child { white-space: nowrap; }
+.self-up { color: var(--loss); }
+.minds-sum { margin-bottom: 16px; }
+
+/* il verbale */
+.v-head { display: grid; gap: 4px; }
+.v-head .when { font-size: .9rem; color: var(--ink-2); }
+.v-title { font-size: 1.3rem; font-weight: 600; max-width: 60ch; }
+.theme { max-width: 80ch; color: var(--ink-2); font-size: .92rem; }
+.v-stack { display: grid; gap: 16px; }
+.v-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.prose { font-family: var(--font-read); font-size: 1rem; line-height: 1.6; max-width: 70ch; overflow-wrap: anywhere; }
+.prose > * + * { margin-top: .6em; }
+.prose p, .prose ul, .prose ol { margin: 0; }
+.prose ul, .prose ol { padding-left: 1.3em; }
+.prose li + li { margin-top: .25em; }
+.prose h1, .prose h2, .prose h3, .prose h4 { font-family: var(--font-head); font-size: 1rem; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.prose blockquote { margin: 0; padding-left: 12px; border-left: 2px solid var(--rule); color: var(--ink-2); }
+.prose code { font-family: var(--font-num); font-size: .9em; }
+.prose table { display: block; overflow-x: auto; font-family: var(--font-head); }
+.news { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.news-item { display: grid; gap: 4px; border-top: 1px solid var(--rule); padding-top: 8px; }
+.news-item p { font-family: var(--font-read); }
+.news-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: .8rem; }
+.lab { display: inline-block; font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--ink-2); color: var(--ink); white-space: nowrap; }
+.lab.lab-interpretazione { border-style: dashed; color: var(--ink-2); }
+.lab.lab-previsione { border-style: dotted; border-color: var(--pen); color: var(--pen); }
+.lab.lab-classe { border-color: var(--loss); color: var(--loss); }
+.src { font-size: .82rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.cal { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: .88rem; }
+.cal li { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.cal .when { color: var(--muted); }
+.pred { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.prob { font-family: var(--font-num); font-weight: 500; padding: 0 8px; border-radius: 999px; border: 1px solid var(--who, var(--ink-2)); font-size: .9rem; }
+.preds { display: grid; gap: 4px; font-size: .88rem; color: var(--ink-2); margin: 0; padding: 0; list-style: none; }
+.qa { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: q; }
+.qa > li { display: grid; gap: 8px; }
+.qa .q { font-family: var(--font-read); font-size: 1rem; }
+.qa .a { border-left: 3px solid var(--who, var(--rule)); padding-left: 12px; display: grid; gap: 4px; }
+.righe { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.righe li { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 2px 14px; align-items: baseline; }
+.righe .r-k { font-size: .76rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.righe .r-t { font-family: var(--font-read); font-size: 1rem; overflow-wrap: anywhere; }
+.judgement { border-color: var(--pen); }
+.grades td { vertical-align: middle; }
+.grade { font-style: normal; font-family: var(--font-hand); font-weight: 700; font-size: 1.35rem; line-height: 1; color: var(--pen); width: 32px; height: 32px; display: inline-grid; place-items: center; border: 2px solid var(--pen); border-radius: 50% 46% 52% 48%; }
+.grade.self { color: var(--ink-2); border-color: var(--ink-2); font-size: 1.15rem; width: 28px; height: 28px; }
+.verified { display: grid; gap: 6px; }
+
+/* le monete */
+.coins-scroll { overflow-x: auto; }
+table.coins { min-width: 980px; }
+table.coins td, table.coins th { padding: 4px 8px; }
+table.coins th:first-child, table.coins td:first-child { position: sticky; left: 0; background: var(--sheet); z-index: 1; box-shadow: 1px 0 0 var(--rule); }
+table.coins tbody tr:hover td { background: var(--wash); }
+table.coins th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+table.coins th button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+table.coins th[aria-sort] { color: var(--ink); }
+.rsi-lo { color: var(--gain); font-weight: 600; }
+.rsi-hi { color: var(--loss); font-weight: 600; }
+
+/* le regole */
+.rules-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.rules-grid ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; color: var(--ink-2); font-size: .92rem; }
+.rules-grid li b { color: var(--ink); }
+footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
+
+@media (max-width: 900px) {
+  .week { grid-template-columns: minmax(0, 1fr); }
+  .week-name { padding-top: 0; }
+  .week-head > span:first-child { display: none; }
+  .aula, .wallets, .minds, .v-grid, .risk-grid, .rules-grid { grid-template-columns: minmax(0, 1fr); }
+  .risk-top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage { height: clamp(360px, 62vh, 560px); }
+  .feed { max-height: 380px; }
+}
+@media (max-width: 560px) {
+  .day { padding: 4px 4px 5px; min-height: 46px; }
+  .day .d { font-size: .64rem; }
+  .day .k { top: 3px; right: 3px; font-size: .56rem; padding: 1px 2px; }
+  .wd { padding-left: 4px; }
+  .sheet, .wallet, .mind { padding: 14px; }
+  .risk-top, .two-col, .twins { grid-template-columns: minmax(0, 1fr); }
+  .calib-row { grid-template-columns: minmax(0, 1fr); }
+  .kvs div { grid-template-columns: minmax(0, 1fr); }
+  .righe li { grid-template-columns: minmax(0, 1fr); }
+  .fund { gap: 10px 20px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .day { transition: border-color .15s, background-color .15s; }
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">ARGO · soldi finti, prezzi veri di BingX</p>
+    <h1>Scuola Cripto</h1>
+    <p class="lede">Otto agenti di intelligenza artificiale studiano le criptovalute per tre mesi. Quattro di loro operano, e ognuno ha due portafogli da 10.000 USDT finti: uno segue la sua regola scritta, l'altro il suo giudizio. La differenza tra i due dice se il giudizio vale qualcosa. Ogni mattina alle 07:00 c'è la riunione.</p>
+    <div class="status" id="status"><span class="chip">Carico i dati della scuola…</span></div>
+  </div>
+</header>
+
+<main>
+  <section aria-labelledby="t-aula">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-aula">L'aula</h2><p class="aula-live" id="aula-live">Carico l'aula…</p></div>
+      <div class="aula">
+        <div class="stage" id="stage">
+          <canvas id="aula-canvas" role="img" aria-label="L'aula in 3D: gli otto personaggi intorno al tavolo della riunione, con la lavagna e il terminale del motore"></canvas>
+          <div class="aula-overlay" id="aula-overlay" aria-hidden="true"></div>
+          <div class="stage-bar">
+            <div class="ctl">
+              <button type="button" id="aula-prev" aria-label="Riunione precedente">‹</button>
+              <span class="aula-day" id="aula-day"></span>
+              <button type="button" id="aula-next" aria-label="Riunione successiva">›</button>
+            </div>
+            <div class="ctl">
+              <button type="button" id="aula-play" aria-pressed="false">Pausa</button>
+              <button type="button" id="aula-speed">Velocità 1×</button>
+              <button type="button" id="aula-restart">Da capo</button>
+              <button type="button" id="aula-view">Inquadra</button>
+            </div>
+          </div>
+        </div>
+        <div class="feed"><h3>Cosa si dicono</h3><ol id="aula-feed"></ol></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-registro">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="t-registro">Registro</h2>
+        <div class="legend-row">
+          <span><i class="sw done"></i>riunione svolta</span>
+          <span><i class="sw partial"></i>svolta ma incompleta</span>
+          <span><i class="sw today"></i>oggi</span>
+          <span><b class="sw-k">C</b>consiglio</span>
+          <span><b class="sw-k">S</b>scrutinio</span>
+          <span><b class="sw-k">A</b>accoglienza</span>
+          <span><b class="sw-k">F</b>fine</span>
+        </div>
+      </div>
+      <div class="registro" id="registro"><p class="muted">Il registro compare qui appena i dati arrivano.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-portafogli">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-portafogli">I portafogli</h2><p class="muted" id="wallets-at"></p></div>
+      <div class="fund" id="fund"><p class="muted">Carico i portafogli…</p></div>
+      <div class="wallets" id="wallets"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-rischio">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-rischio">Il rischio, con il Guardiano</h2><p class="muted" id="rischio-at"></p></div>
+      <div id="rischio"><p class="muted">Carico i numeri del Guardiano…</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-consapevolezza">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-consapevolezza">Consapevolezza</h2><p class="muted">Quanto si conoscono: previsioni verificate sui prezzi veri, autovoti accanto ai voti del Preside, errori che ripetono.</p></div>
+      <div class="sheet minds-sum" id="minds-sum"></div>
+      <div class="minds" id="minds"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-verbale">
+    <div class="wrap" id="verbale"></div>
+  </section>
+
+  <section aria-labelledby="t-monete">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-monete">Le monete</h2><p class="muted" id="monete-at"></p></div>
+      <div class="sheet"><div class="coins-scroll" id="monete"></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-regole">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-regole">Le regole della scuola</h2></div>
+      <div class="rules-grid">
+        <div class="sheet">
+          <h3>Il portafoglio a giudizio</h3>
+          <ul>
+            <li>Ogni agente con un portafoglio parte con <b>10.000 USDT</b> finti. I prezzi sono quelli veri dei contratti perpetui di BingX, sulle 36 monete della scuola, senza memecoin.</li>
+            <li><b>Lo stop è obbligatorio</b>, tra l'1% e il 25% dal prezzo. Il target è facoltativo.</li>
+            <li>Si rischia <b>al massimo il 2%</b> del portafoglio a posizione, costi compresi. Nei giorni di panico di BTC, nello stato FRAGILE o per decisione del Preside il massimo scende all'1%. Allo scrutinio il Preside assegna a ognuno 0,5%, 1% o 2%.</li>
+            <li><b>Al massimo 4 posizioni</b>, una per moneta. Tutte insieme valgono al massimo 3 volte il portafoglio.</li>
+            <li><b>I costi:</b> 0,055% di commissione più 0,1% di slittamento a ogni entrata e a ogni uscita. Il funding si paga o si incassa a ogni scadenza, come su un conto vero.</li>
+            <li>Gli ordini si eseguono al prezzo del momento della riunione. Stop e target si controllano su ogni candela oraria.</li>
+          </ul>
+        </div>
+        <div class="sheet">
+          <h3>I portafogli a regole</h3>
+          <ul>
+            <li><b>Falco:</b> entra sulle rotture del massimo o del minimo di 20 candele a 4 ore con un picco di volume, nel verso di BTC; stop a 3 ATR (al massimo 12%), target a 3R.</li>
+            <li><b>Tartaruga:</b> compra solo le monete con il trend positivo su 1-16 settimane, pesate per la volatilità; con il trend negativo sta fuori.</li>
+            <li><b>Spazzino:</b> compra le monete sopra la media a 100 giorni quando l'RSI a 2 periodi va sotto 10 (e vende nel caso opposto); esce entro 5 giorni.</li>
+            <li><b>Ragioniere:</b> ogni lunedì compra le monete con il funding più basso e vende quelle con il funding più alto, neutrale in dollari.</li>
+          </ul>
+          <p class="muted" style="font-size:.86rem">Le regole sono codice: il motore le rifà ogni giorno dall'inizio della scuola, e nessuno le può toccare.</p>
+        </div>
+        <div class="sheet">
+          <h3>La riunione</h3>
+          <ul>
+            <li>Ogni mattina alle <b>07:00</b>. Il motore fa i conti della notte; il Cronista porta calendario e notizie, con fonte e ora.</li>
+            <li>Falco, Tartaruga, Spazzino, Ragioniere e Guardiano scrivono la loro posizione <b>in privato</b>, senza vedersi: la regola, una previsione con la sua probabilità, cosa farebbe cambiare idea, gli ordini.</li>
+            <li>Lo Scettico fa <b>al massimo 2 domande</b>, e chi è chiamato risponde. Poi il motore esegue gli ordini, o li respinge se escono dalle regole.</li>
+            <li>Il Preside chiude in <b>5 righe</b> e dà i voti: prima il ragionamento, poi la disciplina, per ultimo il risultato. Nessuno promette guadagni.</li>
+            <li>Ogni lunedì c'è il consiglio di classe; il primo lunedì del mese lo scrutinio, con le pagelle. Se la riunione del mattino non riesce, alle 13:17 parte il recupero.</li>
+          </ul>
+        </div>
+        <div class="sheet">
+          <h3>I limiti onesti</h3>
+          <ul>
+            <li><b>Gli agenti non sono coscienti</b> e non imparano da soli: ricordano solo quello che è scritto nei quaderni e nei verbali.</li>
+            <li><b>Il paper trading non è il conto vero:</b> mancano lo slittamento dei crolli veri, gli ordini non eseguiti e il rischio dell'exchange.</li>
+            <li>Ogni previsione ha una probabilità e una scadenza, e il motore la verifica sulla chiusura giornaliera vera. Così si misura quanto ognuno si sbaglia.</li>
+            <li>I soldi sono finti: nessun ordine arriva a un exchange.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">Prezzi, funding e open interest dei contratti perpetui di BingX, letti senza chiavi. Nessun denaro vero passa da questa scuola.</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  "use strict";
+  const CAPITAL = 10000;
+  const MEETING = "07:00";
+  const RECOVERY = "13:17";
+  const TRADERS = ["falco", "tartaruga", "spazzino", "ragioniere"];
+  const GRADED = ["falco", "tartaruga", "spazzino", "ragioniere", "guardiano", "cronista", "scettico"];
+  const CAST = ["preside", ...GRADED];
+  const WHO = {
+    preside: { name: "Preside", line: "Dirige la riunione e dà i voti. Allo scrutinio decide quanto rischio può prendere ognuno." },
+    falco: { name: "Falco", line: "Le rotture di volume sulle candele a 4 ore: il desk dei perpetui." },
+    tartaruga: { name: "Tartaruga", line: "Il trend lento, da 1 a 16 settimane. Paziente, quasi noiosa." },
+    spazzino: { name: "Spazzino", line: "Compra le vendite forzate: RSI a 2 periodi nel verso del trend." },
+    ragioniere: { name: "Ragioniere", line: "Il carry sul funding, neutrale in dollari: prezzo, funding e costi separati." },
+    guardiano: { name: "Guardiano", line: "Il rischio: esposizione, allarmi e riduzioni scritte prima." },
+    cronista: { name: "Cronista", line: "Calendario, notizie, politica e biblioteca. Separa il fatto dall'opinione." },
+    scettico: { name: "Scettico", line: "Il revisore: al massimo 2 domande al giorno, ognuna con un numero." },
+  };
+  const NAMES = { preside: "Preside", falco: "Falco", tartaruga: "Tartaruga", spazzino: "Spazzino", ragioniere: "Ragioniere", guardiano: "Guardiano", cronista: "Cronista", scettico: "Scettico", motore: "Motore" };
+  const COINS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "AVAX", "TRX", "LINK", "DOT", "MATIC", "LTC", "BCH", "ATOM", "UNI", "ETC", "XLM", "NEAR", "FIL", "APT", "ARB", "OP", "INJ", "SEI", "SUI", "TIA", "ICP", "HBAR", "AAVE", "RNDR", "FTM", "IMX", "STX", "RUNE", "ORDI", "WLD"];
+  const KIND = { accoglienza: "accoglienza, senza ordini", riunione: "riunione", consiglio: "consiglio di classe", scrutinio: "scrutinio con le pagelle", fine: "ultimo giorno, il bilancio" };
+  const KMARK = { accoglienza: "A", consiglio: "C", scrutinio: "S", fine: "F" };
+  const RIGHE = ["Cosa abbiamo imparato", "Le previsioni nel registro", "Le ipotesi per la lista d'esame", "La richiesta al Guardiano", "La domanda per domani"];
+
+  const S = { programma: null, classe: null, giudizio: null, regole: null, live: null, memoria: {}, verbali: {}, got: {}, errors: {},
+              selected: null, picked: false, slow: false, unavailable: false, coinSort: { key: "rank", dir: 1 } };
+  let db = null, vUnsub = null, vDate = null;
+  const $ = (id) => document.getElementById(id);
+  const arr = (v) => Array.isArray(v) ? v : [];
+  const obj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+
+  // ---- formatting: numbers the Italian way ------------------------------------------------
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const isNum = (v) => typeof v === "number" && Number.isFinite(v);
+  const toNum = (v) => isNum(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+  const NFS = {};
+  const nf = (a, b) => NFS[a + ":" + b] || (NFS[a + ":" + b] = new Intl.NumberFormat("it-IT", { minimumFractionDigits: a, maximumFractionDigits: b, useGrouping: "always" }));
+  const QF = new Intl.NumberFormat("it-IT", { maximumSignificantDigits: 4, useGrouping: "always" });
+  function fmt(v, d = 2, sign = false) {
+    if (!isNum(v)) return "—";
+    const r = Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v;
+    return (r > 0 && sign ? "+" : r < 0 ? "−" : "") + nf(d, d).format(Math.abs(r));
+  }
+  const small = (v) => { const n = toNum(v); return n === null ? "—" : (n < 0 ? "−" : "") + nf(0, 2).format(Math.abs(n)); };
+  const usd = (v, sign) => isNum(v) ? fmt(v, 2, sign) + " USDT" : "—";
+  const pct = (v, d = 2, sign = true) => isNum(v) ? fmt(v, d, sign) + "%" : "—";
+  const pdig = (p) => p >= 10000 ? 1 : p >= 100 ? 2 : p >= 1 ? 3 : p >= 0.1 ? 4 : 5;
+  const price = (v) => { const n = toNum(v); return n === null ? "—" : fmt(n, pdig(Math.abs(n))); };
+  const level = (v) => { const n = toNum(v); return n === null ? esc(v ?? "—") : (n < 0 ? "−" : "") + nf(0, pdig(Math.abs(n))).format(Math.abs(n)); };
+  const qty = (v) => isNum(v) ? QF.format(v) : "—";
+  const tone = (v) => isNum(v) && v > 0 ? "up" : isNum(v) && v < 0 ? "down" : "";
+  const prob = (v) => { const n = toNum(v); return n === null ? "—" : Math.round(n * 100) + "%"; };
+  const cap = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
+  const listIt = (xs) => xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " e " + xs[xs.length - 1];
+  const sign = (side) => side === "short" ? -1 : 1;
+  const side = (s) => `<span class="side ${s === "short" ? "short" : "long"}">${esc(s || "?")}</span>`;
+  const whoOf = (id) => String(id || "").split("-")[0];
+  const whom = (w) => `<span class="whom k-${esc(w)}"><i class="dot" aria-hidden="true"></i>${esc(NAMES[w] || w)}</span>`;
+
+  // ---- dates: the meeting runs on Rome's clock, the engine writes UTC -----------------------
+  const romeParts = (d) => Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(d).map((p) => [p.type, p.value]));
+  const romeToday = () => { const p = romeParts(new Date()); return { date: `${p.year}-${p.month}-${p.day}`, minutes: +p.hour * 60 + +p.minute }; };
+  const isoDay = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : "";
+  const dayDate = (iso) => new Date(iso + "T12:00:00Z");
+  const longDay = (iso) => isoDay(iso) ? new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(dayDate(isoDay(iso))) : "";
+  const dm = (iso) => isoDay(String(iso || "")) ? `${String(iso).slice(8, 10)}/${String(iso).slice(5, 7)}` : "";
+  function utc(s) {
+    if (!s) return null;
+    let t = String(s).trim().replace(/\s*UTC$/i, "").replace(" ", "T");
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(t)) t += "Z";
+    const d = new Date(t);
+    return isNaN(d) ? null : d;
+  }
+  // the engine wrote some of Falco's rule times in 1970: those are not shown
+  const goodTime = (s) => { const d = utc(s); return d && d.getUTCFullYear() >= 2000 ? d : null; };
+  const romeTime = (s) => { const d = goodTime(s); return d ? new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" }).format(d) : ""; };
+  const whenTxt = (s) => romeTime(s) || String(s || "");
+
+  // ---- markdown, sanitized -----------------------------------------------------------------
+  let mdReady = false;
+  function md(text) {
+    const src = Array.isArray(text) ? text.map((x) => "- " + x).join("\n") : String(text ?? "").trim();
+    if (!src) return "";
+    if (window.marked && window.DOMPurify) {
+      if (!mdReady) {
+        window.DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+          if (node.tagName === "A") {
+            const href = node.getAttribute("href") || "";
+            if (!/^https:\/\//i.test(href)) node.removeAttribute("href");
+            node.setAttribute("target", "_blank");
+            node.setAttribute("rel", "noopener noreferrer");
+          }
+        });
+        mdReady = true;
+      }
+      const html = window.marked.parse(src, { mangle: false, headerIds: false });
+      return window.DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "ul", "ol", "li", "a", "blockquote", "code", "h1", "h2", "h3", "h4", "table", "thead", "tbody", "tr", "th", "td", "hr"],
+        ALLOWED_ATTR: ["href", "title"],
+      });
+    }
+    // the formatting library did not load: bold, italics, lists and https links only
+    const inline = (t) => esc(t)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+      .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    return src.split(/\n{2,}/).map((block) => {
+      const lines = block.split("\n");
+      if (lines.every((l) => /^\s*[-*]\s+/.test(l))) return "<ul>" + lines.map((l) => "<li>" + inline(l.replace(/^\s*[-*]\s+/, "")) + "</li>").join("") + "</ul>";
+      if (lines.every((l) => /^\s*\d+[.)]\s+/.test(l))) return "<ol>" + lines.map((l) => "<li>" + inline(l.replace(/^\s*\d+[.)]\s+/, "")) + "</li>").join("") + "</ol>";
+      return "<p>" + lines.map(inline).join("<br>") + "</p>";
+    }).join("");
+  }
+  function plain(text, max = 240) {
+    const t = String(Array.isArray(text) ? text.join(" ") : text ?? "")
+      .split("\n")
+      .filter((l) => !/^\s*\|/.test(l) && !/^\s*-{3,}\s*$/.test(l))
+      .join(" ")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[*_`#>]+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (t.length <= max) return t;
+    const cut = t.slice(0, max);
+    const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
+    return end > max * 0.45 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, "") + "…";
+  }
+  const yesNo = (v) => v === true ? "sì" : v === false ? "no" : v;
+  const keyName = (k) => cap(String(k).replace(/_/g, " "));
+  function valTxt(v) {
+    if (v == null || v === "") return "—";
+    if (typeof v === "boolean") return yesNo(v);
+    if (isNum(v)) return small(v);
+    if (Array.isArray(v)) return v.map(valTxt).join(", ");
+    if (typeof v === "object") return Object.entries(v).map(([k, x]) => `${NAMES[k] || keyName(k)}: ${valTxt(x)}`).join(" · ");
+    return String(v);
+  }
+  function kvLine(o) {
+    if (!obj(o)) return esc(valTxt(o));
+    const lead = o.nome || o.titolo || (o.agente && (NAMES[o.agente] || o.agente)) || "";
+    const rest = Object.entries(o).filter(([k, v]) => !["nome", "titolo", "agente"].includes(k) && v != null && v !== "");
+    return (lead ? `<b>${esc(lead)}</b>${rest.length ? " · " : ""}` : "") + rest.map(([k, v]) => `<span class="muted">${esc(keyName(k))}:</span> ${esc(valTxt(v))}`).join(" · ");
+  }
+  function anyBlock(v) {
+    if (v == null || v === "") return "";
+    if (Array.isArray(v)) return `<ul class="lines">${v.map((x) => `<li>${obj(x) ? kvLine(x) : esc(valTxt(x))}</li>`).join("")}</ul>`;
+    if (obj(v)) return `<p class="lines">${kvLine(v)}</p>`;
+    return `<div class="prose">${md(String(v))}</div>`;
+  }
+  // the Guardiano's alarms name the wallets by their keys, with English decimals
+  const WALLET_KEY = /\b(falco|tartaruga|spazzino|ragioniere)_(giudizio|regole)\b/g;
+  const human = (s) => String(s ?? "").replace(WALLET_KEY, (m, a, k) => `${NAMES[a]} ${k === "giudizio" ? "a giudizio" : "a regole"}`).replace(/(\d)\.(\d)/g, "$1,$2");
+  function alarmItem(s, kind) {
+    const t = human(s);
+    const m = t.match(/^([A-ZÀ-Ü]{3,}):\s*(.*)$/s);
+    const label = m ? m[1] : kind === "note" ? "nota" : "allarme";
+    return `<li><span class="tag ${kind === "note" ? "" : "alarm"}">${esc(label)}</span><span>${esc(m ? m[2] : t)}</span></li>`;
+  }
+
+  // ---- the school's calendar ----------------------------------------------------------------
+  const days = () => arr(S.programma && S.programma.giorni);
+  const weeks = () => arr(S.programma && S.programma.settimane);
+  const held = () => arr(S.classe && S.classe.giorni).filter((g) => g && isoDay(g.data));
+  const heldMap = () => Object.fromEntries(held().map((g) => [g.data, g]));
+  const dayOf = (date) => days().find((g) => g.data === date);
+  function defaultDay() {
+    const done = held();
+    if (done.length) return done.slice().sort((a, b) => a.data < b.data ? -1 : 1).pop().data;
+    const all = days();
+    if (!all.length) return null;
+    const today = romeToday().date;
+    return (all.find((g) => g.data === today) || (today < all[0].data ? all[0] : all[all.length - 1])).data;
+  }
+  function liveNow() {
+    const L = S.live;
+    if (!L || !L.ora || L.fase === "fine") return null;
+    const at = utc(L.ora);
+    if (!at) return null;
+    const age = Date.now() - at.getTime();
+    return age < 12 * 60000 && age > -10 * 60000 ? L : null;
+  }
+
+  // ---- status line ----------------------------------------------------------------------------
+  const chip = (html, cls = "") => `<span class="chip ${cls}">${html}</span>`;
+  function renderStatus() {
+    const el = $("status");
+    if (S.unavailable) {
+      el.innerHTML = chip("Apri questa pagina da claude.ai con il tuo account per vedere la scuola.", "warn");
+      return;
+    }
+    const out = [];
+    const all = days();
+    if (!all.length) {
+      out.push(chip(S.got.programma ? "Il programma della scuola non è ancora nel database: arriva con la riunione di accoglienza." : S.slow ? "I dati della scuola non arrivano ancora. Riprova tra poco." : "Carico i dati della scuola…"));
+    } else {
+      const now = romeToday(), first = all[0], last = all[all.length - 1];
+      const today = all.find((g) => g.data === now.date);
+      const done = heldMap();
+      if (now.date < first.data) {
+        out.push(chip(`<strong>La scuola apre ${esc(longDay(first.data))}</strong>, con la riunione di accoglienza della sera`));
+      } else if (now.date > last.data) {
+        out.push(chip(`<strong>Il trimestre è finito</strong> ${esc(longDay(last.data))}`));
+      } else if (today) {
+        out.push(chip(`<strong>Giorno ${esc(today.giorno)} di ${esc(last.giorno)}</strong>${today.tipo !== "riunione" ? " · " + esc(KIND[today.tipo] || today.tipo) : ""}`));
+        out.push(chip(esc(cap(longDay(today.data)))));
+        if (done[today.data]) {
+          const next = all.find((g) => g.data > today.data);
+          out.push(chip(`Riunione di oggi fatta${next ? ` · la prossima è ${esc(longDay(next.data))} alle ${MEETING}` : ""}`));
+        } else if (liveNow()) {
+          out.push(chip(`<span class="live-dot" aria-hidden="true"></span><strong>Riunione in corso</strong>: guardala nell'aula`));
+        } else if (today.tipo === "accoglienza") {
+          out.push(chip("L'accoglienza è stasera: ognuno si presenta, senza ordini"));
+        } else if (now.minutes < 7 * 60) {
+          out.push(chip(`La riunione di oggi è alle <strong>${MEETING}</strong>`));
+        } else if (now.minutes < 13 * 60 + 17) {
+          out.push(chip("La riunione di oggi è in corso: il verbale compare appena è finita"));
+        } else {
+          out.push(chip(`La riunione di oggi non è ancora nel registro: il recupero parte alle ${RECOVERY}`));
+        }
+      }
+    }
+    if (S.classe && S.classe.avviso) out.push(chip(`<b>Avviso</b> ${esc(S.classe.avviso)}`, "warn"));
+    const upd = S.classe && romeTime(S.classe.aggiornato);
+    if (upd) out.push(chip(`Aggiornato il ${esc(upd)}`));
+    el.innerHTML = out.join("");
+  }
+
+  // ---- register -------------------------------------------------------------------------------
+  function renderRegister() {
+    const el = $("registro");
+    const all = days();
+    if (!all.length) {
+      el.innerHTML = `<p class="muted">${S.unavailable ? "Il registro compare quando apri la pagina da claude.ai." : S.got.programma ? "Il programma della scuola non è ancora nel database." : "Il registro compare qui appena i dati arrivano."}</p>`;
+      return;
+    }
+    const active = document.activeElement;
+    const focused = active && el.contains(active) ? active.dataset.date : null;
+    const done = heldMap(), today = romeToday().date;
+    const list = weeks().length ? weeks() : [...new Set(all.map((g) => g.settimana))].map((n) => ({ settimana: n }));
+    const rows = list.map((w) => {
+      const mine = all.filter((g) => g.settimana === w.settimana);
+      if (!mine.length) return "";
+      const firstCol = ((dayDate(mine[0].data).getUTCDay() + 6) % 7) + 1;
+      const cells = mine.map((g, i) => {
+        const h = done[g.data];
+        const partial = h && h.stato && h.stato !== "completo";
+        const cls = ["day", "t-" + g.tipo, h ? "done" : "", partial ? "partial" : "", g.data === today ? "today" : ""].filter(Boolean).join(" ");
+        const style = i === 0 && firstCol > 1 ? ` style="grid-column-start:${firstCol}"` : "";
+        const label = `Giorno ${g.giorno}, ${longDay(g.data)}: ${KIND[g.tipo] || g.tipo}${h ? (partial ? ", svolta ma incompleta" : ", svolta") : ""}${h && h.titolo ? ". " + h.titolo : ""}`;
+        return `<button type="button" class="${cls}"${style} data-date="${esc(g.data)}" aria-pressed="${g.data === S.selected}" aria-label="${esc(label)}" title="${esc(label)}"><span class="n">${esc(g.giorno)}</span><span class="d">${esc(dm(g.data))}</span>${KMARK[g.tipo] ? `<span class="k" aria-hidden="true">${KMARK[g.tipo]}</span>` : ""}</button>`;
+      }).join("");
+      const cast = arr(w.protagonisti).map((k) => NAMES[k] || k);
+      return `<div class="week"><p class="week-name"><b>Settimana ${esc(w.settimana)}</b>${esc(w.tema || "")}${cast.length && cast.length < 8 ? `<span class="muted"> · con ${esc(listIt(cast))}</span>` : ""}</p><div class="days">${cells}</div></div>`;
+    }).join("");
+    el.innerHTML = `<div class="week week-head" aria-hidden="true"><span></span><div class="days">${["lun", "mar", "mer", "gio", "ven", "sab", "dom"].map((d) => `<span class="wd">${d}</span>`).join("")}</div></div>` + rows;
+    if (focused) { const b = el.querySelector(`[data-date="${focused}"]`); if (b) b.focus({ preventScroll: true }); }
+  }
+  $("registro").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-date]");
+    if (!b) return;
+    selectDay(b.dataset.date);
+    $("verbale").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  });
+  function selectDay(date) {
+    S.selected = date;
+    S.picked = true;
+    watchVerbale(date);
+    render();
+  }
+
+  // ---- the wallets: the rule against the judgment ------------------------------------------------
+  const sortDates = (a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+  const rulesPoints = (r) => Object.entries((r && r.curve) || {}).filter(([d, v]) => isoDay(d) && isNum(v)).map(([date, value]) => ({ date, value })).sort(sortDates);
+  const judgPoints = (w) => arr(w && w.equity).filter((e) => e && isoDay(e.date) && isNum(e.value)).map((e) => ({ date: e.date, value: e.value })).sort(sortDates);
+  function judgEquity(w, prices) {
+    if (!w) return null;
+    if (isNum(w.cash)) {
+      return w.cash + arr(w.positions).reduce((a, p) => {
+        const now = isNum(prices[p.symbol]) ? prices[p.symbol] : p.entry;
+        return a + (isNum(p.units) && isNum(p.entry) && isNum(now) ? sign(p.side) * p.units * (now - p.entry) : 0);
+      }, 0);
+    }
+    const e = judgPoints(w);
+    return e.length ? e[e.length - 1].value : null;
+  }
+  function twinsOf(n) {
+    const w = S.giudizio && S.giudizio.wallets && S.giudizio.wallets[n] || null;
+    const r = S.regole && S.regole.portafogli && S.regole.portafogli[n] || null;
+    const prices = (S.giudizio && S.giudizio.prices) || {};
+    const rp = rulesPoints(r), jp = judgPoints(w);
+    const rules = rp.length ? rp[rp.length - 1].value : null;
+    const judg = judgEquity(w, prices);
+    return { n, w, r, rp, jp, rules, judg, gap: isNum(rules) && isNum(judg) ? judg - rules : null, prices };
+  }
+  function limitToday(w) {
+    const base = isNum(w && w.max_risk_pct) ? Math.min(2, w.max_risk_pct) : 2;
+    let top = base, why = base < 2 ? "deciso dal Preside allo scrutinio" : "";
+    const m = S.giudizio && S.giudizio.market;
+    if (m && (m.panic || m.fragile) && m.day === new Date().toISOString().slice(0, 10) && top > 1) {
+      top = 1;
+      why = m.panic ? "giorno di panico di BTC" : "stato FRAGILE";
+    }
+    return { top, why };
+  }
+  function renderWallets() {
+    const el = $("wallets"), fundEl = $("fund");
+    const at = S.giudizio && romeTime(S.giudizio.prices_at);
+    $("wallets-at").textContent = at ? `Prezzi di BingX del ${at}` : "";
+    if (S.unavailable) {
+      fundEl.innerHTML = `<p class="muted">I portafogli compaiono quando apri la pagina da claude.ai.</p>`;
+      el.innerHTML = "";
+      return;
+    }
+    const loading = !S.got.giudizio || !S.got.regole;
+    const T = TRADERS.map(twinsOf);
+    const vals = T.flatMap((t) => [t.rules, t.judg]);
+    const started = vals.some(isNum);
+    if (!started) {
+      const first = days().find((g) => g.operazioni) || null;
+      fundEl.innerHTML = `<p class="muted">${loading ? (S.slow ? "I portafogli non arrivano ancora." : "Carico i portafogli…") : `Gli otto portafogli partono insieme${first ? " " + esc(longDay(first.data)) : ""}, con 10.000 USDT finti ciascuno: qui compaiono il totale della scuola e, per ogni agente, la regola contro il giudizio.`}</p>`;
+    } else {
+      const total = vals.reduce((a, v) => a + (isNum(v) ? v : CAPITAL), 0);
+      const start = CAPITAL * vals.length;
+      const gaps = T.map((t) => t.gap).filter(isNum);
+      const gapSum = gaps.reduce((a, b) => a + b, 0);
+      const best = T.filter((t) => isNum(t.gap)).sort((a, b) => b.gap - a.gap);
+      fundEl.innerHTML = `
+        <div class="fig"><h4>Il fondo della scuola, 8 portafogli</h4><span class="v">${fmt(total, 2)} <small>USDT</small></span><p><span class="num ${tone(total - start)}">${pct((total / start - 1) * 100)}</span> sugli ${fmt(start, 0)} iniziali</p></div>
+        <div class="fig"><h4>Tutto il giudizio contro tutte le regole</h4><span class="v ${tone(gapSum)}">${fmt(gapSum, 2, true)} <small>USDT</small></span><p>${gaps.length ? (gapSum > 0.5 ? "Insieme, i quattro giudizi fanno meglio delle regole." : gapSum < -0.5 ? "Insieme, i quattro giudizi fanno peggio delle regole." : "Per ora giudizio e regole sono pari.") : ""}</p></div>
+        ${best.length ? `<div class="fig"><h4>Chi aggiunge di più</h4><span class="v" style="font-size:1.15rem">${whom(best[0].n)} <span class="num ${tone(best[0].gap)}">${fmt(best[0].gap, 0, true)}</span></span><p>chi toglie di più: ${whom(best[best.length - 1].n)} <span class="num ${tone(best[best.length - 1].gap)}">${fmt(best[best.length - 1].gap, 0, true)}</span></p></div>` : ""}`;
+    }
+    el.innerHTML = T.map((t) => walletCard(t, started)).join("");
+    for (const t of T) {
+      const fig = el.querySelector(`[data-chart="${t.n}"]`);
+      if (fig && charts[t.n]) bindTwinChart(fig, charts[t.n]);
+    }
+  }
+  function walletCard(t, started) {
+    const { n, w, r, rp, jp, rules, judg, gap, prices } = t;
+    const rv = isNum(rules) ? rules : CAPITAL, jv = isNum(judg) ? judg : CAPITAL;
+    const verdict = !isNum(gap) ? (started ? "La differenza compare quando ci sono tutti e due i portafogli." : "La differenza compare con la prima riunione.")
+      : Math.abs(gap) < 0.5 ? "Per ora giudizio e regola sono pari."
+        : gap > 0 ? "Il suo giudizio fa meglio della sua regola."
+          : "Il suo giudizio fa peggio della sua regola: la cosa onesta sarebbe seguirla.";
+    const lim = limitToday(w);
+    const npos = arr(w && w.positions).length;
+    return `<article class="wallet k-${n}" aria-label="${esc(NAMES[n])}">
+      <div class="who"><i class="key" aria-hidden="true"></i><div><h3>${esc(NAMES[n])}</h3><p>${esc(WHO[n].line)}</p></div></div>
+      <div class="gapfig"><h4>Giudizio meno regola</h4><span class="gap ${tone(gap)}">${isNum(gap) ? fmt(gap, 2, true) : "0,00"} <small>USDT</small></span><p>${esc(verdict)}</p></div>
+      <div class="twins">
+        <div class="twin rules"><h4>A regole</h4><span class="v">${fmt(rv, 2)}</span><span class="s num ${tone(rv - CAPITAL)}">${pct((rv / CAPITAL - 1) * 100)} da 10.000</span></div>
+        <div class="twin"><h4>A giudizio</h4><span class="v">${fmt(jv, 2)}</span><span class="s num ${tone(jv - CAPITAL)}">${pct((jv / CAPITAL - 1) * 100)} da 10.000</span></div>
+      </div>
+      <figure class="block" style="margin:0" data-chart="${n}">
+        <div class="chart-legend"><span><i class="ln rules"></i>a regole</span><span><i class="ln"></i>a giudizio</span><span class="muted">la riga piena segna i 10.000 di partenza</span></div>
+        ${twinChart(n, rp, jp)}
+      </figure>
+      <div class="block"><h4>Posizioni aperte a giudizio (${npos} su 4)</h4>${judgTable(w, prices)}</div>
+      <div class="block"><h4>Posizioni aperte a regole (${arr(r && r.open).length})</h4>${rulesTable(n, r, prices)}</div>
+      <div class="two-col">
+        <div class="block"><h4>Ultime chiuse a giudizio</h4>${judgClosed(w)}</div>
+        <div class="block"><h4>Ultime chiuse a regole</h4>${rulesClosed(n, r)}</div>
+      </div>
+      ${r ? `<div class="block"><h4>La regola oggi</h4>${ruleToday(n, r)}</div>` : ""}
+      <div class="facts"><span>Rischio massimo a posizione <b>${small(lim.top)}%</b>${lim.why ? ` <span class="muted">(${esc(lim.why)})</span>` : ""}</span>${w && isNum(w.funding) ? `<span>${w.funding < 0 ? "Funding incassato" : "Funding pagato"} <b>${fmt(Math.abs(w.funding), 2)}</b></span>` : ""}${w && isNum(w.costs) ? `<span>Costi <b>${fmt(w.costs, 2)}</b></span>` : ""}</div>
+    </article>`;
+  }
+  function judgTable(w, prices) {
+    const ps = arr(w && w.positions);
+    if (!ps.length) return `<p class="muted">Nessuna posizione aperta.</p>`;
+    return `<div class="table-scroll"><table class="tight"><thead><tr><th>Id</th><th>Moneta</th><th>Lato</th><th class="num">Entrata</th><th class="num">Stop</th><th class="num">Target</th><th class="num">Unità</th><th class="num">Ora</th><th class="num" title="Ai prezzi di ora, senza costi e funding">Risultato</th></tr></thead><tbody>${ps.map((p) => {
+      const now = isNum(prices[p.symbol]) ? prices[p.symbol] : null;
+      const pnl = isNum(now) && isNum(p.units) && isNum(p.entry) ? sign(p.side) * p.units * (now - p.entry) : null;
+      return `<tr><td class="muted">${esc(p.id)}</td><td><b>${esc(p.symbol)}</b></td><td>${side(p.side)}</td><td class="num">${price(p.entry)}</td><td class="num">${price(p.stop)}</td><td class="num">${isNum(p.target) ? price(p.target) : "—"}</td><td class="num">${qty(p.units)}</td><td class="num">${price(now)}</td><td class="num ${tone(pnl)}">${fmt(pnl, 2, true)}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
+  }
+  function rulesTable(n, r, prices) {
+    const os = arr(r && r.open);
+    if (!r) return `<p class="muted">Il motore rifà questo portafoglio con la prima riunione.</p>`;
+    if (!os.length) return `<p class="muted">${n === "tartaruga" ? "Nessuna moneta in portafoglio: la regola sta fuori." : "Nessuna posizione aperta."}</p>`;
+    const hasEntry = os.some((o) => isNum(o.entry)), hasStop = os.some((o) => isNum(o.stop));
+    return `<div class="table-scroll"><table class="tight"><thead><tr><th>Moneta</th><th>Lato</th>${hasEntry ? `<th class="num">Entrata</th>` : ""}${hasStop ? `<th class="num">Stop</th>` : ""}<th class="num">Quantità</th><th class="num">Ora</th>${hasEntry ? `<th class="num" title="Ai prezzi di ora, senza costi e funding">Risultato</th>` : ""}<th>Dal</th></tr></thead><tbody>${os.map((o) => {
+      const now = isNum(prices[o.symbol]) ? prices[o.symbol] : isNum(o.last) ? o.last : null;
+      const pnl = isNum(now) && isNum(o.qty) && isNum(o.entry) ? sign(o.side) * o.qty * (now - o.entry) : null;
+      const since = isoDay(o.since) && goodTime(o.since) ? dm(o.since) : "—";
+      return `<tr><td><b>${esc(o.symbol)}</b></td><td>${side(o.side)}</td>${hasEntry ? `<td class="num">${price(o.entry)}</td>` : ""}${hasStop ? `<td class="num">${price(o.stop)}</td>` : ""}<td class="num">${qty(o.qty)}</td><td class="num">${price(now)}</td>${hasEntry ? `<td class="num ${tone(pnl)}">${fmt(pnl, 2, true)}</td>` : ""}<td class="muted">${esc(since)}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
+  }
+  const shortReason = (s) => String(s || "").replace(/^chiusa dall'agente:.*$/s, "chiusa dall'agente");
+  function judgClosed(w) {
+    const cs = arr(w && w.closed).slice(-3).reverse();
+    if (!cs.length) return `<p class="muted">Nessuna operazione chiusa.</p>`;
+    return `<ul class="lines">${cs.map((t) => `<li>${side(t.side)} <b>${esc(t.symbol)}</b> · ${esc(shortReason(t.exit_reason))} · <span class="num ${tone(t.pnl)}">${fmt(t.pnl, 2, true)}</span>${isNum(t.r) ? ` <span class="muted num">(${fmt(t.r, 2, true)} R)</span>` : ""}${goodTime(t.closed) ? ` <span class="muted">· ${esc(dm(t.closed))}</span>` : ""}</li>`).join("")}</ul>`;
+  }
+  function rulesClosed(n, r) {
+    const ts = arr(r && r.trades).slice(-3).reverse();
+    if (!ts.length) return `<p class="muted">${n === "tartaruga" ? "La regola della Tartaruga sposta i pesi un po' ogni giorno: non tiene un elenco di operazioni." : "Nessuna operazione chiusa."}</p>`;
+    return `<ul class="lines">${ts.map((t) => {
+      const when = isoDay(t.exit_day) || (typeof t.exit === "string" && goodTime(t.exit) ? isoDay(t.exit) : "");
+      const prices = isNum(t.entry) && isNum(t.exit) ? ` · <span class="num">${price(t.entry)} → ${price(t.exit)}</span>` : "";
+      return `<li>${side(t.side)} <b>${esc(t.symbol)}</b>${prices} · <span class="num ${tone(t.pnl)}">${fmt(t.pnl, 2, true)}</span>${isNum(t.r) ? ` <span class="muted num">(${fmt(t.r, 2, true)} R)</span>` : ""}${t.reason ? ` <span class="muted">· ${esc(t.reason)}</span>` : ""}${when ? ` <span class="muted">· ${esc(dm(when))}</span>` : ""}</li>`;
+    }).join("")}</ul>`;
+  }
+  const coinList = (o) => Object.entries(obj(o) || {}).map(([c, v]) => `${esc(c)} <span class="num">${isNum(v) ? fmt(v, Math.abs(v) < 10 ? 1 : 0, true) : esc(v)}</span>`).join(", ");
+  function ruleToday(n, r) {
+    const out = [];
+    if (n === "tartaruga" && obj(r.segnali)) {
+      const s = r.segnali;
+      out.push(`Monete con il trend positivo: <b>${esc(s.positivi ?? "—")} su ${esc(s.monete ?? "—")}</b>`);
+      if (obj(s.piu_forti)) out.push(`Le più forti: ${Object.entries(s.piu_forti).map(([c, v]) => `${esc(c)} <span class="num">${fmt(toNum(v), 2, true)}</span>`).join(", ")}`);
+      if (obj(s.piu_deboli)) out.push(`Le più deboli: ${Object.entries(s.piu_deboli).map(([c, v]) => `${esc(c)} <span class="num">${fmt(toNum(v), 2, true)}</span>`).join(", ")}`);
+    }
+    if (n === "spazzino") {
+      const s = obj(r.segnali) || {};
+      const k = Object.keys(s);
+      out.push(k.length ? `Ordini per domani: ${k.map((c) => `<b>${esc(c)}</b> (${esc(typeof s[c] === "string" ? s[c] : valTxt(s[c]))})`).join(", ")}` : "Per domani nessun segnale.");
+    }
+    if (n === "ragioniere") {
+      const c = obj(r.classifica);
+      if (c) out.push(`Lunedì entrerebbe long su ${coinList(c.long) || "—"} e short su ${coinList(c.short) || "—"} <span class="muted">(funding in % l'anno)</span>`);
+      const s = obj(r.segnali) || {};
+      if (Object.keys(s).length) out.push(`Ribilanciamento pronto per lunedì: ${Object.entries(s).map(([coin, v]) => `${esc(coin)} <span class="num ${tone(toNum(v))}">${fmt(toNum(v), 0, true)}</span>`).join(", ")} <span class="muted">(USDT, + long e − short)</span>`);
+    }
+    if (obj(r.parti)) {
+      const p = r.parti;
+      out.push(`Dall'inizio: prezzo <span class="num ${tone(p.prezzo)}">${fmt(p.prezzo, 2, true)}</span> · funding <span class="num ${tone(p.funding)}">${fmt(p.funding, 2, true)}</span> · costi <span class="num ${tone(p.costi)}">${fmt(p.costi, 2, true)}</span>`);
+    }
+    if (n === "tartaruga" && (isNum(r.costi) || isNum(r.funding))) out.push(`Costi <span class="num">${fmt(r.costi, 2)}</span> · funding <span class="num">${fmt(r.funding, 2)}</span>${isNum(r.esposizione_media) ? ` · esposizione media <span class="num">${pct(r.esposizione_media * 100, 1, false)}</span>` : ""}`);
+    if (isNum(r.n_trades)) out.push(`Operazioni chiuse dall'inizio: <b>${esc(r.n_trades)}</b>`);
+    return out.length ? `<ul class="lines">${out.map((x) => `<li>${x}</li>`).join("")}</ul>` : `<p class="muted">Nessun dettaglio dal motore.</p>`;
+  }
+
+  // ---- the twin curves ------------------------------------------------------------------------
+  const charts = {};
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((f) => f * mag).find((s) => span / s <= n) || 10 * mag;
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
+    return out;
+  }
+  function twinChart(n, rp, jp) {
+    const dates = [...new Set([...rp, ...jp].map((p) => p.date))].sort();
+    if (!dates.length) { charts[n] = null; return `<p class="muted chart-empty">La curva parte con la prima riunione.</p>`; }
+    const W = 520, H = 180, ml = 50, mr = 112, mt = 12, mb = 24;
+    const rmap = new Map(rp.map((p) => [p.date, p.value])), jmap = new Map(jp.map((p) => [p.date, p.value]));
+    const vals = [...rp, ...jp].map((p) => p.value).concat([CAPITAL]);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = Math.max((hi - lo) * 0.12, CAPITAL * 0.004);
+    lo -= pad; hi += pad;
+    const ticks = niceTicks(lo, hi, 3);
+    const x = (i) => ml + (dates.length === 1 ? (W - ml - mr) / 2 : i * (W - ml - mr) / (dates.length - 1));
+    const y = (v) => mt + (hi - v) * (H - mt - mb) / (hi - lo);
+    const grid = ticks.map((t) => `<line x1="${ml}" x2="${W - mr}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" stroke="var(--rule)" stroke-width="1"/><text x="${ml - 6}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end">${esc(fmt(t, 0))}</text>`).join("");
+    const base = `<line x1="${ml}" x2="${W - mr}" y1="${y(CAPITAL).toFixed(1)}" y2="${y(CAPITAL).toFixed(1)}" stroke="var(--ink-2)" stroke-width="1"/>`;
+    const xi = [0, dates.length - 1].filter((v, i, a) => a.indexOf(v) === i);
+    const xl = xi.map((i) => `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${dates.length === 1 ? "middle" : i === 0 ? "start" : "end"}">${esc(dm(dates[i]))}</text>`).join("");
+    const pathOf = (map) => {
+      let d = "", last = null;
+      dates.forEach((dt, i) => { const v = map.get(dt); if (isNum(v)) { d += `${d ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`; last = { x: x(i), y: y(v), v }; } });
+      return { d, last };
+    };
+    const R = pathOf(rmap), J = pathOf(jmap);
+    const ends = [];
+    let marks = "";
+    if (R.d) { marks += `<path d="${R.d}" fill="none" stroke="var(--ink-2)" stroke-width="1.8" stroke-dasharray="5 4" stroke-linejoin="round"/><circle cx="${R.last.x.toFixed(1)}" cy="${R.last.y.toFixed(1)}" r="4" fill="var(--ink-2)" stroke="var(--sheet)" stroke-width="2"/>`; ends.push({ name: "regole", ...R.last }); }
+    if (J.d) { marks += `<path d="${J.d}" fill="none" stroke="var(--who)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${J.last.x.toFixed(1)}" cy="${J.last.y.toFixed(1)}" r="4.5" fill="var(--who)" stroke="var(--sheet)" stroke-width="2"/>`; ends.push({ name: "giudizio", ...J.last }); }
+    ends.sort((a, b) => a.y - b.y);
+    if (ends.length === 2 && ends[1].y - ends[0].y < 15) { const mid = (ends[0].y + ends[1].y) / 2; ends[0].ly = mid - 7.5; ends[1].ly = mid + 7.5; }
+    const labels = ends.map((e) => {
+      const ly = e.ly ?? e.y;
+      const leader = Math.abs(ly - e.y) > 1 ? `<line x1="${(e.x + 6).toFixed(1)}" y1="${e.y.toFixed(1)}" x2="${W - mr + 2}" y2="${ly.toFixed(1)}" stroke="var(--rule)" stroke-width="1"/>` : "";
+      return `${leader}<text class="end" x="${W - mr + 6}" y="${(ly + 4).toFixed(1)}">${e.name} ${esc(fmt(e.v, 0))}</text>`;
+    }).join("");
+    charts[n] = { dates, rmap, jmap, x, W, mt, mb, H };
+    return `<div class="chart-box"><svg viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${esc(NAMES[n])}: il capitale a regole e a giudizio giorno per giorno, partenza 10.000 USDT">
+      ${grid}${base}${xl}${marks}${labels}
+      <line class="cross" x1="0" x2="0" y1="${mt}" y2="${H - mb}" stroke="var(--ink-2)" stroke-width="1" visibility="hidden"/>
+      <rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="transparent"/>
+    </svg><div class="tip" hidden></div></div>`;
+  }
+  function bindTwinChart(fig, c) {
+    const svg = fig.querySelector("svg"), cross = fig.querySelector(".cross"), tip = fig.querySelector(".tip"), box = fig.querySelector(".chart-box");
+    if (!svg || !cross || !tip) return;
+    let at = null;
+    const row = (label, v, cls) => `<div class="t-row"><span>${label}</span><b class="${cls || ""}">${v}</b></div>`;
+    const show = (i) => {
+      at = i;
+      const cx = c.x(i), d = c.dates[i];
+      cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+      const rv = c.rmap.get(d), jv = c.jmap.get(d);
+      tip.innerHTML = `<div class="t-date">${esc(longDay(d))}</div>${row("A regole", fmt(rv, 2))}${row("A giudizio", fmt(jv, 2))}${row("Giudizio meno regola", isNum(rv) && isNum(jv) ? fmt(jv - rv, 2, true) : "—", isNum(rv) && isNum(jv) ? tone(jv - rv) : "")}`;
+      tip.hidden = false;
+      const r = svg.getBoundingClientRect(), scale = r.width / c.W;
+      const left = cx * scale + 12, maxLeft = box.clientWidth - tip.offsetWidth - 4;
+      tip.style.left = Math.max(4, left > maxLeft ? cx * scale - tip.offsetWidth - 12 : left) + "px";
+      tip.style.top = "4px";
+    };
+    const hide = () => { cross.setAttribute("visibility", "hidden"); tip.hidden = true; };
+    svg.addEventListener("pointermove", (e) => {
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * c.W / r.width;
+      let best = 0;
+      c.dates.forEach((d, i) => { if (Math.abs(c.x(i) - px) < Math.abs(c.x(best) - px)) best = i; });
+      show(best);
+    });
+    svg.addEventListener("pointerleave", hide);
+    svg.addEventListener("focus", () => show(at ?? c.dates.length - 1));
+    svg.addEventListener("blur", hide);
+    svg.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      show(Math.min(c.dates.length - 1, Math.max(0, (at ?? c.dates.length - 1) + (e.key === "ArrowRight" ? 1 : -1))));
+    });
+  }
+
+  // ---- the Guardiano's numbers, from the selected day's minutes ----------------------------------
+  function pill(name, v, txt) {
+    const cls = v === true ? "on" : v === false ? "off" : "na";
+    return `<span class="pill ${cls}"><b>${esc(name)}</b>${esc(txt || (v === true ? "sì" : v === false ? "no" : "non misurabile"))}</span>`;
+  }
+  function renderRisk() {
+    const el = $("rischio");
+    const sel = S.selected, g = dayOf(sel), d = sel ? S.verbali[sel] : undefined;
+    $("rischio-at").textContent = g ? `Dal verbale di ${longDay(g.data)}` : "";
+    if (!g) { el.innerHTML = `<p class="muted">${S.unavailable ? "I numeri del Guardiano compaiono quando apri la pagina da claude.ai." : "I numeri del Guardiano compaiono con il programma della scuola."}</p>`; return; }
+    if (d === undefined) { el.innerHTML = `<p class="muted">Carico i numeri del Guardiano…</p>`; return; }
+    const R = d && obj(d.rischio), Q = d && obj(d.quadro), M = Q && obj(Q.mercato);
+    if (!R && !M) {
+      const future = g.data > romeToday().date;
+      el.innerHTML = `<div class="sheet empty"><p>${d ? "In questo verbale il motore non ha scritto i numeri del rischio." : future ? `I numeri del Guardiano arrivano con la riunione di ${esc(longDay(g.data))}.` : "Per questo giorno non c'è il verbale, quindi nemmeno i numeri del Guardiano."}</p><p class="muted">Qui compaiono gli allarmi, il fondo della scuola, il rischio di ognuno degli 8 portafogli e lo stato del mercato.</p></div>`;
+      return;
+    }
+    const top = R && isNum(R.rischio_massimo_oggi) ? R.rischio_massimo_oggi : null;
+    const F = R && obj(R.fondo);
+    const alarms = arr(R && R.allarmi), notes = arr(R && R.note);
+    const fondo = F && isNum(F.capitale) ? `<div class="stat"><h4>Il fondo della scuola</h4><span class="v">${fmt(F.capitale, 2)} <small>USDT</small></span><p><span class="num ${tone(F.capitale - (F.iniziale || 80000))}">${pct((F.capitale / (F.iniziale || 80000) - 1) * 100)}</span> sugli ${fmt(F.iniziale || 80000, 0)} iniziali · esposizione lorda <span class="num">${pct(F.lorda_pct, 1, false)}</span> · netta pesata per il beta <span class="num">${pct(F.netta_beta_pct, 1)}</span></p></div>` : "";
+    const head = `<div class="risk-top">
+      <div class="stat"><h4>Rischio massimo di oggi</h4><span class="v ${top !== null && top < 2 ? "hot" : ""}">${top !== null ? small(top) + "%" : "—"}</span><p>${top !== null && top < 2 ? "Giorno di panico o stato FRAGILE: ogni nuova posizione a giudizio rischia al massimo l'1%." : "Ogni nuova posizione a giudizio rischia al massimo il 2% del portafoglio, costi compresi. Il Preside può abbassarlo per un agente."}</p></div>
+      ${fondo}
+      <div class="stat"><h4>Allarmi del Guardiano</h4><span class="v ${alarms.length ? "hot" : ""}">${alarms.length}</span><p>${alarms.length ? "Un allarme non è un divieto: chiede attenzione, con un numero." : "Nessun allarme in questo verbale."}${notes.length ? ` Note: ${notes.length}.` : ""}</p></div>
+    </div>`;
+    const alarmList = `<div class="sheet"><h3>Allarmi e note</h3>${alarms.length || notes.length ? `<ul class="alarms">${alarms.map((a) => alarmItem(a, "alarm")).join("")}${notes.map((a) => alarmItem(a, "note")).join("")}</ul>` : `<p class="muted">Nessun allarme e nessuna nota.</p>`}</div>`;
+    let market = "";
+    if (M) {
+      const b = obj(M.btc) || {};
+      const caldo = isNum(M.caldo_pct) ? M.caldo_pct > 0 : null;
+      const rows = [
+        ["BTC", `${price(b.chiusura)} alla chiusura di ieri · dalla media a 50 giorni <span class="num ${tone(b.da_media50_pct)}">${pct(b.da_media50_pct)}</span>, a 100 <span class="num ${tone(b.da_media100_pct)}">${pct(b.da_media100_pct)}</span>, a 200 <span class="num ${tone(b.da_media200_pct)}">${pct(b.da_media200_pct)}</span>`],
+        ["Volatilità di BTC", `${pct(b.vol20_annua_pct, 1, false)} l'anno, sugli ultimi 20 giorni${isNum(b.vol20_percentile_anno) ? ` · più alta del ${fmt(b.vol20_percentile_anno, 1)}% dei giorni dell'ultimo anno` : ""}`],
+        ["Funding in eccesso (CALDO)", isNum(M.caldo_pct) ? `<span class="num">${pct(M.caldo_pct, 4)}</span> ogni 8 ore rispetto alla base dello 0,01%${isNum(M.caldo_percentile_180g) ? ` · ${fmt(M.caldo_percentile_180g, 1)}° percentile dei 180 giorni` : ""}${isNum(M.freddo_giorni) && M.freddo_giorni > 0 ? ` · sotto zero da ${M.freddo_giorni} giorni` : ""}` : "non misurabile"],
+        ["Monete sopra la media a 50 giorni", isNum(M.sopra_media50_pct) ? `${pct(M.sopra_media50_pct, 1, false)} delle 36` : "—"],
+        ["Dispersione a 30 giorni", isNum(M.dispersione_30g_pct) ? pct(M.dispersione_30g_pct, 2, false) : "—"],
+        ["Open interest registrato", `${isNum(M.giorni_di_open_interest) ? M.giorni_di_open_interest : "—"} giorni dalla scuola (FRAGILE ne vuole 14)${isNum(M.oi_btc_14g_pct) ? ` · BTC in 14 giorni <span class="num">${pct(M.oi_btc_14g_pct)}</span>` : ""}`],
+      ];
+      market = `<div class="sheet"><h3>Il mercato</h3>
+        <div class="pills">${pill("PANICO", M.panico)}${pill("FRAGILE", M.fragile)}${pill("CASCATA", M.cascata)}${pill("CALDO", caldo, caldo === null ? "" : caldo ? "sì" : "no")}</div>
+        <dl class="kvs">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>
+        ${M.fragile === null || M.fragile === undefined ? `<p class="muted" style="font-size:.84rem">FRAGILE e CASCATA si misurano con l'open interest, che BingX non conserva: la scuola lo registra ogni mattina.</p>` : ""}
+      </div>`;
+    }
+    let table = "";
+    const P = R && obj(R.portafogli);
+    if (P) {
+      const keys = TRADERS.flatMap((n) => [`${n}_regole`, `${n}_giudizio`]).filter((k) => obj(P[k]));
+      table = `<div class="sheet"><h3>Il rischio di ogni portafoglio</h3><div class="table-scroll"><table class="tight"><thead><tr><th>Portafoglio</th><th class="num">Capitale</th><th class="num" title="Quanto è sotto il suo massimo">Calo dal massimo</th><th class="num" title="Valore delle posizioni sul capitale">Esposizione lorda</th><th class="num" title="Long meno short, pesati per il beta verso BTC">Netta (beta)</th><th class="num" title="Quanto si perde se tutti gli stop long scattano">Rischio long</th><th class="num" title="Quanto si perde se tutti gli stop short scattano">Rischio short</th><th class="num">Volatilità</th><th class="num">Posizioni</th></tr></thead><tbody>${keys.map((k) => {
+        const p = P[k], [n, kind] = k.split("_");
+        const hotDrop = isNum(p.calo_pct) && p.calo_pct <= -15;
+        const hotGross = kind === "giudizio" && isNum(p.lorda_pct) && p.lorda_pct > 250;
+        return `<tr><td>${whom(n)} <span class="muted">${kind === "giudizio" ? "a giudizio" : "a regole"}</span></td><td class="num">${fmt(p.capitale, 2)}</td><td class="num ${hotDrop ? "hot" : ""}">${pct(p.calo_pct)}</td><td class="num ${hotGross ? "hot" : ""}">${pct(p.lorda_pct, 1, false)}</td><td class="num">${pct(p.netta_beta_pct, 1)}</td><td class="num ${isNum(p.rischio_long_pct) && p.rischio_long_pct > 3 ? "hot" : ""}">${pct(p.rischio_long_pct, 2, false)}</td><td class="num ${isNum(p.rischio_short_pct) && p.rischio_short_pct > 3 ? "hot" : ""}">${pct(p.rischio_short_pct, 2, false)}</td><td class="num">${isNum(p.vol_annua_pct) ? pct(p.vol_annua_pct, 1, false) : "—"}</td><td class="num">${esc(p.posizioni ?? "—")}</td></tr>`;
+      }).join("")}</tbody></table></div><p class="muted" style="font-size:.82rem">In rosso quello che fa scattare un allarme: un calo oltre il 15%, più del 3% di rischio sugli stop di un lato solo (il tetto dell'esame E05), un portafoglio a giudizio oltre 2,5 volte il capitale.</p></div>`;
+    }
+    el.innerHTML = head + `<div class="risk-grid">${alarmList}${market}</div>` + table;
+  }
+
+  // ---- self-awareness: the notebooks ----------------------------------------------------------------
+  const pctTxt = (x) => isNum(x) ? Math.round(x * 100) + "%" : "—";
+  function verdictOf(c) {
+    if (!c || !c.n) return "";
+    const over = c.eccesso_di_sicurezza;
+    if (!isNum(over)) return "";
+    return over > 0.05 ? `troppo sicuro di ${Math.round(over * 100)} punti` : over < -0.05 ? `troppo prudente di ${Math.round(-over * 100)} punti` : "ben calibrato";
+  }
+  function calibChart(c) {
+    if (!c || !c.n || !arr(c.fasce).length) return `<p class="muted">Nessuna previsione verificata ancora: il motore le controlla alla scadenza, sulla chiusura giornaliera vera.</p>`;
+    const W = 260, H = 180, l = 36, r = 12, t = 10, b = 32;
+    const x = (v) => l + (v - 0.5) / 0.5 * (W - l - r), y = (v) => t + (1 - v) * (H - t - b);
+    const dots = c.fasce.filter((f) => isNum(f.detta) && isNum(f.avverata)).map((f) => `<circle cx="${x(Math.min(0.99, Math.max(0.5, f.detta))).toFixed(1)}" cy="${y(f.avverata).toFixed(1)}" r="${(4 + Math.sqrt(f.n || 1) * 1.6).toFixed(1)}" fill="var(--who)" stroke="var(--sheet)" stroke-width="2"><title>${esc(`Dette al ${Math.round(f.detta * 100)}%: avverate ${Math.round(f.avverata * 100)}% su ${f.n}`)}</title></circle>`).join("");
+    return `<div class="calib"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Calibrazione: probabilità dichiarate contro previsioni avverate">
+      <line class="ax" x1="${l}" x2="${W - r}" y1="${y(0)}" y2="${y(0)}"/><line class="ax" x1="${l}" x2="${W - r}" y1="${y(0.5)}" y2="${y(0.5)}"/><line class="ax" x1="${l}" x2="${W - r}" y1="${y(1)}" y2="${y(1)}"/>
+      <line class="ideal" x1="${x(0.5)}" y1="${y(0.5)}" x2="${x(1)}" y2="${y(1)}"/>
+      <text x="${l - 5}" y="${y(0) + 3}" text-anchor="end">0%</text><text x="${l - 5}" y="${y(0.5) + 3}" text-anchor="end">50%</text><text x="${l - 5}" y="${y(1) + 3}" text-anchor="end">100%</text>
+      <text x="${x(0.5)}" y="${H - 15}" text-anchor="start">50%</text><text x="${x(0.75)}" y="${H - 15}" text-anchor="middle">75%</text><text x="${x(1)}" y="${H - 15}" text-anchor="end">99%</text>
+      <text x="${(l + W - r) / 2}" y="${H - 2}" text-anchor="middle">sicurezza dichiarata</text>
+      ${dots}</svg><p class="muted calib-note">In alto quante volte ci ha preso. Sulla diagonale è onesto: dice 70% e ci prende 7 volte su 10.</p></div>`;
+  }
+  const gradePair = (v) => v && (isNum(toNum(v.ragionamento)) || isNum(toNum(v.disciplina))) ? `${esc(v.ragionamento ?? "—")} · ${esc(v.disciplina ?? "—")}` : "—";
+  function renderMinds() {
+    const el = $("minds"), sumEl = $("minds-sum");
+    if (S.unavailable) { sumEl.hidden = true; el.innerHTML = `<p class="muted">I quaderni compaiono quando apri la pagina da claude.ai.</p>`; return; }
+    sumEl.hidden = false;
+    const gaps = Object.fromEntries(TRADERS.map((n) => [n, twinsOf(n).gap]));
+    const rows = CAST.map((who) => {
+      const m = S.memoria[who];
+      const c = (m && obj(m.calibrazione)) || {};
+      const last = arr(m && m.autovoti).slice(-1)[0];
+      const gap = gaps[who];
+      return `<tr><td>${whom(who)}</td><td class="num">${who === "preside" ? "—" : esc(c.n || 0)}</td><td class="num">${pctTxt(c.sicurezza_media)}</td><td class="num">${pctTxt(c.successi)}</td><td class="num">${isNum(c.brier) ? fmt(c.brier, 3) : "—"}</td><td>${who === "preside" ? `<span class="muted">non fa previsioni</span>` : esc(verdictOf(c) || "—")}</td><td class="num">${last ? gradePair(last) : "—"}</td><td class="num">${last && last.preside ? gradePair(last.preside) : "—"}</td><td class="num ${tone(gap)}">${TRADERS.includes(who) ? (isNum(gap) ? fmt(gap, 0, true) : "—") : ""}</td></tr>`;
+    }).join("");
+    sumEl.innerHTML = `<h3>Gli otto a confronto</h3><div class="table-scroll"><table class="tight sum-table"><thead><tr><th>Chi</th><th class="num" title="Previsioni arrivate a scadenza e verificate">Verificate</th><th class="num">Sicuro in media</th><th class="num">Ci ha preso</th><th class="num" title="0 è perfetto, 0,25 vale tirare a indovinare">Brier</th><th>Calibrazione</th><th class="num" title="Ragionamento · disciplina">Ultimo autovoto</th><th class="num" title="Ragionamento · disciplina">Il Preside</th><th class="num" title="Capitale a giudizio meno capitale a regole, in USDT">Giudizio − regola</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    el.innerHTML = CAST.map((who) => mindCard(who, gaps[who])).join("");
+  }
+  function mindCard(who, gap) {
+    const m = S.memoria[who];
+    const name = who === "preside" ? "Il Preside" : NAMES[who];
+    const head = (sub) => `<div class="who"><i class="key" aria-hidden="true"></i><div><h3>${esc(name)}</h3><p>${sub}</p></div></div>`;
+    if (m === undefined) return `<article class="mind k-${who}">${head(esc(WHO[who].line))}<p class="muted">Carico il quaderno…</p></article>`;
+    if (!m) return `<article class="mind k-${who}">${head(esc(WHO[who].line))}<p class="muted">Il quaderno non c'è ancora: si riempie dalla prossima riunione con le regole, gli errori che ripete, le previsioni con la loro probabilità e gli autovoti${who === "preside" ? " (il Preside non fa previsioni e non si dà voti)" : ""}.</p></article>`;
+    const c = obj(m.calibrazione) || {};
+    const verdict = verdictOf(c);
+    const open = arr(m.previsioni).filter((x) => (x.stato || "aperta") === "aperta").slice(-4).reverse();
+    const done = arr(m.previsioni).filter((x) => x.stato === "verificata").slice(-3).reverse();
+    const rules = arr(m.regole).slice(-5).reverse();
+    const errs = arr(m.errori).slice().sort((a, b) => (b.volte || 1) - (a.volte || 1)).slice(0, 4);
+    const lessons = arr(m.lezioni).slice(-3).reverse();
+    const grades = arr(m.autovoti).slice(-5).reverse();
+    const upd = romeTime(m.aggiornato);
+    const calib = who === "preside" ? `<div class="block"><h4>Calibrazione</h4><p class="muted">Il Preside non fa previsioni: il suo quaderno tiene come insegna e le sue lezioni sbagliate.</p></div>`
+      : `<div class="block"><h4>Calibrazione</h4><div class="calib-row">${calibChart(c)}<div class="kv"><span>Previsioni verificate <b>${esc(c.n || 0)}</b></span><span>Sicuro in media <b>${pctTxt(c.sicurezza_media)}</b></span><span>Ci ha preso <b>${pctTxt(c.successi)}</b></span><span>Brier <b>${isNum(c.brier) ? fmt(c.brier, 3) : "—"}</b> <span class="muted">(0 perfetto, 0,25 a caso)</span></span>${verdict ? `<p class="verdict"><b class="${verdict === "ben calibrato" ? "up" : "down"}" style="font-family:inherit">${esc(cap(verdict))}</b></p>` : ""}</div></div></div>`;
+    const gapBlock = TRADERS.includes(who) ? `<div class="block"><h4>Giudizio contro regola</h4><p><span class="num ${tone(gap)}" style="font-size:1.2rem">${isNum(gap) ? fmt(gap, 2, true) + " USDT" : "—"}</span> <span class="muted">${isNum(gap) ? (gap > 0.5 ? "il suo giudizio aggiunge alla regola" : gap < -0.5 ? "il suo giudizio toglie alla regola" : "pari") : "compare con la prima riunione"}</span></p></div>` : "";
+    const gradeTable = grades.length && who !== "preside" ? `<div class="block"><h4>Autovoto e voto del Preside</h4><div class="table-scroll"><table class="tight"><thead><tr><th>Giorno</th><th class="num">Si dà</th><th class="num">Il Preside</th><th class="num" title="Autovoto meno voto del Preside, sommando ragionamento e disciplina">Scarto</th></tr></thead><tbody>${grades.map((g) => {
+      const sR = toNum(g.ragionamento), sD = toNum(g.disciplina), p = obj(g.preside), pR = p ? toNum(p.ragionamento) : null, pD = p ? toNum(p.disciplina) : null;
+      const diff = [sR, sD, pR, pD].every((v) => v !== null) ? sR + sD - pR - pD : null;
+      return `<tr><td class="muted">${esc(dm(g.data))}</td><td class="num">${gradePair(g)}</td><td class="num">${p ? gradePair(p) : "—"}</td><td class="num ${diff !== null && diff >= 2 ? "self-up" : ""}">${diff === null ? "—" : diff > 0 ? "+" + diff : diff < 0 ? "−" + Math.abs(diff) : "0"}</td></tr>`;
+    }).join("")}</tbody></table></div><p class="muted" style="font-size:.8rem">ragionamento · disciplina, da 1 a 10. Uno scarto positivo vuol dire che si dà più del Preside.</p></div>` : "";
+    return `<article class="mind k-${who}" aria-label="${esc(name)}">
+      ${head(esc(upd ? "quaderno aggiornato il " + upd : WHO[who].line))}
+      ${calib}${gapBlock}${gradeTable}
+      ${errs.length ? `<div class="block"><h4>Errori che ripete</h4><ul>${errs.map((x) => `<li>${esc(x.testo)}${(x.volte || 1) > 1 ? ` <b>×${esc(x.volte)}</b>` : ""}${x.ultima ? ` <span class="muted">· l'ultima il ${esc(dm(x.ultima))}</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+      ${rules.length ? `<div class="block"><h4>${who === "preside" ? "Le sue regole per insegnare" : "Le regole che si è dato"}</h4><ul>${rules.map((x) => `<li>${esc(x.testo)}${x.dal ? ` <span class="muted">· dal ${esc(dm(x.dal))}</span>` : ""}${x.perche ? `<br><span class="muted">${esc(x.perche)}</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+      ${lessons.length ? `<div class="block"><h4>Ultime lezioni</h4><ul>${lessons.map((x) => `<li>${esc(x.testo)}${x.data ? ` <span class="muted">· ${esc(dm(x.data))}</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+      ${done.length ? `<div class="block"><h4>Ultime previsioni verificate</h4><ul>${done.map((x) => `<li><span class="tag ${x.esito ? "ok" : "no"}">${x.esito ? "giusta" : "sbagliata"}</span> ${esc(x.mercato)} ${esc(x.direzione)} ${level(x.livello)} al ${prob(x.probabilita)} · chiusura <span class="num">${price(x.chiusura)}</span></li>`).join("")}</ul></div>` : ""}
+      ${open.length ? `<div class="block"><h4>Previsioni aperte</h4><ul>${open.map((x) => `<li>${esc(x.mercato)} ${esc(x.direzione)} ${level(x.livello)} entro il ${esc(dm(x.scadenza))} · <b>${prob(x.probabilita)}</b></li>`).join("")}</ul></div>` : ""}
+      ${m.chi_sono ? `<details><summary>Chi sono, con le sue parole</summary><div class="prose">${md(m.chi_sono)}</div></details>` : ""}
+    </article>`;
+  }
+
+  // ---- the minutes of the selected day -------------------------------------------------------------
+  function eventLine(ev) {
+    if (!obj(ev)) return "";
+    const o = obj(ev.order) || {};
+    if (ev.event === "aperta") {
+      return `<span class="tag ok">aperta</span><span>${side(ev.side)} <b>${esc(ev.symbol)}</b> a <span class="num">${price(ev.entry)}</span>, stop <span class="num">${price(ev.stop)}</span>${isNum(ev.target) ? `, target <span class="num">${price(ev.target)}</span>` : ""}, rischio <span class="num">${usd(ev.risk_usd)}</span>${isNum(ev.risk_pct) ? ` <span class="muted">(${small(ev.risk_pct)}%)</span>` : ""}${ev.id ? ` <span class="muted">· ${esc(ev.id)}</span>` : ""}</span>`;
+    }
+    if (ev.event === "chiusa") {
+      const parts = [isNum(ev.price_pnl) ? `prezzo ${fmt(ev.price_pnl, 2, true)}` : "", isNum(ev.costs) ? `costi ${fmt(ev.costs, 2)}` : "", isNum(ev.funding) && ev.funding !== 0 ? `funding ${fmt(ev.funding, 2)}` : ""].filter(Boolean).join(", ");
+      return `<span class="tag">chiusa</span><span>${side(ev.side)} <b>${esc(ev.symbol)}</b> a <span class="num">${price(ev.exit)}</span>, ${esc(shortReason(ev.exit_reason))}: <span class="num ${tone(ev.pnl)}">${usd(ev.pnl, true)}</span>${isNum(ev.r) ? ` <span class="muted num">(${fmt(ev.r, 2, true)} R)</span>` : ""}${parts ? ` <span class="muted">· ${esc(parts)}</span>` : ""}</span>`;
+    }
+    const what = [o.side, o.symbol ? String(o.symbol).toUpperCase() : o.id].filter(Boolean).join(" ");
+    return `<span class="tag no">respinto</span><span>${esc(what)}${what ? ": " : ""}${esc(ev.reason)}</span>`;
+  }
+  const shortEvent = (e) => {
+    const o = obj(e.order) || {};
+    if (e.event === "aperta") return `aperta: ${e.side} ${e.symbol} a ${price(e.entry)}`;
+    if (e.event === "chiusa") return `chiusa: ${e.side || ""} ${e.symbol}, ${shortReason(e.exit_reason)}, ${usd(e.pnl, true)}`;
+    return `respinto: ${[o.side, o.symbol || o.id].filter(Boolean).join(" ")}: ${e.reason || ""}`;
+  };
+  function matchOrders(who, orders, events) {
+    const pool = events.filter((e) => obj(e) && e.wallet === who).map((e) => ({ e, used: false }));
+    const out = orders.map((o) => {
+      if (!obj(o)) return { o, e: null };
+      const sym = String(o.symbol || "").toUpperCase();
+      const hit = pool.find((x) => {
+        if (x.used) return false;
+        const eo = obj(x.e.order) || {};
+        if (o.action === "close") return x.e.id === o.id || eo.id === o.id;
+        return (x.e.event === "aperta" && x.e.symbol === sym) || (x.e.event === "respinto" && String(eo.symbol || "").toUpperCase() === sym && eo.action !== "close");
+      });
+      if (hit) hit.used = true;
+      return { o, e: hit ? hit.e : null };
+    });
+    return { out, rest: pool.filter((x) => !x.used).map((x) => x.e) };
+  }
+  function orderLine(o, e, executed) {
+    if (!obj(o)) return "";
+    const head = o.action === "close" ? `Chiude <b>${esc(o.id)}</b>`
+      : `${side(o.side)} <b>${esc(String(o.symbol || "").toUpperCase())}</b> · stop <span class="num">${level(o.stop)}</span>${o.target != null && o.target !== "" ? ` · target <span class="num">${level(o.target)}</span>` : ""} · rischio <span class="num">${small(toNum(o.risk_pct) ?? 1)}%</span>`;
+    return `<div class="order"><span>${head}</span>${o.reason ? `<span class="why">${esc(o.reason)}</span>` : ""}<div class="event">${e ? eventLine(e) : `<span class="tag">nessun esito</span><span class="muted">${executed ? "il motore non ha registrato questo ordine: forse l'agente l'ha cambiato dopo la domanda dello Scettico" : "il motore oggi non ha eseguito ordini"}</span>`}</div></div>`;
+  }
+  function predMain(p) {
+    if (!obj(p)) return "";
+    return `<p class="pred"><b>${esc(p.mercato)} ${esc(p.direzione)} ${level(p.livello)}</b>${p.scadenza ? ` <span class="muted">entro il ${esc(dm(p.scadenza))}</span>` : ""} <span class="prob">${prob(p.probabilita)}</span></p>${p.perche ? `<p class="muted" style="font-size:.88rem">${esc(p.perche)}</p>` : ""}`;
+  }
+  function predsBlock(list, title = "Previsioni") {
+    const ps = arr(list).filter(obj);
+    if (!ps.length) return "";
+    return `<div class="block"><h4>${esc(title)}</h4><ul class="preds">${ps.map((p) => `<li><b>${esc(p.mercato)} ${esc(p.direzione)} ${level(p.livello)}</b>${p.scadenza ? ` entro il ${esc(dm(p.scadenza))}` : ""} · <b>${prob(p.probabilita)}</b>${p.perche ? ` · <span class="muted">${esc(p.perche)}</span>` : ""}</li>`).join("")}</ul></div>`;
+  }
+  const reflection = (a) => a && a.riflessione ? `<div class="block"><h4>Riflessione</h4><p class="thought">${esc(a.riflessione)}</p></div>` : "";
+  function gradeMarks(v, self) {
+    if (!obj(v)) return "";
+    const names = { ragionamento: "Ragionamento", disciplina: "Disciplina", risultato: "Risultato", consapevolezza: "Consapevolezza" };
+    return `<div class="voti${self ? " self" : ""}">${Object.keys(names).filter((k) => isNum(toNum(v[k]))).map((k) => `<span class="voto"><i aria-hidden="true">${esc(v[k])}</i>${names[k]}<span class="sr"> ${esc(v[k])} su 10</span></span>`).join("")}</div>`;
+  }
+  const selfGrade = (a) => a && obj(a.autovoto) ? `<div class="block"><h4>Si dà, prima del Preside</h4>${gradeMarks(a.autovoto, true)}</div>` : "";
+  const chiSono = (a) => a && a.chi_sono ? `<details><summary>Chi sono, con le sue parole</summary><div class="prose">${md(a.chi_sono)}</div></details>` : "";
+  function newsItem(nw) {
+    if (!obj(nw)) return "";
+    const lab = String(nw.etichetta || "").toLowerCase();
+    const url = /^https:\/\//i.test(nw.url || "") ? nw.url : "";
+    let host = "";
+    try { host = url ? new URL(url).hostname.replace(/^www\./, "") : ""; } catch (e) { host = ""; }
+    const src = nw.fonte || host;
+    return `<li class="news-item"><div class="news-meta"><span class="lab lab-${esc(lab)}">${esc(lab || "notizia")}</span>${nw.classe ? `<span class="lab lab-classe">${esc(nw.classe)}</span>` : ""}${nw.ora ? `<span class="muted num" title="${esc(nw.ora)}">${esc(whenTxt(nw.ora))}</span>` : ""}</div><p>${esc(nw.testo)}</p><p class="src">${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(src || url)}</a>` : esc(src || "fonte non indicata")}</p></li>`;
+  }
+  function briefingCard(b, d) {
+    if (!obj(b)) return `<article class="sheet k-cronista"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Il briefing del Cronista</h3></div><p class="muted">Il briefing non è nel verbale.</p></article>`;
+    const cal = arr(b.calendario).filter(obj), news = arr(b.notizie).filter(obj);
+    const ipotesi = arr(b.ipotesi).filter(Boolean);
+    const lettura = obj(b.lettura);
+    return `<article class="sheet k-cronista"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Il briefing del Cronista</h3><span class="turn">prima i fatti, poi le opinioni</span></div>
+      ${chiSono(b)}
+      ${b.testo ? `<div class="prose">${md(b.testo)}</div>` : ""}
+      <div class="v-grid">
+        <div class="block"><h4>Calendario</h4>${cal.length ? `<ul class="cal">${cal.map((c) => `<li><span class="num when" title="${esc(c.quando)}">${esc(whenTxt(c.quando))}</span><span>${esc(c.evento)}</span></li>`).join("")}</ul>` : `<p class="muted">Niente in calendario.</p>`}</div>
+        <div class="block"><h4>Le notizie</h4>${news.length ? `<ol class="news">${news.map(newsItem).join("")}</ol>` : `<p class="muted">Nessuna notizia.</p>`}</div>
+      </div>
+      ${b.ora_delle_notizie ? `<div class="block"><h4>L'ora delle notizie</h4><div class="prose">${md(b.ora_delle_notizie)}</div></div>` : ""}
+      ${lettura ? `<div class="block"><h4>La lettura dalla biblioteca${lettura.titolo ? ": " + esc(lettura.titolo) : ""}</h4><div class="prose">${md(lettura.testo)}</div></div>` : ""}
+      ${ipotesi.length ? `<div class="block"><h4>Ipotesi nuove per la lista d'esame</h4>${anyBlock(ipotesi)}</div>` : ""}
+      ${predsBlock(b.previsioni)}${reflection(b)}${selfGrade(b)}
+    </article>`;
+  }
+  function positionCard(who, a, d) {
+    a = obj(a) || {};
+    const orders = arr(a.ordini);
+    const events = arr(d.eventi_ordini);
+    const { out, rest } = matchOrders(who, orders, events);
+    const preds = arr(a.previsioni).filter(obj);
+    const welcome = d.tipo === "accoglienza";
+    const empty = !Object.keys(a).length;
+    return `<article class="sheet k-${who}" aria-label="${esc(NAMES[who])}"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>${esc(NAMES[who])}</h3><span class="turn">${esc(WHO[who].line)}</span></div>
+      ${empty ? `<p class="muted">La sua posizione non è nel verbale.</p>` : ""}
+      ${chiSono(a)}
+      ${a.regola ? `<div class="block"><h4>La regola</h4><p class="read">${esc(a.regola)}</p></div>` : ""}
+      ${preds.length ? `<div class="block"><h4>Previsione principale</h4>${predMain(preds[0])}</div>` : ""}
+      ${preds.length > 1 ? predsBlock(preds.slice(1), "Altre previsioni") : ""}
+      ${a.cambierei_idea_se ? `<div class="block"><h4>Cambierei idea se</h4><p class="read">${esc(a.cambierei_idea_se)}</p></div>` : ""}
+      ${a.intervento ? `<div class="block"><h4>Intervento</h4><div class="prose">${md(a.intervento)}</div></div>` : ""}
+      ${empty ? "" : `<div class="block"><h4>Ordini a giudizio</h4>${orders.length ? out.map(({ o, e }) => orderLine(o, e, events.length > 0)).join("") : `<p class="muted">${welcome ? "All'accoglienza non si danno ordini." : "Nessun ordine: oggi resta fermo."}</p>`}${rest.length ? `<h4 style="margin-top:6px">Altri esiti del motore</h4>${rest.map((e) => `<div class="event">${eventLine(e)}</div>`).join("")}` : ""}</div>`}
+      ${a.settimana ? `<div class="block"><h4>La sua settimana</h4>${anyBlock(a.settimana)}</div>` : ""}
+      ${reflection(a)}${selfGrade(a)}
+    </article>`;
+  }
+  function guardianCard(G, d) {
+    G = obj(G) || {};
+    const al = arr(G.allarmi).length ? arr(G.allarmi) : arr(d.rischio && d.rischio.allarmi);
+    return `<article class="sheet k-guardiano"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Il Guardiano</h3><span class="turn">il bollettino del rischio</span></div>
+      ${chiSono(G)}
+      ${G.bollettino ? `<div class="prose">${md(G.bollettino)}</div>` : `<p class="muted">Nessun bollettino scritto.</p>`}
+      <div class="block"><h4>Allarmi</h4>${al.length ? `<ul class="alarms">${al.map((x) => alarmItem(x, "alarm")).join("")}</ul>` : `<p class="muted">Nessun allarme.</p>`}</div>
+      ${G.settimana ? `<div class="block"><h4>I gemelli della settimana</h4>${anyBlock(G.settimana)}</div>` : ""}
+      ${predsBlock(G.previsioni)}${reflection(G)}${selfGrade(G)}
+    </article>`;
+  }
+  function skepticCard(Sc) {
+    Sc = obj(Sc) || {};
+    const qs = arr(Sc.domande).filter(obj);
+    return `<article class="sheet k-scettico"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Lo Scettico</h3><span class="turn">al massimo 2 domande, con un numero</span></div>
+      ${chiSono(Sc)}
+      ${qs.length ? `<ol class="qa">${qs.map((q, i) => `<li><h4>Domanda ${i + 1} · a ${esc(NAMES[q.a] || q.a || "?")}</h4><p class="q">${esc(q.testo)}</p>${q.risposta ? `<div class="a k-${esc(q.a)}"><h4>Risponde ${whom(q.a)}</h4><div class="prose">${md(q.risposta)}</div></div>` : `<p class="muted">Nessuna risposta registrata.</p>`}</li>`).join("")}</ol>` : `<p class="muted">Oggi nessuna domanda.</p>`}
+      ${Sc.contrario ? `<div class="block"><h4>Il contrario</h4><div class="prose">${md(Sc.contrario)}</div></div>` : ""}
+      ${Sc.conti ? `<div class="block"><h4>I conti rifatti a mano</h4>${anyBlock(Sc.conti)}</div>` : ""}
+      ${predsBlock(Sc.previsioni)}${reflection(Sc)}${selfGrade(Sc)}
+    </article>`;
+  }
+  function selfOf(d, who) {
+    if (who === "cronista") return obj(d.briefing) && obj(d.briefing.autovoto);
+    if (who === "scettico") return obj(d.scettico) && obj(d.scettico.autovoto);
+    return obj(d.posizioni) && obj(d.posizioni[who]) && obj(d.posizioni[who].autovoto);
+  }
+  const grade = (v, self) => isNum(toNum(v)) ? `<i class="grade${self ? " self" : ""}">${esc(v)}</i>` : `<span class="muted">—</span>`;
+  function gradesTable(voti, d, keys = ["ragionamento", "disciplina"], withSelf = true) {
+    const names = { ragionamento: "Ragionamento", disciplina: "Disciplina", risultato: "Risultato", consapevolezza: "Consapevolezza" };
+    const who = GRADED.filter((w) => obj(voti[w]));
+    if (!who.length) return "";
+    return `<div class="table-scroll"><table class="grades"><thead><tr><th>Chi</th>${keys.map((k) => `<th class="num">${names[k]}</th>`).join("")}${withSelf ? `<th class="num" title="Ragionamento · disciplina, dati prima del voto del Preside">Si dava</th>` : ""}</tr></thead><tbody>${who.map((w) => {
+      const v = voti[w], s = withSelf ? selfOf(d, w) : null;
+      return `<tr><td>${whom(w)}</td>${keys.map((k) => `<td class="num">${grade(v[k])}</td>`).join("")}${withSelf ? `<td class="num">${s ? `${grade(s.ragionamento, true)} ${grade(s.disciplina, true)}` : `<span class="muted">—</span>`}</td>` : ""}</tr>`;
+    }).join("")}</tbody></table></div>`;
+  }
+  function closingCard(d) {
+    const C = obj(d.chiusura) || {};
+    const righe = arr(C.righe).filter(Boolean);
+    const voti = obj(C.voti);
+    if (!righe.length && !voti && !C.consapevolezza && !d.riflessione_preside) return "";
+    return `<article class="sheet judgement k-preside"><h3 class="pen">La chiusura del Preside</h3>
+      ${righe.length ? `<ol class="righe">${righe.map((r, i) => `<li><span class="r-k">${esc(RIGHE[i] || "Riga " + (i + 1))}</span><span class="r-t">${esc(r)}</span></li>`).join("")}</ol>` : ""}
+      ${voti ? `<div class="block"><h4>I voti di oggi, da 1 a 10</h4>${gradesTable(voti, d)}</div>` : ""}
+      ${C.consapevolezza ? `<div class="block"><h4>La consapevolezza</h4><div class="prose">${md(C.consapevolezza)}</div></div>` : ""}
+      ${d.riflessione_preside ? `<div class="block"><h4>Il Preside riflette</h4><p class="thought">${esc(d.riflessione_preside)}</p></div>` : ""}
+    </article>`;
+  }
+  function councilCard(c) {
+    if (!obj(c)) return "";
+    const ip = arr(c.ipotesi_accettate), au = arr(c.autopsie);
+    return `<article class="sheet judgement"><h3 class="pen">Il consiglio di classe</h3>
+      ${c.testo ? `<div class="prose">${md(c.testo)}</div>` : ""}
+      <div class="block"><h4>Ipotesi accettate per la lista d'esame</h4>${ip.length ? anyBlock(ip) : `<p class="muted">Nessuna questa settimana.</p>`}</div>
+      <div class="block"><h4>Le autopsie delle perdite</h4>${au.length ? anyBlock(au) : `<p class="muted">Nessuna perdita oltre 2R, o oltre il 3% di un portafoglio in un giorno.</p>`}</div>
+    </article>`;
+  }
+  function pagellaTable(p) {
+    if (!obj(p)) return "";
+    return gradesTable(p, {}, ["ragionamento", "disciplina", "risultato", "consapevolezza"], false);
+  }
+  function scrutinyCard(s) {
+    if (!obj(s)) return "";
+    const lim = obj(s.limiti);
+    return `<article class="sheet judgement"><h3 class="pen">Lo scrutinio del mese</h3>
+      ${s.testo ? `<div class="prose">${md(s.testo)}</div>` : ""}
+      ${s.pagella ? `<div class="block"><h4>La pagella</h4>${pagellaTable(s.pagella)}</div>` : ""}
+      ${lim ? `<div class="block"><h4>Il rischio massimo a posizione, da domani</h4><div class="facts">${TRADERS.filter((n) => lim[n] != null).map((n) => `<span>${whom(n)} <b>${small(lim[n])}%</b></span>`).join("")}</div></div>` : ""}
+    </article>`;
+  }
+  function endCard(f) {
+    if (!obj(f)) return "";
+    const perAgent = Object.entries(f).filter(([k, v]) => !["testo", "pagella"].includes(k) && obj(v) && Object.keys(v).some((x) => NAMES[x]));
+    return `<article class="sheet judgement"><h3 class="pen">Il bilancio del trimestre</h3>
+      ${f.testo ? `<div class="prose">${md(f.testo)}</div>` : ""}
+      ${f.pagella ? `<div class="block"><h4>La pagella finale</h4>${pagellaTable(f.pagella)}</div>` : ""}
+      ${perAgent.map(([k, v]) => `<div class="block"><h4>${esc(keyName(k))}</h4><ul class="lines">${Object.entries(v).map(([w, t]) => `<li>${whom(w)} ${esc(valTxt(t))}</li>`).join("")}</ul></div>`).join("")}
+    </article>`;
+  }
+  function capitalsCard(d) {
+    const c = obj(d.capitali);
+    if (!c) return "";
+    const rows = TRADERS.filter((n) => obj(c[n]));
+    if (!rows.length) return "";
+    return `<article class="sheet"><h3>I portafogli dopo la riunione</h3><div class="table-scroll"><table class="tight"><thead><tr><th>Chi</th><th class="num">A regole</th><th class="num">A giudizio</th><th class="num">Giudizio meno regola</th></tr></thead><tbody>${rows.map((n) => {
+      const r = toNum(c[n].regole), j = toNum(c[n].giudizio), g = r !== null && j !== null ? j - r : null;
+      return `<tr><td>${whom(n)}</td><td class="num">${fmt(r, 2)}</td><td class="num">${fmt(j, 2)}</td><td class="num ${tone(g)}">${fmt(g, 2, true)}</td></tr>`;
+    }).join("")}</tbody></table></div></article>`;
+  }
+  function verifiedCard(list) {
+    const xs = arr(list).filter(obj);
+    if (!xs.length) return "";
+    return `<article class="sheet"><h3>Previsioni verificate oggi</h3><div class="verified">${xs.map((x) => `<div class="event"><span class="tag ${x.esito ? "ok" : "no"}">${x.esito ? "giusta" : "sbagliata"}</span><span>${NAMES[whoOf(x.id)] ? whom(whoOf(x.id)) + " · " : ""}${esc(x.mercato)} ${esc(x.direzione)} ${level(x.livello)}${x.scadenza ? ` entro il ${esc(dm(x.scadenza))}` : ""} al ${prob(x.probabilita)}: chiusura <span class="num">${price(x.chiusura)}</span> · Brier <span class="num">${fmt(toNum(x.brier), 2)}</span></span></div>`).join("")}</div></article>`;
+  }
+  function nightCard(list) {
+    const xs = arr(list).filter(obj);
+    return `<article class="sheet k-motore"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Dalla notte</h3><span class="turn">stop, target e funding sulle candele orarie</span></div>${xs.length ? xs.map((e) => `<div class="event">${NAMES[e.wallet] ? whom(e.wallet) : ""}${eventLine(e)}</div>`).join("") : `<p class="muted">Nella notte nessuna posizione è arrivata allo stop o al target.</p>`}</article>`;
+  }
+  function renderVerbale() {
+    const el = $("verbale");
+    const sel = S.selected, g = dayOf(sel);
+    if (!g) {
+      el.innerHTML = `<div class="section-head"><h2 id="t-verbale">Il verbale</h2></div><p class="muted">${S.unavailable ? "Il verbale compare quando apri la pagina da claude.ai." : "Il verbale compare qui appena i dati arrivano."}</p>`;
+      return;
+    }
+    const week = weeks().find((w) => w.settimana === g.settimana);
+    const d = S.verbali[sel];
+    const myths = arr(g.miti).length ? arr(g.miti) : arr(week && week.miti);
+    const head = `<div class="section-head"><div class="v-head"><h2 id="t-verbale">Il verbale · giorno ${esc(g.giorno)}</h2><p class="when">${esc(cap(longDay(g.data)))} · ${esc(KIND[g.tipo] || g.tipo)} · settimana ${esc(g.settimana)}</p></div></div>
+      <div class="block" style="margin-bottom:14px">${d && d.titolo ? `<p class="v-title">${esc(d.titolo)}</p>` : ""}<p class="theme"><b>Il tema:</b> ${esc(d && d.tema || g.tema)}</p>${myths.length ? `<p class="theme"><b>I miti da smontare:</b> ${esc(myths.join("; "))}</p>` : ""}</div>`;
+    if (d === undefined) { el.innerHTML = head + `<p class="muted">Carico il verbale…</p>`; return; }
+    if (!d) {
+      const today = romeToday().date;
+      const future = g.data > today;
+      const msg = future ? `Questa riunione si terrà ${esc(longDay(g.data))}${g.tipo === "accoglienza" ? ", la sera" : ` alle ${MEETING}`}.`
+        : g.data === today ? "La riunione di oggi non è ancora finita: il verbale compare appena il Preside lo salva."
+          : heldMap()[g.data] ? "Il registro dice che questa riunione c'è stata, ma il suo verbale non è nel database." : "Il verbale di questo giorno non è stato scritto.";
+      el.innerHTML = head + `<div class="sheet empty"><p>${msg}</p><p class="muted">Qui compaiono il briefing del Cronista con le notizie, la posizione di ogni agente con la previsione e gli ordini, il bollettino del Guardiano, le domande dello Scettico con le risposte e la chiusura del Preside con i voti.</p></div>`;
+      return;
+    }
+    const P = obj(d.posizioni) || {};
+    const notice = d.avviso || d.stato === "incompleto" ? `<p class="notice">${esc(d.avviso || "Questa riunione non è stata completata.")}</p>` : "";
+    const meta = `<p class="muted" style="font-size:.84rem">${d.scritto ? `Verbale salvato il ${esc(romeTime(d.scritto))}` : ""}${d.mercati_ora ? ` · prezzi delle ${esc(romeTime(d.mercati_ora))}` : ""}</p>`;
+    const unmatched = arr(d.eventi_ordini).filter((e) => obj(e) && !TRADERS.includes(e.wallet));
+    const capitals = capitalsCard(d);
+    el.innerHTML = head + `<div class="v-stack">${notice}${meta}
+      ${capitals ? `<div class="v-grid">${nightCard(d.eventi_notte)}${capitals}</div>` : nightCard(d.eventi_notte)}
+      ${briefingCard(d.briefing, d)}
+      <div><h3 style="margin-bottom:10px">Le posizioni, scritte in privato</h3><div class="v-grid">${TRADERS.map((w) => positionCard(w, P[w], d)).join("")}</div></div>
+      <div class="v-grid">${guardianCard(P.guardiano, d)}${skepticCard(d.scettico)}</div>
+      ${unmatched.length ? `<article class="sheet"><h3>Altri esiti del motore</h3>${unmatched.map((e) => `<div class="event">${eventLine(e)}</div>`).join("")}</article>` : ""}
+      ${closingCard(d)}
+      ${councilCard(d.consiglio)}${scrutinyCard(d.scrutinio)}${endCard(d.fine)}
+      ${verifiedCard(d.previsioni_verificate)}
+    </div>`;
+  }
+
+  // ---- the 36 coins --------------------------------------------------------------------------------
+  const pctTone = (v, d = 2) => `<span class="${tone(v)}">${pct(v, d)}</span>`;
+  const COLS = [
+    { k: "coin", label: "Moneta", get: (c, s) => s, show: (v) => `<b>${esc(v)}</b>`, text: true },
+    { k: "price", label: "Prezzo", title: "Il prezzo all'ora della riunione, o la chiusura di ieri", get: (c) => isNum(c.prezzo) ? c.prezzo : c.chiusura, show: price },
+    { k: "v1", label: "1 g", title: "Variazione in un giorno", get: (c) => c.var_pct && c.var_pct["1g"], show: pctTone },
+    { k: "v7", label: "7 g", title: "Variazione in 7 giorni", get: (c) => c.var_pct && c.var_pct["7g"], show: pctTone },
+    { k: "v30", label: "30 g", title: "Variazione in 30 giorni", get: (c) => c.var_pct && c.var_pct["30g"], show: pctTone },
+    { k: "m50", label: "Da media 50 g", title: "Distanza dalla media dei 50 giorni", get: (c) => c.da_media50_pct, show: pctTone },
+    { k: "rsi2", label: "RSI 2", title: "RSI a 2 periodi: sotto 10 o sopra 90 guarda lo Spazzino", get: (c) => c.rsi2, show: (v) => isNum(v) ? `<span class="${v < 10 ? "rsi-lo" : v > 90 ? "rsi-hi" : ""}">${fmt(v, 1)}</span>` : "—" },
+    { k: "fund", label: "Funding l'anno", title: "Il funding degli ultimi 7 giorni, portato a un anno", get: (c) => c.funding_annuo_pct, show: (v) => pctTone(v, 1) },
+    { k: "oi", label: "Open interest", title: "Milioni di dollari, registrato dalla scuola", get: (c) => c.oi_mln, show: (v) => isNum(v) ? fmt(v, 1) + " mln" : "—" },
+    { k: "vol", label: "Volatilità 20 g", title: "Volatilità degli ultimi 20 giorni, in un anno", get: (c) => c.vol20_annua_pct, show: (v) => pct(v, 1, false) },
+    { k: "rank", label: "Rango volume", title: "1 è la moneta con più volume nei 30 giorni", get: (c) => c.rango_volume, show: (v) => isNum(v) ? String(v) : "—" },
+    { k: "beta", label: "Beta BTC", title: "Quanto si muove quando BTC si muove dell'1%, sui 60 giorni", get: (c) => c.beta_btc, show: (v) => fmt(v, 2) },
+  ];
+  function renderCoins() {
+    const el = $("monete"), atEl = $("monete-at");
+    const d = S.verbali[S.selected];
+    const q = d && obj(d.quadro) && obj(d.quadro.monete);
+    const prices = (S.giudizio && S.giudizio.prices) || {};
+    if (!q) {
+      const have = COINS.filter((s) => isNum(prices[s]));
+      if (!have.length) {
+        atEl.textContent = "";
+        el.innerHTML = `<p class="muted">${S.unavailable ? "Le monete compaiono quando apri la pagina da claude.ai." : "Il quadro delle 36 monete compare con il verbale della riunione."}</p>`;
+        return;
+      }
+      atEl.textContent = S.giudizio.prices_at ? `Solo i prezzi, del ${romeTime(S.giudizio.prices_at)}` : "";
+      el.innerHTML = `<p class="muted" style="margin-bottom:8px">Per questo giorno non c'è il quadro completo: ecco gli ultimi prezzi del motore.</p><table class="tight"><thead><tr><th>Moneta</th><th class="num">Prezzo</th></tr></thead><tbody>${have.map((s) => `<tr><td><b>${esc(s)}</b></td><td class="num">${price(prices[s])}</td></tr>`).join("")}</tbody></table>`;
+      return;
+    }
+    atEl.textContent = d.quadro.giorno ? `Candele giornaliere fino a ${longDay(d.quadro.giorno)}${d.mercati_ora ? `, prezzi delle ${romeTime(d.mercati_ora)}` : ""}` : "";
+    const col = COLS.find((c) => c.k === S.coinSort.key) || COLS[10];
+    const rows = Object.entries(q).filter(([s, c]) => obj(c)).map(([s, c]) => ({ s, c, v: col.get(c, s) }));
+    rows.sort((a, b) => {
+      if (col.text) return a.s < b.s ? -S.coinSort.dir : a.s > b.s ? S.coinSort.dir : 0;
+      const x = toNum(a.v), y = toNum(b.v);
+      if (x === null && y === null) return 0;
+      if (x === null) return 1;
+      if (y === null) return -1;
+      return (x - y) * S.coinSort.dir;
+    });
+    el.innerHTML = `<table class="coins"><thead><tr>${COLS.map((c, i) => `<th class="${i ? "num" : ""}"${c.k === S.coinSort.key ? ` aria-sort="${S.coinSort.dir > 0 ? "ascending" : "descending"}"` : ""}${c.title ? ` title="${esc(c.title)}"` : ""}><button type="button" data-sort="${c.k}">${esc(c.label)}${c.k === S.coinSort.key ? (S.coinSort.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`).join("")}</tr></thead><tbody>${rows.map(({ s, c }) => `<tr>${COLS.map((k, i) => `<td class="${i ? "num" : ""}">${k.show(k.get(c, s))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+  $("monete").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-sort]");
+    if (!b) return;
+    const k = b.dataset.sort;
+    S.coinSort = S.coinSort.key === k ? { key: k, dir: -S.coinSort.dir } : { key: k, dir: k === "coin" || k === "rank" ? 1 : -1 };
+    renderCoins();
+    const again = $("monete").querySelector(`button[data-sort="${k}"]`);
+    if (again) again.focus({ preventScroll: true });
+  });
+
+  // ---- the classroom in 3D: the eight characters around the meeting table -----------------------------
+  const FASE = {
+    inizio: "si comincia", motore: "il motore fa i conti", briefing: "il briefing del Cronista",
+    posizioni: "le posizioni, in privato", domande: "le domande dello Scettico", risposte: "le risposte",
+    ordini: "gli ordini", chiusura: "la chiusura del Preside", fine: "riunione salvata",
+  };
+  const orderText = (o) => !obj(o) ? "" : o.action === "close" ? `chiudo ${o.id}`
+    : `${o.side || ""} ${String(o.symbol || "").toUpperCase()}, stop ${level(o.stop)}${o.target != null && o.target !== "" ? ", target " + level(o.target) : ""}, rischio ${small(toNum(o.risk_pct) ?? 1)}%`;
+  const predText = (p) => `${p.mercato} ${p.direzione} ${level(p.livello)}${p.scadenza ? " entro il " + dm(p.scadenza) : ""}, al ${prob(p.probabilita)}`;
+
+  function makeAula() {
+    const stage = $("stage"), canvas = $("aula-canvas"), overlay = $("aula-overlay"), feedEl = $("aula-feed"), liveEl = $("aula-live"), dayEl = $("aula-day");
+    const playBtn = $("aula-play"), speedBtn = $("aula-speed");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const ui = { playing: true, speed: 1 };
+    let key = "", script = [], step = 0, items = [], liveMode = false, wasLive = false;
+    let scene3d = null; // set when the 3D room is built
+
+    // --- the feed: every line spoken, in order ---------------------------------------------------
+    function renderFeed() {
+      if (!items.length) {
+        feedEl.innerHTML = `<li class="msg-empty">${esc(liveMode ? "La riunione è appena cominciata." : "Qui compare la conversazione della riunione.")}</li>`;
+        return;
+      }
+      feedEl.innerHTML = items.map((it, i) => `<li class="msg k-${esc(it.who)}" data-state="next"><button type="button" data-i="${i}"><span class="msg-head"><i class="dot" aria-hidden="true"></i><b>${esc(NAMES[it.who] || it.who)}</b><span>${esc(it.label || "")}${it.at ? " · " + esc(it.at) : ""}</span></span><span class="msg-text">${esc(it.text)}</span></button></li>`).join("");
+      markFeed();
+    }
+    function markFeed() {
+      const now = script[step] && script[step].item != null ? script[step].item : -1;
+      let last = -1;
+      for (let i = 0; i < step && i < script.length; i++) if (script[i].item != null) last = script[i].item;
+      const current = now >= 0 ? now : last;
+      feedEl.querySelectorAll(".msg").forEach((li, i) => {
+        li.dataset.state = liveMode || !scene3d ? "past" : i < current ? "past" : i === current ? "now" : "next";
+      });
+      const el = feedEl.querySelector('.msg[data-state="now"]');
+      if (el) {
+        const top = el.offsetTop - feedEl.offsetTop, h = feedEl.clientHeight;
+        if (top < feedEl.scrollTop || top > feedEl.scrollTop + h - el.offsetHeight) feedEl.scrollTop = Math.max(0, top - h / 3);
+      }
+    }
+    feedEl.addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-i]");
+      if (!b || liveMode) return;
+      const i = script.findIndex((s) => s.item === Number(b.dataset.i));
+      if (i >= 0) jump(i);
+    });
+
+    // --- the scripts: one replayed meeting, the live meeting, or the wait -------------------------
+    function dayScript(d, g) {
+      const B = [];
+      const say = (who, text, label, to) => {
+        if (!text) return;
+        items.push({ who, text, label });
+        B.push({ kind: "say", who, text, label, to, item: items.length - 1 });
+      };
+      const go = (...moves) => B.push({ kind: "go", moves });
+      const board = (...lines) => B.push({ kind: "board", lines });
+      const screen = (events, title) => B.push({ kind: "screen", events, title });
+      const P = obj(d.posizioni) || {};
+      const n = d.giorno ?? (g && g.giorno) ?? "";
+      const welcome = (d.tipo || (g && g.tipo)) === "accoglienza";
+      const theme = d.tema || (g && g.tema) || "";
+      B.push({ kind: "reset" });
+      board(`Riunione ${n} · ${longDay(d.data || (g && g.data))}`, plain(d.titolo || theme, 110));
+      screen(null, "");
+      // 1. the Preside opens
+      go(["preside", "board"]);
+      say("preside", `Riunione ${n}${d.titolo ? ": " + plain(d.titolo, 110) : ""}.${theme ? " Il tema è " + plain(theme, 150).replace(/^./, (c) => c.toLowerCase()) + "." : ""}`, "Apre la riunione");
+      go(["preside", "stand"]);
+      // 2. the night, from the engine
+      const night = arr(d.eventi_notte).filter(obj);
+      screen(night, "DALLA NOTTE");
+      say("motore", night.length ? "Nella notte: " + night.map((e) => `${NAMES[e.wallet] || e.wallet || ""}, ${shortEvent(e)}`).join(" · ") : "Nella notte nessuna posizione è arrivata allo stop o al target.", "La notte");
+      const ver = arr(d.previsioni_verificate).filter(obj);
+      if (ver.length) say("motore", "Previsioni verificate: " + ver.map((x) => `${NAMES[whoOf(x.id)] || ""} ${x.mercato} ${x.direzione} ${level(x.livello)} al ${prob(x.probabilita)}, ${x.esito ? "giusta" : "sbagliata"}`).join(" · "), "Previsioni verificate");
+      // 3. the Cronista's briefing
+      const Bf = obj(d.briefing) || {};
+      const top = arr(Bf.notizie).filter(obj)[0];
+      board("Il briefing del Cronista", top ? plain(top.testo, 100) : plain(Bf.testo, 100));
+      go(["cronista", "board"], ["preside", "seat"]);
+      if (welcome && Bf.chi_sono) say("cronista", plain(Bf.chi_sono, 220), "Si presenta");
+      say("cronista", plain(Bf.testo, 230), "Il briefing");
+      if (top) say("cronista", `${cap(top.etichetta || "notizia")}: ${plain(top.testo, 170)}${top.fonte ? ` (${top.fonte}${top.ora ? ", " + whenTxt(top.ora) : ""})` : ""}`, "La notizia");
+      go(["cronista", "seat"]);
+      // 4. the four wallets
+      board("Le posizioni", "scritte in privato, senza vedersi");
+      for (const w of TRADERS) {
+        const a = obj(P[w]) || {};
+        if (!Object.keys(a).length) continue;
+        go([w, "stand"]);
+        if (welcome && a.chi_sono) say(w, plain(a.chi_sono, 220), "Si presenta");
+        say(w, plain(a.regola, 210), "La regola");
+        const p0 = arr(a.previsioni).filter(obj)[0];
+        if (p0) say(w, "Prevedo " + predText(p0) + ".", "La previsione principale");
+        say(w, plain(a.intervento, 230), "Intervento");
+        const orders = arr(a.ordini);
+        say(w, orders.length ? "I miei ordini: " + orders.map(orderText).join(" · ") : welcome ? "Oggi è l'accoglienza: niente ordini." : "Oggi nessun ordine: resto fermo.", "Ordini");
+        go([w, "seat"]);
+      }
+      // 5. the Guardiano
+      const G = obj(P.guardiano) || {};
+      if (Object.keys(G).length) {
+        go(["guardiano", "stand"]);
+        if (welcome && G.chi_sono) say("guardiano", plain(G.chi_sono, 220), "Si presenta");
+        say("guardiano", plain(G.bollettino, 240), "Il bollettino");
+        const al = arr(G.allarmi).length ? arr(G.allarmi) : arr(d.rischio && d.rischio.allarmi);
+        say("guardiano", al.length ? "Allarmi: " + al.map((x) => plain(human(x), 140)).join(" · ") : "Oggi nessun allarme.", "Gli allarmi");
+        go(["guardiano", "seat"]);
+      }
+      // 6. the Scettico asks
+      const Sc = obj(d.scettico) || {};
+      const qs = arr(Sc.domande).filter(obj);
+      if (qs.length || Sc.contrario) {
+        board("Le domande dello Scettico", qs.length ? `${qs.length} ${qs.length === 1 ? "domanda" : "domande"}, ognuna con un numero` : "");
+        go(["scettico", "stand"]);
+        if (welcome && Sc.chi_sono) say("scettico", plain(Sc.chi_sono, 220), "Si presenta");
+        qs.forEach((q, i) => say("scettico", `${NAMES[q.a] ? NAMES[q.a] + ", " : ""}${plain(q.testo, 210)}`, `Domanda ${i + 1}`, q.a));
+        say("scettico", plain(Sc.contrario, 230), "Il contrario");
+        go(["scettico", "seat"]);
+      }
+      // 7. the answers
+      for (const q of qs) {
+        if (!q.risposta || !NAMES[q.a] || q.a === "motore") continue;
+        go([q.a, "stand"]);
+        say(q.a, plain(q.risposta, 230), "Risponde allo Scettico", "scettico");
+        go([q.a, "seat"]);
+      }
+      // 8. the orders, from the engine
+      const ev = arr(d.eventi_ordini).filter(obj);
+      screen(ev, "ORDINI");
+      say("motore", ev.length ? ev.map((e) => `${NAMES[e.wallet] || e.wallet || ""}, ${shortEvent(e)}`).join(" · ") : welcome ? "All'accoglienza nessun ordine da eseguire." : "Oggi nessun ordine da eseguire.", "Gli ordini");
+      // 9. the Preside closes
+      const C = obj(d.chiusura) || {};
+      board("La chiusura del Preside", plain(d.titolo || theme, 100));
+      go(["preside", "stand"]);
+      arr(C.righe).filter(Boolean).forEach((r, i) => say("preside", plain(r, 220), RIGHE[i] || `Riga ${i + 1}`));
+      if (obj(C.voti)) {
+        B.push({ kind: "grade", voti: C.voti });
+        say("preside", "I voti: " + GRADED.filter((w) => obj(C.voti[w])).map((w) => `${NAMES[w]} ${C.voti[w].ragionamento ?? "?"} e ${C.voti[w].disciplina ?? "?"}`).join(", ") + ".", "I voti");
+      }
+      if (obj(d.consiglio) && d.consiglio.testo) say("preside", plain(d.consiglio.testo, 240), "Il consiglio");
+      if (obj(d.scrutinio) && d.scrutinio.testo) {
+        if (obj(d.scrutinio.pagella)) B.push({ kind: "grade", voti: d.scrutinio.pagella });
+        say("preside", plain(d.scrutinio.testo, 240), "Lo scrutinio");
+      }
+      if (obj(d.fine) && d.fine.testo) say("preside", plain(d.fine.testo, 240), "Il bilancio");
+      go(["preside", "seat"]);
+      B.push({ kind: "idle", s: 30 });
+      return B;
+    }
+    function waitScript(g, d) {
+      const lines = [g ? `Giorno ${g.giorno} · ${longDay(g.data)}` : "Scuola Cripto", g ? plain(g.tema, 110) : "", g ? (d === undefined ? "Carico la riunione…" : g.tipo === "accoglienza" ? "Accoglienza, la sera" : `Riunione alle ${MEETING}`) : ""];
+      return [{ kind: "reset" }, { kind: "board", lines }, { kind: "screen", events: null, title: "" }, { kind: "idle", s: 3600 }];
+    }
+    function liveMoves(fase, who) {
+      const m = Object.fromEntries(CAST.map((w) => [w, "seat"]));
+      if (fase === "inizio") m.preside = "board";
+      if (fase === "motore" || fase === "ordini" || fase === "chiusura" || fase === "posizioni") m.preside = "stand";
+      if (fase === "briefing") m.cronista = "shelf";
+      if (fase === "domande") m.scettico = "stand";
+      if ((fase === "posizioni" || fase === "risposte") && GRADED.includes(who)) m[who] = "stand";
+      return Object.entries(m);
+    }
+    function liveScript(L) {
+      const who = NAMES[L.attore] ? L.attore : "preside";
+      const log = arr(L.log).filter(obj).length ? arr(L.log).filter(obj) : [L];
+      for (const e of log) items.push({ who: NAMES[e.attore] ? e.attore : "preside", text: String(e.testo || ""), label: FASE[e.fase] || "", at: romeTime(e.ora) });
+      return [
+        { kind: "board", lines: [`Riunione ${L.giorno ?? ""} · in diretta`, cap(FASE[L.fase] || L.fase || "")] },
+        { kind: "screen", events: null, title: L.fase === "ordini" ? "ESEGUO GLI ORDINI" : L.fase === "motore" ? "FACCIO I CONTI" : "" },
+        { kind: "go", moves: liveMoves(L.fase, who) },
+        { kind: "say", who, text: plain(L.testo, 200) || "…", label: FASE[L.fase] || "in diretta", item: items.length - 1 },
+        { kind: "idle", s: 3600 },
+      ];
+    }
+
+    // --- outside the scene: the status line, the day picker, the controls -------------------------
+    function sync() {
+      const L = liveNow();
+      const sel = S.selected;
+      const d = sel ? S.verbali[sel] : undefined;
+      const g = dayOf(sel);
+      const next = L ? `live:${L.ora}:${L.fase}:${L.attore}:${arr(L.log).length}` : `day:${sel}:${d ? d.scritto || d.data || "x" : d === null ? "none" : "loading"}`;
+      const done = held().map((x) => x.data).sort();
+      const idx = done.indexOf(sel);
+      dayEl.textContent = L ? `Riunione ${L.giorno ?? ""} · in diretta` : g ? `Giorno ${g.giorno} · ${dm(g.data)}` : "";
+      $("aula-prev").disabled = !!L || (idx < 0 ? !done.some((x) => x < sel) : idx <= 0);
+      $("aula-next").disabled = !!L || (idx < 0 ? !done.some((x) => x > sel) : idx >= done.length - 1);
+      liveEl.innerHTML = L
+        ? `<span class="live-dot" aria-hidden="true"></span><strong>In diretta</strong> · ${esc(FASE[L.fase] || L.fase || "")} · aggiornata alle ${esc(romeTime(L.ora))}`
+        : d ? `Replica della riunione di ${esc(longDay(d.data || sel))}, con le loro parole.`
+          : S.unavailable ? "L'aula si anima quando apri la pagina da claude.ai." : g ? `In attesa della riunione. La prossima è alle ${MEETING}.` : "Carico l'aula…";
+      if (next === key) return;
+      key = next;
+      items = [];
+      wasLive = liveMode;
+      liveMode = !!L;
+      script = L ? liveScript(L) : d ? dayScript(d, g) : waitScript(g, d);
+      step = 0;
+      for (const b of script) b.started = false;
+      renderFeed();
+      if (scene3d) scene3d.settle(0, liveMode && wasLive);
+    }
+    function moveDay(delta) {
+      const done = held().map((x) => x.data).sort();
+      const sel = S.selected;
+      let to = null;
+      const idx = done.indexOf(sel);
+      if (idx >= 0) to = done[idx + delta];
+      else to = delta < 0 ? done.filter((x) => x < sel).pop() : done.find((x) => x > sel);
+      if (to) selectDay(to);
+    }
+    $("aula-prev").addEventListener("click", () => moveDay(-1));
+    $("aula-next").addEventListener("click", () => moveDay(1));
+    playBtn.addEventListener("click", () => {
+      ui.playing = !ui.playing;
+      playBtn.textContent = ui.playing ? "Pausa" : "Riprendi";
+      playBtn.setAttribute("aria-pressed", String(!ui.playing));
+    });
+    speedBtn.addEventListener("click", () => {
+      ui.speed = ui.speed === 1 ? 2 : ui.speed === 2 ? 4 : 1;
+      speedBtn.textContent = `Velocità ${ui.speed}×`;
+    });
+    $("aula-restart").addEventListener("click", () => jump(0));
+    function jump(index) { if (scene3d) scene3d.jump(index); }
+    setInterval(() => { sync(); }, 20000); // a live meeting starts and ends on the clock too
+
+    const T = window.THREE;
+    const webgl = (() => {
+      try {
+        const c = document.createElement("canvas");
+        return !!(c.getContext("webgl2") || c.getContext("webgl"));
+      } catch (e) {
+        return false;
+      }
+    })();
+    if (T && webgl) {
+      try {
+        scene3d = buildRoom(T);
+      } catch (e) {
+        scene3d = null;
+      }
+    }
+    if (!scene3d) {
+      stage.classList.add("no3d");
+      canvas.hidden = true;
+      overlay.hidden = true;
+      $("aula-play").hidden = $("aula-speed").hidden = $("aula-restart").hidden = $("aula-view").hidden = true;
+      const note = document.createElement("div");
+      note.className = "no3d-note";
+      note.innerHTML = `<b>Qui non si vede l'aula in 3D</b><span>Questo dispositivo non mostra la grafica 3D. La riunione si legge parola per parola in «Cosa si dicono».</span>`;
+      stage.appendChild(note);
+    }
+    return { sync };
+
+    // --- the room ------------------------------------------------------------------------------------
+    function buildRoom(T) {
+      const renderer = new T.WebGLRenderer({ canvas, antialias: true });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      const scene = new T.Scene();
+      const camera = new T.PerspectiveCamera(40, 16 / 9, 0.1, 100);
+      const look = new T.Vector3(0, 0.85, -0.9);
+      const cam = { yaw: 0, pitch: 0.52, dist: 11.4, touched: -1e9, fx: 0, fz: -0.9 };
+      const PAL = {
+        light: { sky: 0xdfe6ee, floor: 0xb98d60, rug: 0x3d6a86, wall: 0xf0ebe1, trim: 0xcfc6b4, frame: 0x7a5a3a, wood: 0xa8764a, woodTop: 0xc49461, table: 0x8a5a36, tableTop: 0xb07c4f, metal: 0x6f7781, window: 0xcfe6ff, hemiSky: 0xffffff, hemiGround: 0xb59d7d, hemi: 0.95, sun: 0.62, lamp: 0.25, chalkboard: "#2c4a3a" },
+        dark: { sky: 0x0d1317, floor: 0x5c4431, rug: 0x22445a, wall: 0x2d3633, trim: 0x232a28, frame: 0x4e3a27, wood: 0x6b4c31, woodTop: 0x7d5a3a, table: 0x4f3420, tableTop: 0x6e4b30, metal: 0x4b525b, window: 0x1c2f4a, hemiSky: 0xa9bccf, hemiGround: 0x3a3026, hemi: 0.62, sun: 0.3, lamp: 0.95, chalkboard: "#1e3529" },
+      };
+      const mats = {};
+      const mat = (name) => mats[name] || (mats[name] = new T.MeshLambertMaterial({ color: 0xffffff }));
+      const LAM = {};
+      const lam = (c) => LAM[c] || (LAM[c] = new T.MeshLambertMaterial({ color: c }));
+      const hemi = new T.HemisphereLight(0xffffff, 0xb59d7d, 0.9);
+      scene.add(hemi);
+      const sun = new T.DirectionalLight(0xfff1dc, 0.62);
+      sun.position.set(5, 9, 6);
+      scene.add(sun);
+      const lamp = new T.PointLight(0xffd59a, 0.3, 14);
+      lamp.position.set(0, 3.0, -0.8);
+      scene.add(lamp);
+      const isDark = () => {
+        const t = document.documentElement.dataset.theme;
+        return t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+      };
+      let pal = PAL.light;
+      function paint() {
+        pal = PAL[isDark() ? "dark" : "light"];
+        for (const [name, m] of Object.entries(mats)) if (typeof pal[name] === "number") m.color.setHex(pal[name]);
+        scene.background = new T.Color(pal.sky);
+        hemi.color.setHex(pal.hemiSky);
+        hemi.groundColor.setHex(pal.hemiGround);
+        hemi.intensity = pal.hemi;
+        sun.intensity = pal.sun;
+        lamp.intensity = pal.lamp;
+        drawBoard(boardLines, 1);
+      }
+      const GEO = {};
+      const geoBox = (w, h, d) => GEO[`b${w}:${h}:${d}`] || (GEO[`b${w}:${h}:${d}`] = new T.BoxGeometry(w, h, d));
+      const box = (w, h, d, m, x, y, z, parent = scene) => {
+        const mesh = new T.Mesh(geoBox(w, h, d), typeof m === "string" ? mat(m) : m);
+        mesh.position.set(x, y, z);
+        parent.add(mesh);
+        return mesh;
+      };
+      const cyl = (rt, rb, h, m, seg = 12) => new T.Mesh(new T.CylinderGeometry(rt, rb, h, seg), m);
+      const floor = new T.Mesh(new T.PlaneGeometry(12, 9), mat("floor"));
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
+      const rug = new T.Mesh(new T.PlaneGeometry(4.6, 6.2), mat("rug"));
+      rug.rotation.x = -Math.PI / 2;
+      rug.position.set(0, 0.004, -0.55);
+      scene.add(rug);
+      box(12, 3.4, 0.12, "wall", 0, 1.7, -4.56);
+      box(0.12, 3.4, 9, "wall", -6.06, 1.7, 0);
+      box(0.12, 3.4, 9, "wall", 6.06, 1.7, 0);
+      box(12, 0.14, 0.06, "trim", 0, 0.07, -4.48);
+      box(0.04, 1.3, 2.4, "window", 5.99, 1.95, 2.2);
+      box(0.04, 1.3, 0.06, "frame", 5.98, 1.95, 2.2);
+      // the board, written in chalk
+      box(5.5, 1.75, 0.08, "frame", 0, 1.95, -4.47);
+      const boardCanvas = document.createElement("canvas");
+      boardCanvas.width = 1024;
+      boardCanvas.height = 320;
+      const boardTex = new T.CanvasTexture(boardCanvas);
+      const board = new T.Mesh(new T.PlaneGeometry(5.2, 1.6), new T.MeshBasicMaterial({ map: boardTex }));
+      board.position.set(0, 1.95, -4.42);
+      scene.add(board);
+      let boardLines = ["Scuola Cripto"];
+      function drawBoard(lines, reveal) {
+        boardLines = lines;
+        const c = boardCanvas.getContext("2d");
+        c.fillStyle = pal.chalkboard;
+        c.fillRect(0, 0, 1024, 320);
+        c.fillStyle = "rgba(255,255,255,0.05)";
+        for (let i = 0; i < 6; i++) c.fillRect(60 + i * 160, 40 + (i % 3) * 70, 120, 18);
+        let left = Math.floor(lines.join("").length * reveal);
+        let y = 70;
+        lines.forEach((line, n) => {
+          if (!line) return;
+          c.font = n === 0 ? "600 40px Caveat, 'Segoe Print', cursive" : "600 52px Caveat, 'Segoe Print', cursive";
+          c.fillStyle = n === 0 ? "rgba(238,242,234,0.8)" : "#eef2ea";
+          const rows = [];
+          let row = "";
+          for (const w of String(line).split(" ")) {
+            const test = row ? row + " " + w : w;
+            if (c.measureText(test).width > 940 && row) { rows.push(row); row = w; } else row = test;
+          }
+          if (row) rows.push(row);
+          for (const r of rows.slice(0, n === 0 ? 1 : 2)) {
+            c.fillText(r.slice(0, Math.max(0, left)), 42, y);
+            left -= r.length;
+            y += n === 0 ? 62 : 58;
+          }
+        });
+        boardTex.needsUpdate = true;
+      }
+      // the prices running above the board
+      const tickCanvas = document.createElement("canvas");
+      tickCanvas.width = 4096;
+      tickCanvas.height = 64;
+      const tickTex = new T.CanvasTexture(tickCanvas);
+      tickTex.wrapS = T.RepeatWrapping;
+      const ticker = new T.Mesh(new T.PlaneGeometry(6.6, 0.22), new T.MeshBasicMaterial({ map: tickTex }));
+      ticker.position.set(0, 3.02, -4.48);
+      scene.add(ticker);
+      let tickKey = "";
+      function drawTicker() {
+        const p = (S.giudizio && S.giudizio.prices) || {};
+        const k = JSON.stringify(p);
+        if (k === tickKey) return;
+        tickKey = k;
+        const c = tickCanvas.getContext("2d");
+        c.fillStyle = "#101820";
+        c.fillRect(0, 0, 4096, 64);
+        c.font = "500 30px 'IBM Plex Mono', monospace";
+        c.fillStyle = "#e9f1f7";
+        const text = COINS.filter((s) => isNum(p[s])).slice(0, 14).map((s) => `${s} ${price(p[s])}`).join("   ·   ") || "Prezzi di BingX in arrivo";
+        const w = c.measureText(text + "   ·   ").width;
+        for (let x = 20; x < 4096; x += w) c.fillText(text + "   ·   ", x, 43);
+        tickTex.needsUpdate = true;
+      }
+      // the meeting table and the chairs
+      box(1.62, 0.07, 3.8, "tableTop", 0, 0.76, -0.5);
+      for (const x of [-0.68, 0.68]) for (const z of [-2.2, 1.2]) box(0.08, 0.72, 0.08, "table", x, 0.37, z);
+      box(1.3, 0.05, 0.05, "table", 0, 0.2, -2.2);
+      box(1.3, 0.05, 0.05, "table", 0, 0.2, 1.2);
+      const H = Math.PI / 2;
+      const SEATS = {
+        preside: [0, -2.95, 0], falco: [-1.2, -1.75, H], tartaruga: [-1.2, -0.8, H], spazzino: [-1.2, 0.15, H], ragioniere: [-1.2, 1.1, H],
+        cronista: [1.2, -1.45, -H], guardiano: [1.2, -0.35, -H], scettico: [1.2, 0.75, -H],
+      };
+      function chair(x, z, face) {
+        const c = new T.Group();
+        box(0.48, 0.05, 0.46, "wood", 0, 0.46, 0, c);
+        box(0.48, 0.52, 0.05, "wood", 0, 0.74, -0.24, c);
+        for (const dx of [-0.2, 0.2]) for (const dz of [-0.2, 0.2]) box(0.04, 0.45, 0.04, "metal", dx, 0.22, dz, c);
+        c.position.set(x, 0, z);
+        c.rotation.y = face;
+        scene.add(c);
+      }
+      for (const [, s] of Object.entries(SEATS)) {
+        chair(s[0], s[1], s[2]);
+        // a notepad on the table in front of each seat
+        const fx = s[0] + Math.sin(s[2]) * 0.62, fz = s[1] + Math.cos(s[2]) * 0.62;
+        box(0.24, 0.012, 0.3, lam(0xf4f1e8), fx, 0.8, fz).rotation.y = s[2];
+      }
+      // the library on the left wall
+      box(0.5, 2.4, 2.8, "wood", -5.75, 1.2, -1.6);
+      const spines = [0x8c2f39, 0x2a78d6, 0xd9a441, 0x3c6e47, 0x6b4c9a, 0xeb6834, 0x1f4e5f, 0xb5523b];
+      let bi = 0;
+      for (const yy of [0.45, 1.05, 1.65, 2.22]) {
+        box(0.46, 0.04, 2.7, "woodTop", -5.72, yy - 0.24, -1.6);
+        for (let z = -2.85; z < -0.42; z += 0.17) {
+          const h = 0.32 + ((bi * 37) % 10) / 55;
+          box(0.3, h, 0.13, lam(spines[bi++ % spines.length]), -5.6, yy - 0.22 + h / 2, z);
+        }
+      }
+      // a plant in the corner
+      const pot = cyl(0.22, 0.17, 0.4, lam(0x9c5b3b));
+      pot.position.set(-5.4, 0.2, -3.9);
+      scene.add(pot);
+      for (const [dx, dy, r] of [[0, 0.72, 0.36], [0.16, 0.95, 0.24], [-0.14, 0.98, 0.22]]) {
+        const leaf = new T.Mesh(new T.IcosahedronGeometry(r, 0), lam(0x3f8a4f));
+        leaf.position.set(-5.4 + dx, dy, -3.9);
+        scene.add(leaf);
+      }
+      // the engine's terminal on the right
+      box(1.4, 0.06, 0.8, "woodTop", 5.3, 0.76, -1.4);
+      box(0.06, 0.74, 0.7, "metal", 4.66, 0.37, -1.4);
+      box(0.06, 0.74, 0.7, "metal", 5.94, 0.37, -1.4);
+      box(0.08, 0.72, 1.12, "metal", 5.6, 1.22, -1.4);
+      box(0.06, 0.38, 0.08, "metal", 5.6, 0.95, -1.4);
+      const screenCanvas = document.createElement("canvas");
+      screenCanvas.width = 512;
+      screenCanvas.height = 320;
+      const screenTex = new T.CanvasTexture(screenCanvas);
+      const screen = new T.Mesh(new T.PlaneGeometry(1.02, 0.64), new T.MeshBasicMaterial({ map: screenTex }));
+      screen.position.set(5.55, 1.22, -1.4);
+      screen.rotation.y = -Math.PI / 2;
+      scene.add(screen);
+      function drawScreen(events, title) {
+        const c = screenCanvas.getContext("2d");
+        c.fillStyle = "#0b1620";
+        c.fillRect(0, 0, 512, 320);
+        c.fillStyle = "#7fd1a8";
+        c.font = "600 22px 'IBM Plex Mono', monospace";
+        c.fillText(`MOTORE${title ? " · " + title : ""}`, 18, 34);
+        c.font = "400 18px 'IBM Plex Mono', monospace";
+        let y = 70;
+        if (events && events.length) {
+          for (const e of events.slice(0, 5)) {
+            c.fillStyle = e.event === "aperta" ? "#7fd1a8" : e.event === "chiusa" ? "#9fc3ff" : "#ff8f8f";
+            const t = `${(NAMES[e.wallet] || "").toUpperCase().slice(0, 4)} ${shortEvent(e)}`;
+            for (const part of [t.slice(0, 40), t.slice(40, 80)].filter(Boolean)) {
+              if (y > 310) break;
+              c.fillText(part, 18, y);
+              y += 26;
+            }
+          }
+        } else if (events && !events.length) {
+          c.fillStyle = "#c9d6e2";
+          c.fillText("niente da segnalare", 18, y);
+        } else {
+          const p = (S.giudizio && S.giudizio.prices) || {};
+          c.fillStyle = "#c9d6e2";
+          for (const s of COINS.slice(0, 9)) {
+            if (!isNum(p[s])) continue;
+            c.fillText(`${s.padEnd(6)} ${price(p[s])}`, 18, y);
+            y += 26;
+          }
+          if (y === 70) c.fillText("in attesa dei prezzi", 18, y);
+        }
+        screenTex.needsUpdate = true;
+      }
+      // a soft shadow under everyone
+      const shadowCanvas = document.createElement("canvas");
+      shadowCanvas.width = shadowCanvas.height = 64;
+      const sc = shadowCanvas.getContext("2d");
+      const grad = sc.createRadialGradient(32, 32, 4, 32, 32, 32);
+      grad.addColorStop(0, "rgba(0,0,0,0.35)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      sc.fillStyle = grad;
+      sc.fillRect(0, 0, 64, 64);
+      const shadowMat = new T.MeshBasicMaterial({ map: new T.CanvasTexture(shadowCanvas), transparent: true, depthWrite: false });
+      // the Cronista's newspaper
+      const paperCanvas = document.createElement("canvas");
+      paperCanvas.width = 128;
+      paperCanvas.height = 160;
+      const pc = paperCanvas.getContext("2d");
+      pc.fillStyle = "#f3f0e6";
+      pc.fillRect(0, 0, 128, 160);
+      pc.fillStyle = "#1b1b1b";
+      pc.font = "700 15px Georgia, serif";
+      pc.fillText("IL CRONISTA", 12, 22);
+      pc.fillRect(10, 28, 108, 2);
+      pc.fillStyle = "#8c8c8c";
+      for (let i = 0; i < 12; i++) { pc.fillRect(10, 40 + i * 9, 50, 3); pc.fillRect(68, 40 + i * 9, 50, 3); }
+      const paperMat = new T.MeshLambertMaterial({ map: new T.CanvasTexture(paperCanvas), side: T.DoubleSide });
+
+      // --- the characters ----------------------------------------------------------------------------
+      const LOOK = {
+        preside: { body: 0x2a2430, legs: 0x26262c, hair: 0xd0d0d0, skin: 0xedc7a4, h: 1.04, speed: 1.15, freq: 8, tw: 0.2, bw: 0.24, hat: 0.18 },
+        falco: { body: 0x2f78d0, legs: 0x26324a, hair: 0x5a3b22, skin: 0xe2b48e, h: 0.98, speed: 1.9, freq: 11, tw: 0.18, bw: 0.21, hat: 0.06 },
+        tartaruga: { body: 0x2f8a3e, legs: 0x4a4031, hair: 0x8a8a8a, skin: 0xd8a47f, h: 0.9, speed: 0.72, freq: 5, tw: 0.23, bw: 0.28, hat: 0 },
+        spazzino: { body: 0xef6a26, legs: 0x2b3a55, hair: 0x2a1c12, skin: 0xc68b5e, h: 0.97, speed: 1.3, freq: 9, tw: 0.2, bw: 0.24, hat: 0.08 },
+        ragioniere: { body: 0xd99a1a, legs: 0x3b3b44, hair: 0x1d1d1d, skin: 0xf0cfae, h: 0.95, speed: 1.2, freq: 9, tw: 0.2, bw: 0.24, hat: 0.06 },
+        guardiano: { body: 0x0f9e80, legs: 0x26323d, hair: 0x3b2a1e, skin: 0xa8714a, h: 1.06, speed: 1.25, freq: 8, tw: 0.24, bw: 0.27, hat: 0.08 },
+        cronista: { body: 0xd2588f, legs: 0x3a2f2a, hair: 0x6b4226, skin: 0xe8bf98, h: 0.98, speed: 1.4, freq: 9.5, tw: 0.2, bw: 0.24, hat: 0.16 },
+        scettico: { body: 0x6a4ce2, legs: 0x2a2a35, hair: 0x101010, skin: 0xdcb08c, h: 0.96, speed: 1.2, freq: 9, tw: 0.18, bw: 0.21, hat: 0 },
+      };
+      function makeAgent(key) {
+        const L = LOOK[key], g = new T.Group(), body = new T.Group();
+        g.add(body);
+        const legs = lam(L.legs), shirt = lam(L.body), skin = lam(L.skin), dark = lam(0x161616);
+        const hip = (x) => {
+          const p = new T.Group();
+          p.position.set(x, 0.74, 0);
+          const leg = cyl(0.075, 0.068, 0.72, legs);
+          leg.position.y = -0.36;
+          p.add(leg);
+          const shoe = new T.Mesh(geoBox(0.13, 0.06, 0.22), lam(0x222222));
+          shoe.position.set(0, -0.71, 0.04);
+          p.add(shoe);
+          body.add(p);
+          return p;
+        };
+        const hipL = hip(-0.11), hipR = hip(0.11);
+        const torso = cyl(L.tw, L.bw, 0.66, shirt);
+        torso.position.y = 1.07;
+        body.add(torso);
+        const neck = cyl(0.06, 0.06, 0.1, key === "scettico" ? shirt : skin);
+        neck.position.y = 1.44;
+        body.add(neck);
+        const head = new T.Group();
+        head.position.y = 1.63;
+        body.add(head);
+        head.add(new T.Mesh(new T.SphereGeometry(0.19, 18, 14), skin));
+        if (key !== "falco") {
+          const hair = new T.Mesh(new T.SphereGeometry(0.2, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2.2), lam(L.hair));
+          hair.position.y = 0.025;
+          hair.rotation.x = -0.25;
+          head.add(hair);
+          for (const x of [-0.065, 0.065]) {
+            const eye = new T.Mesh(new T.SphereGeometry(0.022, 8, 6), dark);
+            eye.position.set(x, 0.02, 0.172);
+            head.add(eye);
+          }
+        }
+        const arm = (x) => {
+          const p = new T.Group();
+          p.position.set(x, 1.36, 0);
+          const a = cyl(0.055, 0.05, 0.6, shirt);
+          a.position.y = -0.3;
+          p.add(a);
+          const hand = new T.Mesh(new T.SphereGeometry(0.06, 8, 6), skin);
+          hand.position.y = -0.62;
+          p.add(hand);
+          body.add(p);
+          return p;
+        };
+        const armL = arm(-(L.tw + 0.07)), armR = arm(L.tw + 0.07);
+        let broom = null;
+        if (key === "preside") {
+          // the gown, the stole and the mortarboard
+          const gown = cyl(0.23, 0.37, 0.98, lam(0x221d27), 14);
+          gown.position.y = 0.9;
+          body.add(gown);
+          for (const x of [-0.085, 0.085]) {
+            const stole = new T.Mesh(geoBox(0.065, 0.72, 0.02), lam(0xb8243a));
+            stole.position.set(x, 1.0, 0.29);
+            stole.rotation.x = -0.14;
+            body.add(stole);
+          }
+          const capBase = cyl(0.17, 0.19, 0.1, lam(0x151318));
+          capBase.position.y = 0.16;
+          head.add(capBase);
+          const top = new T.Mesh(geoBox(0.46, 0.025, 0.46), lam(0x151318));
+          top.position.y = 0.22;
+          head.add(top);
+          const tassel = cyl(0.01, 0.01, 0.17, lam(0xd9a441), 6);
+          tassel.position.set(0.21, 0.14, 0.18);
+          head.add(tassel);
+          const glasses = new T.Mesh(geoBox(0.22, 0.035, 0.02), lam(0x111111));
+          glasses.position.set(0, 0.03, 0.19);
+          head.add(glasses);
+        } else if (key === "falco") {
+          // the beak-like visor and a crest of feathers
+          const visor = new T.Mesh(geoBox(0.34, 0.075, 0.07), lam(0x10151d));
+          visor.position.set(0, 0.035, 0.165);
+          head.add(visor);
+          const beak = new T.Mesh(new T.ConeGeometry(0.075, 0.22, 4), lam(0xf2a600));
+          beak.rotation.x = Math.PI / 2;
+          beak.position.set(0, -0.025, 0.27);
+          head.add(beak);
+          const cap = new T.Mesh(new T.SphereGeometry(0.2, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2.4), lam(0x1d4f8f));
+          cap.position.y = 0.03;
+          head.add(cap);
+          for (const [x, r] of [[-0.05, -0.15], [0, 0], [0.05, 0.15]]) {
+            const f = new T.Mesh(geoBox(0.035, 0.2, 0.02), lam(0x1d4f8f));
+            f.position.set(x, 0.2, -0.1);
+            f.rotation.set(-0.7, 0, r);
+            head.add(f);
+          }
+        } else if (key === "tartaruga") {
+          // the shell on the back, with its plates
+          const shell = new T.Mesh(new T.SphereGeometry(0.34, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), lam(0x3c6e47));
+          shell.rotation.x = -Math.PI / 2;
+          shell.scale.set(1, 0.62, 1.12);
+          shell.position.set(0, 1.04, -0.13);
+          body.add(shell);
+          const rim = new T.Mesh(new T.TorusGeometry(0.34, 0.035, 6, 18), lam(0x8a6a3a));
+          rim.scale.set(1, 1.12, 1);
+          rim.position.set(0, 1.04, -0.13);
+          body.add(rim);
+          const plate = new T.CylinderGeometry(0.075, 0.075, 0.03, 6);
+          for (const [th, ph] of [[0, 0], [0.9, 0.6], [0.9, 2.2], [0.9, 3.8], [0.9, 5.4]]) {
+            const local = new T.Vector3(Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)).multiplyScalar(0.34);
+            const p = new T.Vector3(local.x, local.z * 1.12, -local.y * 0.62);
+            const m = new T.Mesh(plate, lam(0x5d8f4c));
+            m.position.set(p.x, 1.04 + p.y, -0.13 + p.z);
+            m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), p.clone().normalize());
+            body.add(m);
+          }
+        } else if (key === "spazzino") {
+          // the broom, the cap and the reflective stripes
+          broom = new T.Group();
+          const handle = cyl(0.017, 0.017, 1.3, lam(0x9b6b3c), 6);
+          handle.position.y = 0.78;
+          broom.add(handle);
+          const bristles = new T.Mesh(new T.ConeGeometry(0.13, 0.26, 8), lam(0xd9b45a));
+          bristles.position.y = 0.13;
+          broom.add(bristles);
+          const band = cyl(0.045, 0.045, 0.05, lam(0x6b3d1f), 8);
+          band.position.y = 0.27;
+          broom.add(band);
+          broom.position.set(0.42, 0, 0.12);
+          broom.rotation.z = 0.08;
+          g.add(broom);
+          for (const yy of [0.95, 1.15]) {
+            const stripe = new T.Mesh(new T.TorusGeometry(L.bw - (yy - 0.74) / 0.66 * (L.bw - L.tw) + 0.006, 0.018, 6, 20), lam(0xe8eef0));
+            stripe.rotation.x = Math.PI / 2;
+            stripe.position.y = yy;
+            body.add(stripe);
+          }
+          const capTop = cyl(0.19, 0.2, 0.09, lam(0xef6a26));
+          capTop.position.y = 0.14;
+          head.add(capTop);
+          const peak = new T.Mesh(geoBox(0.22, 0.02, 0.15), lam(0xef6a26));
+          peak.position.set(0, 0.1, 0.19);
+          head.add(peak);
+        } else if (key === "ragioniere") {
+          // round glasses, the green eyeshade, a bow tie and the ledger
+          for (const x of [-0.068, 0.068]) {
+            const ring = new T.Mesh(new T.TorusGeometry(0.048, 0.009, 6, 14), dark);
+            ring.position.set(x, 0.02, 0.185);
+            head.add(ring);
+          }
+          const bridge = new T.Mesh(geoBox(0.04, 0.01, 0.01), dark);
+          bridge.position.set(0, 0.03, 0.19);
+          head.add(bridge);
+          const shadeBand = new T.Mesh(new T.TorusGeometry(0.19, 0.016, 6, 20), lam(0x2a7a50));
+          shadeBand.rotation.x = Math.PI / 2;
+          shadeBand.position.y = 0.09;
+          head.add(shadeBand);
+          const shade = new T.Mesh(geoBox(0.3, 0.012, 0.14), new T.MeshLambertMaterial({ color: 0x2fa36b, transparent: true, opacity: 0.85 }));
+          shade.position.set(0, 0.1, 0.22);
+          shade.rotation.x = 0.35;
+          head.add(shade);
+          for (const s of [-1, 1]) {
+            const bow = new T.Mesh(new T.ConeGeometry(0.035, 0.07, 4), lam(0x8c1c2c));
+            bow.rotation.z = s * Math.PI / 2;
+            bow.position.set(s * 0.035, 1.39, 0.18);
+            body.add(bow);
+          }
+          const ledger = new T.Mesh(geoBox(0.05, 0.3, 0.24), lam(0x6b2d1f));
+          ledger.position.set(0, -0.66, 0.06);
+          armL.add(ledger);
+          const pages = new T.Mesh(geoBox(0.052, 0.28, 0.2), lam(0xf2efe6));
+          pages.position.set(0, -0.66, 0.075);
+          armL.add(pages);
+        } else if (key === "guardiano") {
+          // the shield on the left arm and a helmet
+          const shield = new T.Group();
+          const disc = cyl(0.24, 0.24, 0.045, lam(0x4f6d7a), 18);
+          disc.rotation.z = Math.PI / 2;
+          shield.add(disc);
+          const boss = cyl(0.1, 0.1, 0.05, lam(0xf2c94c), 14);
+          boss.rotation.z = Math.PI / 2;
+          boss.position.x = -0.02;
+          shield.add(boss);
+          const edge = new T.Mesh(new T.TorusGeometry(0.24, 0.018, 6, 24), lam(0x0f9e80));
+          edge.rotation.y = Math.PI / 2;
+          shield.add(edge);
+          shield.position.set(-0.1, -0.38, 0.03);
+          armL.add(shield);
+          const helmet = new T.Mesh(new T.SphereGeometry(0.215, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2.1), lam(0x9aa5ad));
+          helmet.position.y = 0.03;
+          head.add(helmet);
+          const ridge = new T.Mesh(geoBox(0.035, 0.06, 0.4), lam(0x0f9e80));
+          ridge.position.set(0, 0.23, 0);
+          head.add(ridge);
+        } else if (key === "cronista") {
+          // the fedora with its press card, and the newspaper
+          const brim = cyl(0.29, 0.29, 0.018, lam(0x7a5a3c), 20);
+          brim.position.y = 0.1;
+          head.add(brim);
+          const crown = cyl(0.15, 0.175, 0.14, lam(0x7a5a3c), 16);
+          crown.position.y = 0.18;
+          head.add(crown);
+          const band = cyl(0.178, 0.178, 0.035, lam(0x2a1d14), 16);
+          band.position.y = 0.13;
+          head.add(band);
+          const card = new T.Mesh(geoBox(0.07, 0.045, 0.008), lam(0xffffff));
+          card.position.set(0.08, 0.17, 0.16);
+          card.rotation.y = 0.45;
+          head.add(card);
+          const paper = new T.Mesh(new T.PlaneGeometry(0.26, 0.33), paperMat);
+          paper.position.set(0, -0.72, 0.1);
+          paper.rotation.x = -0.25;
+          armR.add(paper);
+        } else if (key === "scettico") {
+          // the magnifying glass and one raised eyebrow
+          const glass = new T.Group();
+          const handle = cyl(0.014, 0.014, 0.16, lam(0x3a2a1a), 6);
+          handle.position.y = -0.7;
+          glass.add(handle);
+          const ring = new T.Mesh(new T.TorusGeometry(0.075, 0.013, 6, 20), lam(0x9a8a6a));
+          ring.rotation.x = Math.PI / 2;
+          ring.position.y = -0.86;
+          glass.add(ring);
+          const lens = new T.Mesh(new T.CircleGeometry(0.068, 18), new T.MeshLambertMaterial({ color: 0xbfe3ff, transparent: true, opacity: 0.5, side: T.DoubleSide }));
+          lens.rotation.x = Math.PI / 2;
+          lens.position.y = -0.86;
+          glass.add(lens);
+          armR.add(glass);
+          const browL = new T.Mesh(geoBox(0.075, 0.016, 0.02), dark);
+          browL.position.set(-0.065, 0.085, 0.17);
+          browL.rotation.z = 0.28;
+          head.add(browL);
+          const browR = new T.Mesh(geoBox(0.075, 0.016, 0.02), dark);
+          browR.position.set(0.065, 0.062, 0.175);
+          browR.rotation.z = -0.08;
+          head.add(browR);
+        }
+        const shadow = new T.Mesh(new T.CircleGeometry(0.42, 20), shadowMat);
+        shadow.rotation.x = -Math.PI / 2;
+        shadow.position.y = 0.012;
+        g.add(shadow);
+        g.scale.setScalar(L.h);
+        scene.add(g);
+        const tag = document.createElement("div");
+        tag.className = `nametag k-${key}`;
+        tag.innerHTML = `<i class="dot"></i><span>${NAMES[key]}</span><span class="tag-act"></span><span class="tag-grades"></span>`;
+        overlay.appendChild(tag);
+        const bubble = document.createElement("div");
+        bubble.className = `bubble k-${key}`;
+        bubble.hidden = true;
+        bubble.innerHTML = `<b></b><span></span>`;
+        overlay.appendChild(bubble);
+        return { key, g, body, head, hipL, hipR, armL, armR, broom, pos: g.position, path: [], face: 0, pose: "sit", restPose: "sit", restFace: 0, lookAt: null, t: Math.random() * 10, speaking: false, tag, bubble, act: "", speed: L.speed, freq: L.freq, hat: L.hat, tagW: 0, tagH: 0, tagY: 0 };
+      }
+      const agents = Object.fromEntries(CAST.map((k) => [k, makeAgent(k)]));
+      const list = Object.values(agents);
+      // the engine speaks from its screen
+      const motore = { key: "motore", pos: new T.Vector3(5.5, 1.62, -1.4), bubble: document.createElement("div") };
+      motore.bubble.className = "bubble k-motore";
+      motore.bubble.hidden = true;
+      motore.bubble.innerHTML = `<b></b><span></span>`;
+      overlay.appendChild(motore.bubble);
+
+      // where everyone can be: x, z, facing, pose, what the label says
+      function spotOf(who, name) {
+        const s = SEATS[who];
+        if (who === "preside") {
+          if (name === "board") return [-1.05, -3.95, Math.PI, "write", "alla lavagna"];
+          if (name === "stand") return [0, -3.5, 0, "stand", "in piedi"];
+          return [0, -2.95, 0, "sit", "a capotavola"];
+        }
+        if (name === "stand") return [s[0] + Math.sign(s[0]) * 0.5, s[1], s[2], "stand", "in piedi"];
+        if (name === "board") return [1.75, -3.75, -0.49, "stand", "alla lavagna"];
+        if (name === "shelf") return [-4.95, -1.6, -H, "read", "in biblioteca"];
+        return [s[0], s[1], s[2], "sit", "al tavolo"];
+      }
+      const LANE = 2.3, BACK = -3.9, FRONT = 2.15;
+      const zone = (x, z) => z < -2.6 ? "back" : x < 0 ? "left" : "right";
+      function route(a, s) {
+        const fx = a.pos.x, fz = a.pos.z, tx = s[0], tz = s[1];
+        const zf = zone(fx, fz), zt = zone(tx, tz);
+        const lx = (zn) => zn === "left" ? -LANE : LANE;
+        if ((zf === zt && Math.abs(fz - tz) < 0.05) || (zf === "back" && zt === "back")) return [[tx, tz]];
+        const pts = [];
+        if (zf === zt) pts.push([lx(zf), fz], [lx(zt), tz]);
+        else if (zf === "back") pts.push([lx(zt), BACK], [lx(zt), tz]);
+        else if (zt === "back") pts.push([lx(zf), fz], [lx(zf), BACK]);
+        else {
+          const viaBack = Math.abs(fz - BACK) + Math.abs(tz - BACK), viaFront = Math.abs(FRONT - fz) + Math.abs(FRONT - tz);
+          const zz = viaBack <= viaFront ? BACK : FRONT;
+          pts.push([lx(zf), fz], [lx(zf), zz], [lx(zt), zz], [lx(zt), tz]);
+        }
+        pts.push([tx, tz]);
+        return pts;
+      }
+      function place(a, name) {
+        const s = spotOf(a.key, name);
+        a.pos.set(s[0], 0, s[1]);
+        a.path = [];
+        a.face = a.restFace = s[2];
+        a.g.rotation.y = s[2];
+        a.pose = a.restPose = s[3];
+        a.act = s[4];
+        a.lookAt = null;
+      }
+      function send(a, name) {
+        const s = spotOf(a.key, name);
+        if (reduce) { place(a, name); return; }
+        a.path = route(a, s);
+        a.restFace = s[2];
+        a.restPose = s[3];
+        a.act = s[4];
+        a.lookAt = null;
+      }
+      const wrap = (d) => ((((d + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
+      function stepAgent(a, dts, dt) {
+        a.t += dt;
+        if (a.path.length && dts > 0) {
+          const [tx, tz] = a.path[0];
+          const dx = tx - a.pos.x, dz = tz - a.pos.z, dist = Math.hypot(dx, dz), v = a.speed * dts;
+          if (dist <= v) {
+            a.pos.x = tx;
+            a.pos.z = tz;
+            a.path.shift();
+          } else {
+            a.pos.x += (dx / dist) * v;
+            a.pos.z += (dz / dist) * v;
+            a.face = Math.atan2(dx, dz);
+          }
+          a.pose = "walk";
+          if (!a.path.length) {
+            a.pose = a.restPose;
+            a.face = a.restFace;
+          }
+        }
+        const sit = a.pose === "sit", walk = a.pose === "walk", t = a.t;
+        let want = a.face;
+        let headTurn = 0;
+        if (!a.path.length && a.lookAt) {
+          const toward = Math.atan2(a.lookAt.pos.x - a.pos.x, a.lookAt.pos.z - a.pos.z);
+          if (sit || a.pose === "write") headTurn = Math.max(-1.1, Math.min(1.1, wrap(toward - a.g.rotation.y)));
+          else want = toward;
+        }
+        a.g.rotation.y += wrap(want - a.g.rotation.y) * Math.min(1, dt * 6);
+        a.head.rotation.y += (headTurn - a.head.rotation.y) * Math.min(1, dt * 5);
+        const swing = walk ? Math.sin(t * a.freq) * (a.key === "tartaruga" ? 0.35 : 0.55) : 0;
+        a.hipL.rotation.x = sit ? -Math.PI / 2 : swing;
+        a.hipR.rotation.x = sit ? -Math.PI / 2 : -swing;
+        a.body.position.y = sit ? -0.3 : walk ? Math.abs(Math.sin(t * a.freq)) * 0.03 : Math.sin(t * 2) * 0.006;
+        a.body.rotation.z = walk && a.key === "tartaruga" ? Math.sin(t * a.freq) * 0.06 : 0;
+        if (a.broom) a.broom.rotation.z = 0.08 + (walk ? Math.sin(t * a.freq) * 0.18 : 0);
+        let l = 0, r = 0;
+        if (walk) {
+          l = -swing * 0.8;
+          r = swing * 0.8;
+        } else if (a.speaking) {
+          if (a.key === "guardiano") { l = -1.3; r = -0.5 + Math.sin(t * 4) * 0.25; }
+          else if (a.key === "scettico") { l = -0.15; r = -1.7 + Math.sin(t * 3) * 0.08; }
+          else if (a.key === "cronista") { l = -0.6 + Math.sin(t * 4) * 0.25; r = -1.2; }
+          else if (a.key === "ragioniere") { l = -0.9; r = -0.7 + Math.sin(t * 4) * 0.3; }
+          else { l = -0.15; r = -0.7 + Math.sin(t * 4) * 0.3; }
+        } else if (a.pose === "write") {
+          r = -2.3 + Math.sin(t * 7) * 0.12;
+        } else if (a.pose === "read" || sit) {
+          l = r = -0.95 + Math.sin(t * 1.3) * 0.04;
+        }
+        a.armL.rotation.x += (l - a.armL.rotation.x) * Math.min(1, dt * 8);
+        a.armR.rotation.x += (r - a.armR.rotation.x) * Math.min(1, dt * 8);
+        a.head.rotation.x = a.speaking ? Math.sin(t * 5) * 0.06 : a.pose === "read" || (sit && !a.lookAt) ? 0.3 : 0;
+      }
+
+      // --- the beats -----------------------------------------------------------------------------------
+      const speaker = (who) => (who === "motore" ? motore : agents[who]);
+      const sayTime = (text) => Math.min(11, 2.4 + String(text).length / 26);
+      function showBubble(b) {
+        const s = speaker(b.who);
+        if (!s) return;
+        s.bubble.hidden = false;
+        s.bubble.querySelector("b").textContent = `${NAMES[b.who]}${b.label ? " · " + b.label : ""}`;
+        s.bubble.querySelector("span").textContent = reduce ? b.text : "";
+        b.shown = reduce ? b.text.length : 0;
+        if (agents[b.who]) {
+          agents[b.who].speaking = true;
+          agents[b.who].tag.classList.add("speaking");
+          if (b.to && agents[b.to] && b.to !== b.who) agents[b.who].lookAt = agents[b.to];
+        }
+        for (const a of list) if (a.key !== b.who && !a.path.length) a.lookAt = b.who === "motore" ? null : agents[b.who];
+      }
+      function hideBubble(b) {
+        const s = speaker(b.who);
+        if (!s) return;
+        s.bubble.hidden = true;
+        if (agents[b.who]) {
+          agents[b.who].speaking = false;
+          agents[b.who].tag.classList.remove("speaking");
+        }
+        for (const a of list) a.lookAt = null;
+      }
+      function setGrades(voti) {
+        const compact = overlay.classList.contains("compact");
+        for (const w of GRADED) {
+          const v = voti && obj(voti[w]);
+          const el = agents[w].tag.querySelector(".tag-grades");
+          el.innerHTML = v
+            ? compact ? `<em>${esc(v.ragionamento ?? "?")}·${esc(v.disciplina ?? "?")}</em>`
+              : ["ragionamento", "disciplina"].filter((k) => isNum(toNum(v[k]))).map((k) => `<em title="${k}">${k[0].toUpperCase()} ${esc(v[k])}</em>`).join("")
+            : "";
+          agents[w].tagW = 0;
+        }
+        lastGrades = voti;
+      }
+      let lastGrades = null;
+      function resetScene() {
+        for (const a of list) {
+          place(a, "seat");
+          a.speaking = false;
+          a.bubble.hidden = true;
+          a.tag.classList.remove("speaking");
+        }
+        motore.bubble.hidden = true;
+        setGrades(null);
+      }
+      function startBeat(b) {
+        b.t = 0;
+        if (b.kind === "reset") resetScene();
+        else if (b.kind === "go") for (const [who, spot] of b.moves) { if (agents[who]) send(agents[who], spot); }
+        else if (b.kind === "say") showBubble(b);
+        else if (b.kind === "board") drawBoard(b.lines, reduce ? 1 : 0);
+        else if (b.kind === "screen") drawScreen(b.events, b.title);
+        else if (b.kind === "grade") setGrades(b.voti);
+      }
+      function beatDone(b) {
+        if (b.kind === "go") return b.moves.every(([who]) => !agents[who] || !agents[who].path.length) || b.t > 16;
+        if (b.kind === "say") return b.t >= sayTime(b.text);
+        if (b.kind === "board") return b.t >= 1.6;
+        if (b.kind === "idle") return b.t >= b.s;
+        if (b.kind === "screen" || b.kind === "grade") return b.t >= 0.5;
+        return true;
+      }
+      function endBeat(b) {
+        if (b.kind === "say") hideBubble(b);
+        if (b.kind === "board") drawBoard(b.lines, 1);
+      }
+      function settle(index, keepPlaces) {
+        if (!keepPlaces) resetScene();
+        else for (const a of list) { a.bubble.hidden = true; a.speaking = false; a.tag.classList.remove("speaking"); }
+        motore.bubble.hidden = true;
+        for (const b of script) b.started = false;
+        for (let i = 0; i < index; i++) {
+          const b = script[i];
+          if (b.kind === "go") for (const [who, spot] of b.moves) { if (agents[who]) place(agents[who], spot); }
+          else if (b.kind === "board") drawBoard(b.lines, 1);
+          else if (b.kind === "screen") drawScreen(b.events, b.title);
+          else if (b.kind === "grade") setGrades(b.voti);
+        }
+        step = index;
+        markFeed();
+      }
+      function jumpTo(index) {
+        const b = script[step];
+        if (b && b.kind === "say" && b.started) hideBubble(b);
+        settle(index, false);
+      }
+      function advance(dts) {
+        const b = script[step];
+        if (!b) {
+          if (!liveMode) jumpTo(0);
+          return;
+        }
+        if (!b.started) {
+          b.started = true;
+          startBeat(b);
+          markFeed();
+        }
+        b.t += dts;
+        if (b.kind === "say" && b.shown < b.text.length) {
+          b.shown = Math.min(b.text.length, b.shown + dts * 42);
+          const s = speaker(b.who);
+          if (s) s.bubble.querySelector("span").textContent = b.text.slice(0, Math.ceil(b.shown));
+        }
+        if (b.kind === "board" && !reduce) drawBoard(b.lines, Math.min(1, b.t / 1.4));
+        if (beatDone(b)) {
+          endBeat(b);
+          step += 1;
+          if (script[step]) script[step].started = false;
+        }
+      }
+
+      // --- camera, labels and the loop ---------------------------------------------------------------
+      let drag = null;
+      canvas.addEventListener("pointerdown", (e) => {
+        drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch };
+        cam.touched = performance.now();
+      });
+      window.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        cam.yaw = Math.max(-1.05, Math.min(1.05, drag.yaw - (e.clientX - drag.x) * 0.006));
+        if (e.pointerType === "mouse") cam.pitch = Math.max(0.2, Math.min(1.05, drag.pitch + (e.clientY - drag.y) * 0.004));
+        cam.touched = performance.now();
+      });
+      window.addEventListener("pointerup", () => (drag = null));
+      window.addEventListener("pointercancel", () => (drag = null));
+      $("aula-view").addEventListener("click", () => {
+        cam.yaw = 0;
+        cam.pitch = 0.52;
+        cam.touched = -1e9;
+      });
+      function placeCamera(now, dt) {
+        const idle = now - cam.touched > 9000 && !reduce;
+        const yaw = cam.yaw + (idle ? Math.sin(now / 9000) * 0.2 : 0);
+        const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
+        // follow the action: whoever speaks, or whoever walks; the narrower the view, the more
+        const b = script[step];
+        const moving = list.filter((a) => a.path.length);
+        const who = b && b.kind === "say" ? speaker(b.who) : null;
+        let fx = 0, fz = -0.9;
+        if (who) { fx = who.pos.x; fz = who.pos.z; }
+        else if (moving.length) { fx = moving.reduce((s, a) => s + a.pos.x, 0) / moving.length; fz = moving.reduce((s, a) => s + a.pos.z, 0) / moving.length; }
+        const k = reduce ? 1 : Math.min(1, dt * 1.2);
+        cam.fx += (fx - cam.fx) * k;
+        cam.fz += (fz - cam.fz) * k;
+        const reach = reduce ? 0 : aspect < 1 ? 0.8 : aspect < 1.4 ? 0.5 : 0.25;
+        look.x = cam.fx * reach;
+        look.z = -0.9 + (cam.fz + 0.9) * (reduce ? 0 : 0.25);
+        const dist = cam.dist * (aspect < 0.8 ? 1.42 : aspect < 1.2 ? 1.2 : 1);
+        camera.position.set(look.x + dist * Math.cos(cam.pitch) * Math.sin(yaw), look.y + dist * Math.sin(cam.pitch), look.z + dist * Math.cos(cam.pitch) * Math.cos(yaw));
+        camera.lookAt(look);
+      }
+      const v = new T.Vector3();
+      function placeLabels() {
+        const w = stage.clientWidth, h = stage.clientHeight;
+        const compact = w < 600;
+        if (overlay.classList.contains("compact") !== compact) {
+          overlay.classList.toggle("compact", compact);
+          setGrades(lastGrades);
+        }
+        const at = (pos, y) => {
+          v.set(pos.x, y, pos.z).project(camera);
+          return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, ok: v.z < 1 };
+        };
+        const order = list.map((a) => ({ a, p: at(a.pos, ((a.pose === "sit" ? 1.6 : 1.92) + a.hat) * a.g.scale.y) })).sort((m, n) => n.p.y - m.p.y);
+        const placed = [];
+        for (const { a, p } of order) {
+          const act = a.tag.querySelector(".tag-act");
+          const label = a.speaking ? "parla" : a.pose === "walk" ? "cammina" : a.act;
+          if (act.textContent !== label) { act.textContent = label; a.tagW = 0; }
+          if (!a.tagW) { a.tagW = a.tag.offsetWidth; a.tagH = a.tag.offsetHeight; }
+          let x = Math.max(2, Math.min(w - a.tagW - 2, p.x - a.tagW / 2)), y = p.y - a.tagH - 4;
+          for (let k = 0; k < 8; k++) {
+            const hit = placed.find((r) => x < r.x + r.w + 3 && x + a.tagW + 3 > r.x && y < r.y + r.h + 2 && y + a.tagH + 2 > r.y);
+            if (!hit) break;
+            y = hit.y - a.tagH - 3;
+          }
+          placed.push({ x, y, w: a.tagW, h: a.tagH });
+          a.tag.hidden = !p.ok;
+          a.tag.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+          a.tagX = p.x;
+          a.tagY = y;
+        }
+        for (const s of [...list, motore]) {
+          if (s.bubble.hidden) continue;
+          const anchor = s === motore ? (() => { const q = at(s.pos, s.pos.y + 0.32); return { x: q.x, y: q.y - 6 }; })() : { x: s.tagX, y: s.tagY - 4 };
+          const bw = s.bubble.offsetWidth, bh = s.bubble.offsetHeight;
+          const bx = Math.max(6, Math.min(w - bw - 6, anchor.x - bw / 2));
+          const by = Math.max(6, anchor.y - 10 - bh);
+          s.bubble.style.transform = `translate(${bx.toFixed(1)}px, ${by.toFixed(1)}px)`;
+          s.bubble.style.setProperty("--tail", `${Math.max(16, Math.min(bw - 16, anchor.x - bx))}px`);
+        }
+      }
+      function resize() {
+        const w = stage.clientWidth, h = stage.clientHeight;
+        if (!w || !h) return;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+      new ResizeObserver(resize).observe(stage);
+      let visible = true;
+      new IntersectionObserver((es) => (visible = es[0].isIntersecting)).observe(stage);
+      matchMedia("(prefers-color-scheme: dark)").addEventListener("change", paint);
+      new MutationObserver(paint).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawBoard(boardLines, 1); tickKey = ""; });
+      paint();
+      resize();
+      drawScreen(null, "");
+      for (const a of list) place(a, "seat");
+      let last = performance.now();
+      function frame(now) {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        if (visible && !document.hidden) {
+          const dts = ui.playing ? dt * ui.speed : 0;
+          if (dts) advance(dts);
+          for (const a of list) stepAgent(a, dts, dt);
+          drawTicker();
+          if (!reduce) tickTex.offset.x = (tickTex.offset.x + dt * 0.012) % 1;
+          placeCamera(now, dt);
+          renderer.render(scene, camera);
+          placeLabels();
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+      return { settle, jump: jumpTo };
+    }
+  }
+
+  const aula = makeAula();
+
+  // ---- data ------------------------------------------------------------------------------------------
+  let pending = null;
+  function render() {
+    pending = null;
+    if (!S.picked) {
+      const want = defaultDay();
+      if (want && want !== S.selected) { S.selected = want; watchVerbale(want); }
+    }
+    for (const f of [renderStatus, renderRegister, renderWallets, renderRisk, renderMinds, renderVerbale, renderCoins, aula.sync]) {
+      try { f(); } catch (e) { console.warn("Scuola Cripto:", f.name, e); }
+    }
+  }
+  const soon = () => { if (!pending) pending = setTimeout(render, 30); };
+  function watchVerbale(date) {
+    if (!db || !date || vDate === date) return;
+    if (vUnsub) { try { vUnsub(); } catch (e) { /* already closed */ } }
+    vDate = date;
+    vUnsub = db.doc("riunione/" + date).onSnapshot(
+      (snap) => { S.verbali[date] = snap.exists ? snap.data() : null; soon(); },
+      () => { S.verbali[date] = null; soon(); }
+    );
+  }
+  function watch(path, key) {
+    db.doc(path).onSnapshot(
+      (snap) => { S[key] = snap.exists ? snap.data() : null; S.got[key] = true; soon(); },
+      (err) => { S.errors[key] = err && err.code; S.got[key] = true; soon(); }
+    );
+  }
+  async function start() {
+    render();
+    const use = window.claude && typeof window.claude.use === "function" ? window.claude.use.bind(window.claude) : null;
+    db = use ? await use("db").catch(() => null) : null;
+    if (!db) { S.unavailable = true; render(); return; }
+    setTimeout(() => { if (!S.got.programma || !S.got.giudizio) { S.slow = true; render(); } }, 10000);
+    watch("classe/programma", "programma");
+    watch("classe/stato", "classe");
+    watch("motore/giudizio", "giudizio");
+    watch("motore/regole", "regole");
+    watch("live/ora", "live");
+    for (const who of CAST) {
+      db.doc("memoria/" + who).onSnapshot(
+        (snap) => { S.memoria[who] = snap.exists ? snap.data() : null; soon(); },
+        () => { S.memoria[who] = null; soon(); }
+      );
+    }
+  }
+  start();
+})();
+</script>
