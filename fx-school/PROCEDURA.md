@@ -42,6 +42,39 @@ I campi:
 
 Se una scrittura della diretta non riesce, vai avanti: conta la giornata, non la diretta.
 
+## La consapevolezza: i quaderni
+
+Ogni personaggio ha un quaderno nel database: `memoria/macro`, `memoria/tecnico` e
+`memoria/preside`. Gli agenti non sono coscienti, e non devono fingere di esserlo. La loro
+consapevolezza è sapere cosa sanno e cosa no, misurare quanto si sbagliano, ricordare i
+propri errori e cambiare le proprie regole.
+
+```json
+{"chi_sono": "come ragiono, dove sono forte, dove sbaglio (in Markdown)",
+ "regole": [{"testo": "...", "dal": "2026-11-26", "perche": "..."}],
+ "errori": [{"testo": "...", "volte": 2, "ultima": "2026-11-26"}],
+ "lezioni": [{"data": "2026-11-26", "testo": "..."}],
+ "previsioni": [{"id": "macro-2026-11-26-1", "fatta": "2026-11-26", "mercato": "EUR/USD",
+                 "direzione": "sopra", "livello": 1.095, "scadenza": "2026-12-03",
+                 "probabilita": 0.65, "perche": "..."}],
+ "calibrazione": {},
+ "autovoti": [{"data": "2026-11-26", "ragionamento": 7, "disciplina": 8,
+               "preside": {"ragionamento": 6, "disciplina": 8}}],
+ "aggiornato": "2026-11-26 07:40:00"}
+```
+
+Le regole del quaderno:
+- **Lezioni:** al massimo le ultime 30.
+- **Previsioni:** al massimo le ultime 100. Le verifica il motore (punto 3).
+- **Errori:** un errore che torna non si scrive due volte, si aumentano le `volte`.
+- **Il quaderno del Preside** usa gli stessi campi:
+  - `chi_sono` e `regole` per come insegna;
+  - `lezioni` per cosa ha funzionato in classe;
+  - `errori` per le sue lezioni sbagliate.
+- **Quaderno mancante o vuoto:** se il quaderno di un allievo non esiste ancora, il Preside
+  lo crea leggendo i diari dei giorni passati. Ci mette gli errori ammessi e i rilievi già
+  fatti, senza inventare niente.
+
 ## 1. Prepara il lavoro
 
 1. Nella copia del repository Andrex998/Argo prendi la versione aggiornata della scuola:
@@ -92,6 +125,15 @@ Se una scrittura della diretta non riesce, vai avanti: conta la giornata, non la
    l'`avviso` del diario lo dice.
 5. Leggi anche il diario di ieri, `diario/<ieri>`, se esiste: il giudizio del Preside, le
    analisi e le domande degli allievi.
+6. Leggi i tre quaderni (`memoria/macro`, `memoria/tecnico`, `memoria/preside`) e annota le
+   loro versioni. Per ciascun allievo:
+   - salva il quaderno in `LAVORO/quaderno-<allievo>.json`;
+   - lancia `python3 fx-school/school.py verify LAVORO/quaderno-<allievo>.json`.
+
+   Il motore confronta con le chiusure vere le previsioni arrivate a scadenza e aggiorna la
+   `calibrazione`. La calibrazione dice quanto l'allievo si dichiarava sicuro e quanto ci ha
+   preso, con il punteggio di Brier: 0 è perfetto, 0,25 vale dire sempre 50%. Le previsioni
+   verificate oggi vanno nel diario come `previsioni_verificate`.
 
 ## 4. La lezione del Preside (sei tu)
 
@@ -137,12 +179,20 @@ sua analisi e quanti ordini propone. Nel suo messaggio metti, per intero:
    di `mark`;
 6. l'ultima analisi del compagno e la domanda che il compagno gli ha fatto;
 7. il giudizio e i voti che il Preside gli ha dato ieri;
-8. i limiti:
+8. il suo quaderno, che deve rileggere prima di studiare:
+   - chi è;
+   - le sue regole;
+   - gli errori che ripete;
+   - le ultime lezioni;
+   - la sua calibrazione;
+   - le previsioni ancora aperte, e quelle verificate oggi con l'esito;
+   - gli ultimi autovoti accanto ai voti del Preside;
+9. i limiti:
    - al massimo 6 ricerche sul web e 4 pagine lette;
    - il Tecnico può lanciare `python3 fx-school/school.py history "SIMBOLO" 500` al
      massimo 3 volte;
    - nessun file va modificato;
-9. il formato della risposta, qui sotto.
+10. il formato della risposta, qui sotto.
 
 L'allievo risponde solo con un oggetto JSON, senza altro testo:
 
@@ -156,13 +206,33 @@ L'allievo risponde solo con un oggetto JSON, senza altro testo:
     {"action": "open", "symbol": "EUR/USD", "side": "long", "stop": 1.0820, "target": 1.1000,
      "risk_pct": 1, "reason": "perché, in una o due frasi"},
     {"action": "close", "id": "macro-3", "reason": "perché"}
-  ]
+  ],
+  "previsioni": [
+    {"mercato": "EUR/USD", "direzione": "sopra", "livello": 1.0950, "scadenza": "2026-12-03",
+     "probabilita": 0.65, "perche": "una frase"}
+  ],
+  "riflessione": "2-4 frasi: cosa ho capito oggi, dove posso sbagliarmi, quanto sono sicuro e perché",
+  "autovoto": {"ragionamento": 7, "disciplina": 8},
+  "quaderno": {"lezione": "una frase da ricordare", "nuove_regole": [{"testo": "...", "perche": "..."}],
+               "errori": ["un errore commesso oggi, se c'è"]}
 }
 ```
+
+Le previsioni:
+- da 1 a 3 al giorno, anche nei giorni senza operazioni;
+- la probabilità va da 0,5 a 0,99, sul lato che l'allievo ritiene più probabile;
+- la scadenza va da 1 a 10 giorni di mercato.
+
+L'autovoto si dà prima di conoscere il voto del Preside.
 
 I mercati sono EUR/USD, GBP/USD, AUD/USD, NZD/USD, USD/JPY, USD/CHF, USD/CAD, XAU/USD e SLV.
 Il target è facoltativo. Il rischio va da 0 a 2: di norma è 1. Nei giorni senza operazioni
 `ordini` è vuoto.
+
+Prima di salvarle, aggiungi a ogni previsione:
+- `id`, cioè `<allievo>-<data>-<n>`;
+- `fatta`, la data di oggi;
+- `stato: "aperta"`.
 
 Se la risposta non è JSON valido, chiedila di nuovo una volta con SendMessage. Se è ancora
 rotta, salva il testo come analisi e nessun ordine.
@@ -186,8 +256,13 @@ ordine `close` per ognuna, così il risultato finale è in contanti.
 ## 7. Il giudizio del Preside
 
 **Diretta**, fase `giudizio`, attore `preside`: "Correggo e do i voti". Leggi analisi,
-risposte, ordini ed esiti. Poi scrivi il `giudizio`: 150-350 parole in
-Markdown e due voti da 1 a 10 per allievo.
+risposte, ordini ed esiti. Leggi anche le riflessioni, gli autovoti e la calibrazione di
+ciascuno. Poi scrivi il `giudizio`: 150-350 parole in Markdown e due voti da 1 a 10 per
+allievo.
+
+Nel giudizio commenta anche la consapevolezza. Se l'autovoto è lontano dal tuo, chiedi
+perché. Se le previsioni al 70% si avverano la metà delle volte, l'allievo è troppo sicuro:
+diglielo con i numeri. Premia chi ammette un errore e cambia una regola.
 - `ragionamento`.
 - `disciplina`: stop sensati, rischio rispettato, coerenza tra analisi e ordini, fonti
   vere. Nei giorni senza operazioni conta la disciplina dello studio.
@@ -222,6 +297,23 @@ Scrivi `LAVORO/diario.json` così:
 }
 ```
 
+Nel diario aggiungi, per ogni allievo dentro `allievi.<allievo>`, i campi `previsioni`,
+`riflessione` e `autovoto` della sua risposta. In cima al diario aggiungi
+`previsioni_verificate`, le previsioni verificate oggi dal motore. Per il Preside aggiungi
+`riflessione_preside`: 2-3 frasi su cosa ha funzionato oggi nella lezione e cosa cambierà.
+
+Aggiorna i quaderni e salvali nello stesso batch del diario, con la versione letta al
+punto 3:
+- `lezioni`: in fondo, la lezione di oggi;
+- `regole`: le nuove regole, con la data;
+- `errori`: gli errori di oggi, aumentando `volte` se c'erano già;
+- `previsioni`: in fondo, le nuove;
+- `autovoti`: in fondo, l'autovoto di oggi accanto ai voti del Preside;
+- `aggiornato`: l'ora UTC.
+
+La domenica ogni allievo riscrive anche `chi_sono`, in 80-150 parole, e il Preside fa lo
+stesso con il suo.
+
 Come si riempiono i campi:
 - `scritto` e `mercati_ora` sono in UTC, nella forma "AAAA-MM-GG HH:MM:SS".
   `mercati_ora` è il `now` di `mark`.
@@ -239,13 +331,15 @@ Poi leggi `scuola/stato` e annota la `version`. Preparane la nuova versione in
 - in fondo alla lista `giorni`, l'oggetto `{"data", "giorno", "tipo", "stato", "titolo", "voti", "capitale"}`
   di oggi, senza doppioni per la stessa data. I `voti` sono quelli del giudizio.
 
-Salva i tre documenti con un solo `batch` di ArtifactData:
+Salva tutti i documenti con un solo `batch` di ArtifactData, compresi i tre quaderni:
 - `set` di `diario/<oggi>` da `LAVORO/diario.json`, con `if_version` solo se il documento
   esisteva già;
 - `set` di `motore/stato` da `LAVORO/stato.json`, con `if_version` la versione letta al
   punto 3;
 - `set` di `scuola/stato` da `LAVORO/scuola-stato.json`, con `if_version` la versione
-  letta.
+  letta;
+- `set` di `memoria/macro`, `memoria/tecnico` e `memoria/preside` dai quaderni aggiornati,
+  con `if_version` la versione letta (senza, se il quaderno non esisteva).
 
 Dopo il batch, **Diretta**, fase `fine`, attore `preside`: "Giornata N salvata: <titolo>".
 

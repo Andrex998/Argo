@@ -249,6 +249,21 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
 @media (prefers-reduced-motion: no-preference) { .live-dot { animation: pulse 1.8s ease-out infinite; } }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(198, 47, 47, .5); } 100% { box-shadow: 0 0 0 10px rgba(198, 47, 47, 0); } }
 .stage.no3d { display: grid; place-items: center; }
+.bubble.think { border-style: dashed; font-style: italic; }
+.bubble.think::after { display: none; }
+.minds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.mind { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.mind ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: .88rem; color: var(--ink-2); }
+.mind .prose { font-size: .95rem; }
+.kv { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .86rem; color: var(--ink-2); }
+.kv b { color: var(--ink); font-family: var(--font-num); font-weight: 500; }
+.calib svg { width: 100%; max-width: 300px; height: auto; display: block; }
+.calib text { font: 10px var(--font-num); fill: var(--muted); }
+.calib .ax { stroke: var(--rule); stroke-width: 1; }
+.calib .ideal { stroke: var(--ink-2); stroke-width: 1; }
+.thought { font-family: var(--font-read); font-style: italic; color: var(--ink-2); border: 1px dashed var(--rule); border-radius: 10px; padding: 8px 12px; }
+.verified { display: grid; gap: 4px; font-size: .88rem; }
+.voti.self .voto i { color: var(--ink-2); border-color: var(--ink-2); }
 .no3d-note { max-width: 36ch; text-align: center; color: var(--ink-2); padding: 16px; }
 
 @media (max-width: 860px) {
@@ -257,6 +272,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
   .week-head > span:first-child { display: none; }
   .banchi, .dialogue, .callouts, .marks { grid-template-columns: minmax(0, 1fr); }
   .aula { grid-template-columns: minmax(0, 1fr); }
+  .minds { grid-template-columns: minmax(0, 1fr); }
   .stage { height: clamp(330px, 58vh, 520px); }
   .feed { max-height: 380px; }
 }
@@ -330,6 +346,13 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     </div>
   </section>
 
+  <section aria-labelledby="t-consapevolezza">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-consapevolezza">Consapevolezza</h2><p class="muted">Quanto si conoscono: previsioni verificate sui prezzi veri, autovoti, errori che ripetono.</p></div>
+      <div class="minds" id="minds"></div>
+    </div>
+  </section>
+
   <section aria-labelledby="t-diario">
     <div class="wrap" id="diario"></div>
   </section>
@@ -384,7 +407,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
   };
   const CLOSED = new Set(["studio", "ripasso", "compito", "esame"]);
 
-  const S = { programma: null, scuola: null, motore: null, live: null, diaries: {}, got: {}, errors: {},
+  const S = { programma: null, scuola: null, motore: null, live: null, memoria: {}, diaries: {}, got: {}, errors: {},
               selected: null, picked: false, slow: false, unavailable: false };
   let db = null, diaryUnsub = null, diaryDate = null, chartIndex = null;
 
@@ -713,6 +736,9 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       <div class="block"><h4>Ordini</h4>${orders.length ? orders.map(orderLine).join("") : `<p class="muted">Nessun ordine.</p>`}</div>
       ${events.length ? `<div class="block"><h4>Cosa ha deciso il motore</h4>${events.map((e) => `<div class="event">${eventLine(e)}</div>`).join("")}</div>` : ""}
       ${a.domanda ? `<div class="block"><h4>Domanda per ${esc(otherName)}</h4><div class="prose">${md(a.domanda)}</div></div>` : ""}
+      ${Array.isArray(a.previsioni) && a.previsioni.length ? `<div class="block"><h4>Previsioni</h4><ul class="lines">${a.previsioni.map((x) => `<li>${esc(x.mercato)} ${esc(x.direzione)} ${esc(price(Number(x.livello)))} entro il ${esc(String(x.scadenza).slice(8, 10) + "/" + String(x.scadenza).slice(5, 7))} · <b>${esc(Math.round(Number(x.probabilita) * 100))}%</b>${x.perche ? ` · <span class="muted">${esc(x.perche)}</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+      ${a.riflessione ? `<div class="block"><h4>Riflessione</h4><p class="thought">${esc(a.riflessione)}</p></div>` : ""}
+      ${a.autovoto ? `<div class="block"><h4>Si dà</h4><div class="voti self">${gradeMarks(a.autovoto)}</div></div>` : ""}
       ${sources(a.fonti)}
     </article>`;
   }
@@ -739,18 +765,19 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     const order = Array.isArray(d.ordine_di_parola) && d.ordine_di_parola.length === 2 ? d.ordine_di_parola : ["macro", "tecnico"];
     const L = d.lezione || {};
     const notice = d.avviso || d.stato === "incompleto" ? `<p class="notice" style="margin-bottom:12px">${esc(d.avviso || "La giornata non è stata completata.")}</p>` : "";
+    const checked = Array.isArray(d.previsioni_verificate) && d.previsioni_verificate.length ? `<div class="sheet night"><h3>Previsioni verificate oggi</h3><div class="verified">${d.previsioni_verificate.map((x) => `<div class="event"><span class="tag ${x.esito ? "ok" : "no"}">${x.esito ? "giusta" : "sbagliata"}</span><span>${esc(WHO[String(x.id || "").split("-")[0]] ? WHO[String(x.id).split("-")[0]].name : "")} · ${esc(x.mercato)} ${esc(x.direzione)} ${esc(price(Number(x.livello)))} al ${esc(Math.round(Number(x.probabilita) * 100))}%: chiusura ${esc(price(Number(x.chiusura)))} · Brier ${esc(String(x.brier).replace(".", ","))}</span></div>`).join("")}</div></div>` : "";
     const night = Array.isArray(d.eventi_notte) && d.eventi_notte.length ? `<div class="sheet night"><h3>Dal mercato, prima della lezione</h3>${d.eventi_notte.map((e) => `<div class="event"><span class="muted">${esc(e.wallet ? WHO[e.wallet]?.name || e.wallet : "")}</span>${eventLine(e)}</div>`).join("")}</div>` : "";
     const lesson = `<article class="sheet"><h4>La lezione del Preside</h4>${L.titolo ? `<h3>${esc(L.titolo)}</h3>` : ""}<div class="prose">${md(L.testo)}</div>
       ${L.compito || L.domanda ? `<div class="callouts">${L.compito ? `<div class="callout"><h4>Compito</h4><p>${esc(L.compito)}</p></div>` : ""}${L.domanda ? `<div class="callout"><h4>La domanda del Preside</h4><p>${esc(L.domanda)}</p></div>` : ""}</div>` : ""}
       ${sources(L.fonti)}</article>`;
     const dialogue = `<div class="dialogue">${order.map((w, i) => studentColumn(w, d, i, order[1 - i])).join("")}</div>`;
     const G = d.giudizio || {};
-    const judgement = G.testo || G.voti ? `<article class="sheet judgement"><h3 class="pen">Il giudizio del Preside</h3>${gradesBlock(G.voti)}<div class="prose">${md(G.testo)}</div></article>` : "";
+    const judgement = G.testo || G.voti ? `<article class="sheet judgement"><h3 class="pen">Il giudizio del Preside</h3>${gradesBlock(G.voti)}<div class="prose">${md(G.testo)}</div>${d.riflessione_preside ? `<div class="block"><h4>Il Preside riflette</h4><p class="thought">${esc(d.riflessione_preside)}</p></div>` : ""}</article>` : "";
     const P = d.pagella;
     const report = P && (P.testo || P.voti) ? `<article class="sheet judgement"><h3 class="pen">Pagella della settimana</h3>${gradesBlock(P.voti)}<div class="prose">${md(P.testo)}</div></article>` : "";
     const D = d.diploma;
     const diploma = D ? `<article class="sheet judgement"><h3 class="pen">Diploma</h3><div class="marks">${["macro", "tecnico"].filter((w) => D[w]).map((w) => `<div class="block"><div class="who-line"><i class="key ${w}"></i>${esc(WHO[w].name)}</div><div class="voti">${gradeMarks({ voto: D[w].voto })}</div><div class="prose">${md(D[w].testo)}</div></div>`).join("")}</div></article>` : "";
-    el.innerHTML = head + notice + lesson + night + dialogue + judgement + report + diploma;
+    el.innerHTML = head + notice + lesson + night + checked + dialogue + judgement + report + diploma;
   }
 
   // ---- markets ------------------------------------------------------------------------
@@ -770,6 +797,53 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
         + `<td class="num">${r && isNum(r.atr14_pct) ? pct(r.atr14_pct).replace("+", "") : "—"}</td><td class="num ${tone(r && r.distanza_media200_pct)}">${pct(r && r.distanza_media200_pct)}</td></tr>`;
     };
     el.innerHTML = `<table class="markets"><thead><tr><th>Mercato</th><th class="num">Prezzo</th><th class="num">1 giorno</th><th class="num">5 giorni</th><th class="num">20 giorni</th><th class="num" title="Escursione media di un giorno (ATR a 14 giorni)">Escursione media</th><th class="num" title="Distanza dalla media dei 200 giorni">Dalla media 200 g</th></tr></thead><tbody>${symbols.map(row).join("")}</tbody></table>`;
+  }
+
+
+  // ---- self-awareness: the notebooks ----------------------------------------------------
+  const pctTxt = (x) => isNum(x) ? Math.round(x * 100) + "%" : "—";
+  function calibChart(c, who) {
+    if (!c || !c.n || !Array.isArray(c.fasce) || !c.fasce.length) return `<p class="muted">Nessuna previsione verificata ancora: il motore le controlla alla scadenza.</p>`;
+    const W = 300, H = 190, l = 38, r = 12, t = 12, b = 32;
+    const x = (v) => l + (v - 0.5) / 0.5 * (W - l - r), y = (v) => t + (1 - v) * (H - t - b);
+    const color = who === "macro" ? "var(--macro)" : who === "tecnico" ? "var(--tecnico)" : "var(--pen)";
+    const dots = c.fasce.map((f) => `<circle cx="${x(f.detta).toFixed(1)}" cy="${y(f.avverata).toFixed(1)}" r="${(4 + Math.sqrt(f.n) * 1.6).toFixed(1)}" fill="${color}" stroke="var(--sheet)" stroke-width="2"><title>${esc(`Dette al ${Math.round(f.detta * 100)}%: avverate ${Math.round(f.avverata * 100)}% su ${f.n}`)}</title></circle>`).join("");
+    return `<div class="calib"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Calibrazione: probabilità dichiarate contro previsioni avverate">
+      <line class="ax" x1="${l}" x2="${W - r}" y1="${y(0)}" y2="${y(0)}"/><line class="ax" x1="${l}" x2="${W - r}" y1="${y(0.5)}" y2="${y(0.5)}"/><line class="ax" x1="${l}" x2="${W - r}" y1="${y(1)}" y2="${y(1)}"/>
+      <line class="ideal" x1="${x(0.5)}" y1="${y(0.5)}" x2="${x(1)}" y2="${y(1)}"/>
+      <text x="${l - 6}" y="${y(0) + 3}" text-anchor="end">0%</text><text x="${l - 6}" y="${y(0.5) + 3}" text-anchor="end">50%</text><text x="${l - 6}" y="${y(1) + 3}" text-anchor="end">100%</text>
+      <text x="${x(0.5)}" y="${H - 14}" text-anchor="start">50%</text><text x="${x(0.75)}" y="${H - 14}" text-anchor="middle">75%</text><text x="${x(1)}" y="${H - 14}" text-anchor="end">99%</text>
+      <text x="${(l + W - r) / 2}" y="${H - 2}" text-anchor="middle">sicurezza dichiarata</text>
+      ${dots}</svg><p class="muted" style="font-size:.8rem">In alto la frequenza con cui ci ha preso. Sulla diagonale è onesto: dice 70% e ci prende 7 volte su 10.</p></div>`;
+  }
+  function renderMinds() {
+    const el = document.getElementById("minds");
+    el.innerHTML = ["macro", "tecnico", "preside"].map((who) => {
+      const m = S.memoria[who];
+      const name = who === "preside" ? "Il Preside" : WHO[who].name;
+      if (!m) return `<article class="mind"><div class="who"><i class="key ${who === "preside" ? "" : who}" aria-hidden="true" style="${who === "preside" ? "background:var(--pen)" : ""}"></i><h3>${esc(name)}</h3></div><p class="muted">Il quaderno si riempie dalla prossima lezione: regole, errori che ripete, previsioni con la loro probabilità, autovoti.</p></article>`;
+      const c = m.calibrazione || {};
+      const over = c.eccesso_di_sicurezza;
+      const verdict = !c.n ? "" : over > 0.05 ? `troppo sicuro di ${Math.round(over * 100)} punti` : over < -0.05 ? `troppo prudente di ${Math.round(-over * 100)} punti` : "ben calibrato";
+      const open = (m.previsioni || []).filter((x) => (x.stato || "aperta") === "aperta").slice(-4);
+      const rules = (m.regole || []).slice(-5).reverse();
+      const errs = (m.errori || []).slice().sort((a, b) => (b.volte || 1) - (a.volte || 1)).slice(0, 4);
+      const lessons = (m.lezioni || []).slice(-3).reverse();
+      const grades = (m.autovoti || []).slice(-5).reverse();
+      return `<article class="mind" aria-label="${esc(name)}">
+        <div class="who"><i class="key ${who}" aria-hidden="true" style="${who === "preside" ? "background:var(--pen)" : ""}"></i><div><h3>${esc(name)}</h3><p>${esc(m.aggiornato ? "quaderno aggiornato il " + romeTime(m.aggiornato) : "")}</p></div></div>
+        ${m.chi_sono ? `<div class="block"><h4>Chi sono</h4><div class="prose">${md(m.chi_sono)}</div></div>` : ""}
+        ${who !== "preside" ? `<div class="block"><h4>Calibrazione</h4>
+          <div class="kv"><span>Previsioni verificate <b>${c.n || 0}</b></span><span>Sicuro in media <b>${pctTxt(c.sicurezza_media)}</b></span><span>Ci ha preso <b>${pctTxt(c.successi)}</b></span><span>Brier <b>${isNum(c.brier) ? String(c.brier).replace(".", ",") : "—"}</b></span></div>
+          ${verdict ? `<p class="muted" style="font-size:.86rem">${esc(verdict)} · il Brier va da 0 (perfetto) a 0,25 (tirare a indovinare)</p>` : ""}
+          ${calibChart(c, who)}</div>` : ""}
+        ${open.length ? `<div class="block"><h4>Previsioni aperte</h4><ul>${open.map((x) => `<li>${esc(x.mercato)} ${esc(x.direzione)} ${esc(price(Number(x.livello)))} entro il ${esc(String(x.scadenza).slice(8, 10) + "/" + String(x.scadenza).slice(5, 7))} · <b>${pctTxt(Number(x.probabilita))}</b></li>`).join("")}</ul></div>` : ""}
+        ${grades.length ? `<div class="block"><h4>Autovoto e voto del Preside</h4><div class="table-scroll"><table><thead><tr><th>Giorno</th><th class="num">Si dà</th><th class="num">Il Preside</th></tr></thead><tbody>${grades.map((g) => `<tr><td class="muted">${esc(String(g.data || "").slice(8, 10) + "/" + String(g.data || "").slice(5, 7))}</td><td class="num">${esc(g.ragionamento ?? "—")} · ${esc(g.disciplina ?? "—")}</td><td class="num">${esc(g.preside ? (g.preside.ragionamento ?? "—") + " · " + (g.preside.disciplina ?? "—") : "—")}</td></tr>`).join("")}</tbody></table></div><p class="muted" style="font-size:.8rem">ragionamento · disciplina</p></div>` : ""}
+        ${rules.length ? `<div class="block"><h4>Le sue regole</h4><ul>${rules.map((x) => `<li>${esc(x.testo)}</li>`).join("")}</ul></div>` : ""}
+        ${errs.length ? `<div class="block"><h4>Errori che ripete</h4><ul>${errs.map((x) => `<li>${esc(x.testo)}${(x.volte || 1) > 1 ? ` <b>×${esc(x.volte)}</b>` : ""}</li>`).join("")}</ul></div>` : ""}
+        ${lessons.length ? `<div class="block"><h4>Ultime lezioni</h4><ul>${lessons.map((x) => `<li>${esc(x.testo)}</li>`).join("")}</ul></div>` : ""}
+      </article>`;
+    }).join("");
   }
 
   // ---- the classroom in 3D: the agents as characters, their words as speech ----------------
@@ -867,6 +941,11 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
         B.push({ kind: "say", who, text, label, to, item: items.length - 1 });
       };
       const go = (...moves) => B.push({ kind: "go", moves });
+      const think = (who, text) => {
+        if (!text) return;
+        items.push({ who, text, label: "Pensa" });
+        B.push({ kind: "say", who, text, label: "pensa", think: true, item: items.length - 1 });
+      };
       const order = Array.isArray(d.ordine_di_parola) && d.ordine_di_parola.length === 2 ? d.ordine_di_parola : ["macro", "tecnico"];
       const L = d.lezione || {};
       B.push({ kind: "reset" });
@@ -875,6 +954,9 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       if (Array.isArray(d.eventi_notte) && d.eventi_notte.length) {
         B.push({ kind: "screen", events: d.eventi_notte, title: "DALLA NOTTE" });
         say("motore", "Dalla notte: " + d.eventi_notte.map(eventText).join(" · "), "Motore");
+      }
+      if (Array.isArray(d.previsioni_verificate) && d.previsioni_verificate.length) {
+        say("motore", d.previsioni_verificate.map((x) => `${NAMES[String(x.id || "").split("-")[0]] || ""}: ${x.mercato} ${x.direzione} ${price(Number(x.livello))} al ${Math.round(Number(x.probabilita) * 100)}%, ${x.esito ? "giusta" : "sbagliata"}`).join(" · "), "Previsioni verificate");
       }
       go(["preside", "board"]);
       say("preside", plain(L.testo, 230), "Lezione");
@@ -906,9 +988,17 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
         say("motore", ev.length ? ev.map(eventText).join(" · ") : "Nessun esito registrato.", "Motore");
       }
       go(["macro", "seatM"], ["tecnico", "seatT"], ["preside", "front"]);
+      for (const w of order) {
+        const a = (d.allievi && d.allievi[w]) || {};
+        const preds = Array.isArray(a.previsioni) ? a.previsioni : [];
+        if (preds.length) say(w, "Prevedo: " + preds.map((x) => `${x.mercato} ${x.direzione} ${price(Number(x.livello))} entro il ${String(x.scadenza).slice(8, 10)}/${String(x.scadenza).slice(5, 7)} al ${Math.round(Number(x.probabilita) * 100)}%`).join(" · "), "Previsione");
+        if (a.riflessione) think(w, plain(a.riflessione, 240));
+        if (a.autovoto) say(w, `Mi do ${a.autovoto.ragionamento ?? "?"} nel ragionamento e ${a.autovoto.disciplina ?? "?"} nella disciplina.`, "Autovoto");
+      }
       const G = d.giudizio || {};
       if (G.voti) B.push({ kind: "grade", voti: G.voti });
       say("preside", plain(G.testo, 260), "Giudizio");
+      if (d.riflessione_preside) think("preside", plain(d.riflessione_preside, 220));
       if (d.pagella && d.pagella.testo) {
         if (d.pagella.voti) B.push({ kind: "grade", voti: d.pagella.voti });
         say("preside", plain(d.pagella.testo, 240), "Pagella");
@@ -1400,11 +1490,13 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       const s = speaker(b.who);
       if (!s) return;
       s.bubble.hidden = false;
+      s.bubble.classList.toggle("think", !!b.think);
       s.bubble.querySelector("b").textContent = `${NAMES[b.who]}${b.label ? " · " + b.label : ""}`;
       s.bubble.querySelector("span").textContent = reduce ? b.text : "";
       b.shown = reduce ? b.text.length : 0;
       if (agents[b.who]) {
-        agents[b.who].speaking = true;
+        agents[b.who].speaking = !b.think;
+        agents[b.who].thinking = !!b.think;
         if (b.to && agents[b.to]) agents[b.who].lookAt = agents[b.to];
       }
       for (const a of Object.values(agents)) if (a.key !== b.who && !a.path.length) a.lookAt = b.who === "motore" ? null : agents[b.who];
@@ -1413,7 +1505,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       const s = speaker(b.who);
       if (!s) return;
       s.bubble.hidden = true;
-      if (agents[b.who]) agents[b.who].speaking = false;
+      if (agents[b.who]) agents[b.who].speaking = agents[b.who].thinking = false;
       for (const a of Object.values(agents)) a.lookAt = null;
     }
     function setGrades(voti) {
@@ -1545,7 +1637,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
           a.tag.hidden = !p.ok;
           a.tag.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
           const act = a.tag.querySelector(".tag-act");
-          const label = a.speaking ? "parla" : a.pose === "walk" ? "cammina" : a.act;
+          const label = a.thinking ? "pensa" : a.speaking ? "parla" : a.pose === "walk" ? "cammina" : a.act;
           if (act.textContent !== label) act.textContent = label;
         }
         if (!a.bubble.hidden) {
@@ -1601,6 +1693,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       if (want && want !== S.selected) { S.selected = want; watchDiary(want); }
     }
     renderStatus(); renderRegister(); renderDesks(); renderCurve(); renderDiary(); renderMarkets();
+    renderMinds();
     aula.sync();
   }
   function watchDiary(date) {
@@ -1628,6 +1721,12 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
     watch("scuola/stato", "scuola");
     watch("motore/stato", "motore");
     watch("live/ora", "live");
+    for (const who of ["macro", "tecnico", "preside"]) {
+      db.doc("memoria/" + who).onSnapshot(
+        (snap) => { S.memoria[who] = snap.exists ? snap.data() : null; render(); },
+        () => { S.memoria[who] = null; render(); }
+      );
+    }
   }
   start();
 })();

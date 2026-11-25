@@ -18,6 +18,7 @@ Run from fx-school/ with plain Python 3 (no packages needed):
   python3 school.py execute state.json orders.json  the students' orders, at those prices
   python3 school.py picture                         every market on daily candles, today
   python3 school.py history "EUR/USD" 500           daily candles, for homework
+  python3 school.py verify quaderno.json            score a student's predictions now due
 
 `mark` and `execute` write the new state back into state.json and print a report.
 """
@@ -34,6 +35,7 @@ import urllib.request
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from statistics import fmean
 
 API = "https://api.twelvedata.com/time_series"
 PER_MINUTE = 8  # the free plan's credits per minute: one per market asked
@@ -48,7 +50,11 @@ HOUR = timedelta(hours=1)
 # Days a market does not trade although it is a weekday (the school's six weeks only).
 HOLIDAYS = {
     "fx": {"2026-12-25", "2027-01-01"},
-    "nyse": {"2026-11-26", "2026-12-25", "2027-01-01"},  # Thanksgiving, Christmas, New Year
+    "nyse": {
+        "2026-11-26",
+        "2026-12-25",
+        "2027-01-01",
+    },  # Thanksgiving, Christmas, New Year
 }
 
 # Spread paid on each trade (half on the way in, half on the way out), and the smallest
@@ -116,14 +122,20 @@ def _get(params: dict, wait: float = 62.0) -> dict:
             with urllib.request.urlopen(url, timeout=60) as response:
                 body = json.load(response)
         except urllib.error.HTTPError as e:
-            body = {"status": "error", "code": e.code, "message": e.read()[:300].decode("utf-8", "replace")}
+            body = {
+                "status": "error",
+                "code": e.code,
+                "message": e.read()[:300].decode("utf-8", "replace"),
+            }
         except (urllib.error.URLError, TimeoutError, ValueError) as e:
             raise PriceError(f"Twelve Data non risponde: {e}") from e
         if isinstance(body, dict) and body.get("code") == 429 and attempt == 1:
             time.sleep(wait)  # the minute's credits are used up: one more try after it
             continue
         if isinstance(body, dict) and body.get("status") == "error":
-            raise PriceError(f"Twelve Data: {body.get('code')} {str(body.get('message'))[:160]}")
+            raise PriceError(
+                f"Twelve Data: {body.get('code')} {str(body.get('message'))[:160]}"
+            )
         return body
     raise PriceError("Twelve Data: troppe richieste anche dopo un minuto")
 
@@ -136,16 +148,28 @@ def _sane(c: Candle, widest: float) -> bool:
     crash day (SLV swung 30% on 30/1/2026) must stay."""
     body_low, body_high = min(c.open, c.close), max(c.open, c.close)
     slack = 1e-6 * c.close
-    return 0 < c.low <= body_low + slack and body_high - slack <= c.high and c.high - c.low <= widest * c.close
+    return (
+        0 < c.low <= body_low + slack
+        and body_high - slack <= c.high
+        and c.high - c.low <= widest * c.close
+    )
 
 
 def _candles(series: dict, symbol: str) -> list[Candle]:
-    if not isinstance(series, dict) or series.get("status") == "error" or "values" not in series:
+    if (
+        not isinstance(series, dict)
+        or series.get("status") == "error"
+        or "values" not in series
+    ):
         raise PriceError(f"serie non valida: {str(series)[:160]}")
-    widest = 0.6 if symbol in ("XAU/USD", "SLV") else 0.2  # metals swing far more than currencies
+    widest = (
+        0.6 if symbol in ("XAU/USD", "SLV") else 0.2
+    )  # metals swing far more than currencies
     candles = []
     for v in series["values"]:
-        start = v["datetime"] if len(v["datetime"]) > 10 else v["datetime"] + " 00:00:00"
+        start = (
+            v["datetime"] if len(v["datetime"]) > 10 else v["datetime"] + " 00:00:00"
+        )
         candles.append(Candle(start, float(v["open"]), float(v["high"]), float(v["low"]),
                               float(v["close"])))  # fmt: skip
     return sorted((c for c in candles if _sane(c, widest)), key=lambda c: c.start)
@@ -164,7 +188,9 @@ def fetch(symbols: list[str], interval: str = "1h", size: int = 48,
                   "timezone": "UTC"}  # fmt: skip
         body = _get(params)
         for symbol in group:
-            out[symbol] = _candles(body if len(group) == 1 else body.get(symbol, {}), symbol)
+            out[symbol] = _candles(
+                body if len(group) == 1 else body.get(symbol, {}), symbol
+            )
     return out
 
 
@@ -201,7 +227,9 @@ def equity(wallet: dict, prices: dict[str, float]) -> float:
         price = prices.get(p["symbol"], p["entry"])
         exit_price = fill(p["symbol"], price, buying=p["side"] == "short")
         sign = 1 if p["side"] == "long" else -1
-        open_pnl += usd(p["symbol"], p["units"], sign * (exit_price - p["entry"]), exit_price)
+        open_pnl += usd(
+            p["symbol"], p["units"], sign * (exit_price - p["entry"]), exit_price
+        )
     return wallet["cash"] + open_pnl
 
 
@@ -225,13 +253,19 @@ def picture(candles: dict[str, list[Candle]], today: str) -> dict:
             continue
         closes = [c.close for c in cs]
         last, d = closes[-1], _digits(closes[-1])
-        ranges = [max(c.high, p.close) - min(c.low, p.close) for p, c in itertools.pairwise(cs)]
+        ranges = [
+            max(c.high, p.close) - min(c.low, p.close)
+            for p, c in itertools.pairwise(cs)
+        ]
         atr = sum(ranges[-14:]) / len(ranges[-14:])
         row = {
-            "ultima_candela": cs[-1].start[:10] + (" (in corso)" if cs[-1].start[:10] >= today else ""),
+            "ultima_candela": cs[-1].start[:10]
+            + (" (in corso)" if cs[-1].start[:10] >= today else ""),
             "prezzo": round(last, d),
             "variazione_pct": {
-                f"{n}g": round((last / closes[-1 - n] - 1) * 100, 2) if len(closes) > n else None
+                f"{n}g": round((last / closes[-1 - n] - 1) * 100, 2)
+                if len(closes) > n
+                else None
                 for n in (1, 5, 20, 60, 250)
             },
             "atr14": round(atr, d),
@@ -244,7 +278,9 @@ def picture(candles: dict[str, list[Candle]], today: str) -> dict:
         for n in (50, 200):
             average = sum(closes[-n:]) / n if len(closes) >= n else None
             row[f"media{n}"] = round(average, d) if average else None
-            row[f"distanza_media{n}_pct"] = round((last / average - 1) * 100, 2) if average else None
+            row[f"distanza_media{n}_pct"] = (
+                round((last / average - 1) * 100, 2) if average else None
+            )
         out[symbol] = row
     return out
 
@@ -299,7 +335,11 @@ def mark(state: dict, candles: dict[str, list[Candle]], now: datetime) -> list[d
     for name, wallet in state["wallets"].items():
         for order in list(wallet.get("pending", [])):
             first = next(
-                (c for c in candles.get(order["symbol"], []) if _at(c.start) >= _at(order["placed"])),
+                (
+                    c
+                    for c in candles.get(order["symbol"], [])
+                    if _at(c.start) >= _at(order["placed"])
+                ),
                 None,
             )
             if first:
@@ -328,7 +368,9 @@ def snapshot(state: dict, prices: dict[str, float], day: str) -> dict:
     out = {}
     for name, wallet in state["wallets"].items():
         value = round(equity(wallet, prices), 2)
-        wallet["equity"] = [e for e in wallet["equity"] if e["date"] != day] + [{"date": day, "value": value}]
+        wallet["equity"] = [e for e in wallet["equity"] if e["date"] != day] + [
+            {"date": day, "value": value}
+        ]
         out[name] = value
     return out
 
@@ -355,19 +397,25 @@ def open_position(name: str, wallet: dict, order: dict, prices: dict[str, float]
         return _reject(name, order, f"già {MAX_POSITIONS} posizioni aperte, il massimo")
     try:
         stop = float(order["stop"])
-        target = float(order["target"]) if order.get("target") not in (None, "") else None
+        target = (
+            float(order["target"]) if order.get("target") not in (None, "") else None
+        )
         risk_pct = float(order.get("risk_pct", DEFAULT_RISK_PCT))
     except (KeyError, TypeError, ValueError):
         return _reject(name, order, "stop, target o rischio non sono numeri")
     if not 0 < risk_pct <= MAX_RISK_PCT:
-        return _reject(name, order, f"rischio {risk_pct}% fuori dai limiti (0-{MAX_RISK_PCT}%)")
+        return _reject(
+            name, order, f"rischio {risk_pct}% fuori dai limiti (0-{MAX_RISK_PCT}%)"
+        )
     entry = fill(symbol, prices[symbol], buying=side == "long")
     sign = 1 if side == "long" else -1
     distance = sign * (entry - stop)
     if distance <= 0:
         return _reject(name, order, "lo stop è dalla parte sbagliata del prezzo")
     if distance < MARKETS[symbol]["min_stop"]:
-        return _reject(name, order, f"stop troppo vicino: minimo {MARKETS[symbol]['min_stop']}")
+        return _reject(
+            name, order, f"stop troppo vicino: minimo {MARKETS[symbol]['min_stop']}"
+        )
     if target is not None and sign * (target - entry) <= 0:
         return _reject(name, order, "il target è dalla parte sbagliata del prezzo")
     marks = {**(equity_prices or prices), symbol: prices[symbol]}
@@ -375,11 +423,16 @@ def open_position(name: str, wallet: dict, order: dict, prices: dict[str, float]
     risk_usd = value_now * risk_pct / 100
     per_unit = usd(symbol, 1.0, distance, stop)
     units = risk_usd / per_unit
-    exposure = sum(notional(p["symbol"], p["units"], marks.get(p["symbol"], p["entry"])) for p in wallet["positions"])
+    exposure = sum(
+        notional(p["symbol"], p["units"], marks.get(p["symbol"], p["entry"]))
+        for p in wallet["positions"]
+    )
     room = MAX_LEVERAGE * value_now - exposure
     if notional(symbol, units, entry) > room:
         if room <= 0:
-            return _reject(name, order, f"leva oltre {MAX_LEVERAGE:g} volte il capitale")
+            return _reject(
+                name, order, f"leva oltre {MAX_LEVERAGE:g} volte il capitale"
+            )
         units *= room / notional(symbol, units, entry)
         risk_usd = units * per_unit
     position = {
@@ -400,25 +453,37 @@ def execute(state: dict, orders: dict, now: datetime) -> list[dict]:
     events = []
     prices = state.get("prices", {})
     if not state.get("prices_at") or now - _at(state["prices_at"]) > PRICES_FRESH:
-        return [{"event": "respinto", "reason": "prezzi vecchi: prima va lanciato mark"}]
+        return [
+            {"event": "respinto", "reason": "prezzi vecchi: prima va lanciato mark"}
+        ]
     when = _text(now)
     for name, wallet in state["wallets"].items():
         mine = [o for o in orders.get(name, []) if isinstance(o, dict)]
         for order in sorted(mine, key=lambda o: o.get("action") != "close"):
             action, symbol = order.get("action"), order.get("symbol")
             if action == "close":
-                p = next((p for p in wallet["positions"] if p["id"] == order.get("id")), None)
+                p = next(
+                    (p for p in wallet["positions"] if p["id"] == order.get("id")), None
+                )
                 if not p:
-                    events.append(_reject(name, order, "posizione da chiudere non trovata"))
+                    events.append(
+                        _reject(name, order, "posizione da chiudere non trovata")
+                    )
                 elif not market_open(p["symbol"], now):
-                    events.append(_reject(name, order, f"{p['symbol']}: mercato chiuso"))
+                    events.append(
+                        _reject(name, order, f"{p['symbol']}: mercato chiuso")
+                    )
                 else:
                     reason = f"chiusa dall'allievo: {order.get('reason', '')}"[:300]
                     trade = close_position(wallet, p, prices[p["symbol"]], when, reason)
                     events.append({"wallet": name, "event": "chiusa", **trade})
-            elif action == "open" and symbol in MARKETS and not market_open(symbol, now):
+            elif (
+                action == "open" and symbol in MARKETS and not market_open(symbol, now)
+            ):
                 if MARKETS[symbol]["hours"] == "nyse" and now.weekday() < 5:
-                    wallet.setdefault("pending", []).append({"symbol": symbol, "placed": when, "order": order})
+                    wallet.setdefault("pending", []).append(
+                        {"symbol": symbol, "placed": when, "order": order}
+                    )
                     events.append({"wallet": name, "event": "in attesa", "order": order,
                                    "reason": "SLV apre a New York: si compra alla prima ora"})  # fmt: skip
                 else:
@@ -430,6 +495,88 @@ def execute(state: dict, orders: dict, now: datetime) -> list[dict]:
     return events
 
 
+# --- the students' predictions, checked against the prices ---------------------------------
+
+BUCKETS = ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 0.9), (0.9, 1.0))
+
+
+def check_prediction(p: dict) -> str | None:
+    """Why a prediction cannot be scored, or None when it can."""
+    if p.get("mercato") not in MARKETS:
+        return f"mercato sconosciuto: {p.get('mercato')}"
+    if p.get("direzione") not in ("sopra", "sotto"):
+        return "la direzione deve essere sopra o sotto"
+    try:
+        float(p["livello"])
+        prob = float(p["probabilita"])
+        deadline = datetime.fromisoformat(str(p["scadenza"])).date().isoformat()
+    except (KeyError, TypeError, ValueError):
+        return "livello, probabilità o scadenza non validi"
+    if not 0.5 <= prob <= 0.99:
+        return "la probabilità va da 0,5 a 0,99: si scommette sul lato più probabile"
+    if p.get("fatta") and deadline <= str(p["fatta"]):
+        return "la scadenza deve venire dopo il giorno della previsione"
+    return None
+
+
+def verify(
+    predictions: list[dict], closes: dict[str, dict[str, float]], today: str
+) -> list[dict]:
+    """Score every open prediction whose deadline has passed: the daily close of the
+    deadline (or the last one before it, when the market was shut) against the level.
+    The score is Brier's: (probability - outcome)^2, 0 at best, 0.25 for always saying 50%.
+    Returns the predictions scored now."""
+    scored = []
+    for p in predictions:
+        if p.get("stato", "aperta") != "aperta":
+            continue
+        why = check_prediction(p)
+        if why:
+            p.update(stato="non valida", motivo=why)
+            continue
+        deadline = str(p["scadenza"])[:10]
+        if deadline >= today:  # the deadline's daily candle is not complete yet
+            continue
+        series = closes.get(p["mercato"], {})
+        days = [d for d in series if d <= deadline]
+        if not days:
+            continue
+        day = max(days)
+        close = series[day]
+        level, prob = float(p["livello"]), float(p["probabilita"])
+        hit = close > level if p["direzione"] == "sopra" else close < level
+        p.update(stato="verificata", chiusura=close, giorno_chiusura=day, esito=int(hit),
+                 brier=round((prob - hit) ** 2, 4))  # fmt: skip
+        scored.append(p)
+    return scored
+
+
+def calibration(predictions: list[dict]) -> dict:
+    """How sure a student said it was, against how often it was right, overall and by band
+    of probability. Overconfidence is the first minus the second."""
+    scored = [p for p in predictions if p.get("stato") == "verificata"]
+    if not scored:
+        return {"n": 0, "brier": None, "sicurezza_media": None, "successi": None,
+                "eccesso_di_sicurezza": None, "fasce": []}  # fmt: skip
+    bands = []
+    for lo, hi in BUCKETS:
+        inside = [
+            p
+            for p in scored
+            if lo <= float(p["probabilita"]) < hi
+            or (hi == 1.0 and float(p["probabilita"]) >= lo)
+        ]
+        if inside:
+            bands.append({"da": lo, "a": hi, "n": len(inside),
+                          "detta": round(fmean(float(p["probabilita"]) for p in inside), 3),
+                          "avverata": round(fmean(p["esito"] for p in inside), 3)})  # fmt: skip
+    sure = fmean(float(p["probabilita"]) for p in scored)
+    right = fmean(p["esito"] for p in scored)
+    return {"n": len(scored), "brier": round(fmean(p["brier"] for p in scored), 4),
+            "sicurezza_media": round(sure, 3), "successi": round(right, 3),
+            "eccesso_di_sicurezza": round(sure - right, 3), "fasce": bands}  # fmt: skip
+
+
 # --- command line --------------------------------------------------------------------------
 
 
@@ -438,14 +585,20 @@ def _load(path: str) -> dict:
 
 
 def _save(path: str, state: dict) -> None:
-    Path(path).write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
+    Path(path).write_text(
+        json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
 
 
 def _hours_needed(state: dict, now: datetime) -> int:
     """Enough hourly candles to cover every position since it was last checked."""
     oldest = min(
         [_at(p["checked"]) for w in state["wallets"].values() for p in w["positions"]]
-        + [_at(o["placed"]) for w in state["wallets"].values() for o in w.get("pending", [])]
+        + [
+            _at(o["placed"])
+            for w in state["wallets"].values()
+            for o in w.get("pending", [])
+        ]
         + [now - timedelta(hours=48)]
     )
     return min(5000, int((now - oldest) / HOUR) + 6)
@@ -476,7 +629,31 @@ def main(argv: list[str]) -> None:
                          ensure_ascii=False, indent=1))  # fmt: skip
     elif command == "picture":
         candles = fetch(list(MARKETS), "1day", 260)
-        print(json.dumps(picture(candles, now.date().isoformat()), ensure_ascii=False, indent=1))
+        print(
+            json.dumps(
+                picture(candles, now.date().isoformat()), ensure_ascii=False, indent=1
+            )
+        )
+    elif command == "verify":
+        notebook = _load(argv[2])
+        predictions = notebook.setdefault("previsioni", [])
+        today = now.date().isoformat()
+        due = sorted({p.get("mercato") for p in predictions
+                      if p.get("stato", "aperta") == "aperta" and p.get("mercato") in MARKETS
+                      and str(p.get("scadenza", "9999"))[:10] < today})  # fmt: skip
+        closes = (
+            {
+                s: {c.start[:10]: c.close for c in cs}
+                for s, cs in fetch(due, "1day", 40).items()
+            }
+            if due
+            else {}
+        )
+        scored = verify(predictions, closes, today)
+        notebook["calibrazione"] = calibration(predictions)
+        _save(argv[2], notebook)
+        print(json.dumps({"verificate": scored, "calibrazione": notebook["calibrazione"]},
+                         ensure_ascii=False, indent=1))  # fmt: skip
     elif command == "history":
         symbol, days = argv[2], int(argv[3]) if len(argv) > 3 else 500
         candles = fetch([symbol], "1day", min(days, 5000))[symbol]
