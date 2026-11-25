@@ -131,12 +131,19 @@ def signals(bars: list[dict]) -> dict[str, list]:
 # --- the portfolio -------------------------------------------------------------------------
 
 
-def simulate(coins: dict, variant: str, exclude: frozenset = frozenset()) -> dict:
+def simulate(
+    coins: dict,
+    variant: str,
+    exclude: frozenset = frozenset(),
+    start: str = "",
+    target_vol: float = TARGET_VOL,
+    capital: float = 1000.0,
+) -> dict:
     """Day by day: execute at the open what the last close decided, pay funding, check the
     stops on the day's range, mark at the close, decide for tomorrow."""
     calendar = sorted({b["day"] for c in coins.values() for b in c["bars"]})
     index = {s: {b["day"]: i for i, b in enumerate(c["bars"])} for s, c in coins.items()}
-    equity = 1000.0
+    equity = capital
     units: dict[str, float] = {}  # signed, per coin
     stops: dict[str, float] = {}
     turtle_stop: dict[str, float] = {}  # the Turtles' stop, fixed at entry
@@ -194,14 +201,17 @@ def simulate(coins: dict, variant: str, exclude: frozenset = frozenset()) -> dic
                 book(s, -fee, day)
                 del units[s]
                 turtle_stop.pop(s, None)
-        curve[day] = equity
+        if day >= start:
+            curve[day] = equity
         gross.append(
             sum(abs(q) * today[s]["close"] for s, q in units.items() if s in today) / equity
         )
         # 3. Decide tomorrow's positions at today's close.
         target, stops = decide(
-            coins, today, index, day, units, turtle_stop, equity, variant, exclude
+            coins, today, index, day, units, turtle_stop, equity, variant, exclude, target_vol
         )
+        if day < start:  # before the start nothing is held
+            target, stops = {}, {}
         # From tomorrow's open the overnight move counts too: carry it into the open.
         for s, q in units.items():
             nxt = next_open(coins[s]["bars"], index[s], day)
@@ -209,7 +219,7 @@ def simulate(coins: dict, variant: str, exclude: frozenset = frozenset()) -> dic
                 move = q * (nxt - today[s]["close"]) if s in today else 0.0
                 equity += move
                 book(s, move, day)
-    return {"curve": curve, "costs": costs, "funding": funding_paid,
+    return {"curve": curve, "costs": costs, "funding": funding_paid, "units": dict(units),
             "gross": fmean(gross) if gross else 0.0, "by_coin": pnl_by_coin}  # fmt: skip
 
 
@@ -218,7 +228,9 @@ def next_open(bars: list[dict], index: dict, day: str) -> float | None:
     return bars[i + 1]["open"] if i is not None and i + 1 < len(bars) else None
 
 
-def decide(coins, today, index, day, units, turtle_stop, equity, variant, exclude):
+def decide(
+    coins, today, index, day, units, turtle_stop, equity, variant, exclude, target_vol=TARGET_VOL
+):
     """The units each coin should hold from tomorrow's open, and the stops for tomorrow."""
     ready = {s for s, bar in today.items() if s not in exclude and index[s][day] + 1 >= HISTORY}
     target, stops = {}, {}
@@ -262,7 +274,7 @@ def decide(coins, today, index, day, units, turtle_stop, equity, variant, exclud
         if variant.endswith("solo long"):
             sv = max(sv, 0.0)
         if sv:
-            weights[s] = max(-CAP_COIN, min(CAP_COIN, sv * (TARGET_VOL / len(ready)) / vol))
+            weights[s] = max(-CAP_COIN, min(CAP_COIN, sv * (target_vol / len(ready)) / vol))
     total = sum(abs(w) for w in weights.values())
     if total > CAP_GROSS:
         weights = {s: w * CAP_GROSS / total for s, w in weights.items()}

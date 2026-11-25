@@ -452,6 +452,25 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
         ),
         "btc": round((btc[-1].close / btc[0].open - 1) * 100, 1) if btc else None,
         **({"trade_list": trades} if setup.keep_trades else {}),
+        **(
+            {
+                "open_list": [
+                    {
+                        "symbol": s,
+                        "side": p.side,
+                        "entry": p.entry,
+                        "stop": p.stop,
+                        "target": p.target,
+                        "qty": p.qty,
+                        "entry_ts": p.entry_ts,
+                        "last": last_price.get(s, p.entry),
+                    }
+                    for s, p in positions.items()
+                ]
+            }
+            if setup.keep_trades
+            else {}
+        ),
         **({"curve": sorted(curve.items())} if setup.keep_curve else {}),
     }
 
