@@ -371,6 +371,12 @@ def test_a_morning_of_commands(tmp_path, fake_bingx):
     assert school._load(state)["market"]["day"] == now.date().isoformat()
     coin = "SOL"
     price = fake_bingx["last"][coin]
+    folder = tmp_path / "oggi"
+    (folder / "stato.json").write_text((tmp_path / "stato.json").read_text())
+    assert len(school.context(str(folder))["scritti"]) == 5
+    falco = school._load(str(folder / "contesto-falco.json"))
+    assert falco["portafoglio_a_giudizio"]["rischio_massimo_oggi_pct"] in (1.0, 2.0)
+    assert "ultime_operazioni" in falco["portafoglio_a_regole"]
     orders = tmp_path / "ordini.json"
     order = {"action": "open", "symbol": coin, "side": "long", "stop": price * 0.9, "risk_pct": 1, "reason": "prova"}
     school._save(str(orders), {"spazzino": [order]})

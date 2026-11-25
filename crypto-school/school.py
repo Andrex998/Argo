@@ -12,6 +12,8 @@ trading-desk/, after `uv sync --frozen`:
   giorno STATE OI DIR       the rules wallets replayed from the start, the picture of the
                             market and the Guardiano's numbers: DIR/regole.json,
                             DIR/quadro.json, DIR/rischio.json
+  contesto DIR             from DIR/stato.json and the files of `giorno`, one file for each
+                            wallet agent and the Guardiano: DIR/contesto-<agent>.json
   execute STATE ORDERS      the agents' orders for their judgment wallets, at the last prices
   verify NOTEBOOK           score the notebook's predictions now due
   limite STATE AGENT PCT    the most AGENT may risk on a position (the Preside's monthly call)
@@ -170,6 +172,46 @@ def verify(notebook_path: str, now: datetime) -> dict:
     return {"verificate": scored, "calibrazione": notebook["calibrazione"]}
 
 
+def context(folder: str) -> dict:
+    """What each agent needs from the engine's files in `folder`, in one file each:
+    contesto-<agent>.json for the four wallet agents and the Guardiano."""
+    base = Path(folder)
+    state, regole = _load(str(base / "stato.json")), _load(str(base / "regole.json"))
+    numbers, pic = _load(str(base / "rischio.json")), _load(str(base / "quadro.json"))
+    prices, day_ = state.get("prices", {}), numbers["giorno"]
+    written = []
+    for name in judgment.AGENTS:
+        w, r = state["wallets"][name], regole["portafogli"][name]
+        top, why = judgment.risk_limit(state, w, day_)
+        positions = []
+        for p in w["positions"]:
+            now_price = prices.get(p["symbol"], p["entry"])
+            gain = judgment._sign(p) * p["units"] * (now_price - p["entry"])
+            positions.append({**p, "prezzo_ora": now_price, "pnl_aperto": round(gain, 2)})
+        curve = sorted(r["curve"].items())
+        by_rules = {k: v for k, v in r.items() if k not in ("curve", "trades")}
+        by_rules |= {"capitale_ultimi_giorni": dict(curve[-10:]), "ultime_operazioni": r["trades"][-10:]}
+        by_judgment = {"capitale": round(judgment.equity(w, prices), 2), "contanti": round(w["cash"], 2),
+                       "posizioni": positions, "ultime_chiuse": w["closed"][-5:],
+                       "funding_pagato": round(w["funding"], 2), "costi": round(w["costs"], 2),
+                       "rischio_massimo_oggi_pct": top, "perche_il_limite": why.strip(" ()")}  # fmt: skip
+        content = {
+            "agente": name, "giorno": day_, "prezzi_ora": state.get("prices_at"),
+            "portafoglio_a_regole": by_rules, "portafoglio_a_giudizio": by_judgment,
+            "confronto_regole_giudizio": numbers["confronto"][name],
+            "rischio_dei_tuoi_portafogli": {k: numbers["portafogli"][f"{name}_{k}"] for k in ("regole", "giudizio")},
+            "allarmi": numbers["allarmi"], "note": numbers["note"], "mercato": pic["mercato"],
+        }  # fmt: skip
+        _save(str(base / f"contesto-{name}.json"), content)
+        written.append(f"contesto-{name}.json")
+    held = {n: [{k: p[k] for k in ("id", "symbol", "side", "units", "entry", "stop", "risk_usd")}
+                for p in state["wallets"][n]["positions"]] for n in judgment.AGENTS}  # fmt: skip
+    rules_open = {n: regole["portafogli"][n]["open"] for n in judgment.AGENTS}
+    _save(str(base / "contesto-guardiano.json"), {**numbers, "mercato": pic["mercato"],
+          "posizioni_a_giudizio": held, "posizioni_a_regole": rules_open})  # fmt: skip
+    return {"scritti": [*written, "contesto-guardiano.json"]}
+
+
 def main(argv: list[str]) -> None:
     command, args, now = (argv[1] if len(argv) > 1 else ""), argv[2:], datetime.now(UTC)
     if command == "new" and len(args) == 2:
@@ -181,6 +223,8 @@ def main(argv: list[str]) -> None:
         _print(day(args[0], args[1], args[2], now))
     elif command == "execute" and len(args) == 2:
         _print(execute(args[0], args[1], now))
+    elif command == "contesto" and len(args) == 1:
+        _print(context(args[0]))
     elif command == "verify" and len(args) == 1:
         _print(verify(args[0], now))
     elif command == "limite" and len(args) == 3:
