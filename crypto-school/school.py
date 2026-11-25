@@ -236,6 +236,15 @@ WALLET_DROP = -0.04  # a judgment wallet this far under its value after the meet
 CASCADE_OI, CASCADE_BTC = -0.15, -0.08  # the library's cascade: open interest and BTC together
 
 
+OF_AGENT = {"falco": "del Falco", "tartaruga": "della Tartaruga", "spazzino": "dello Spazzino",
+            "ragioniere": "del Ragioniere"}  # fmt: skip
+
+
+def _it_pct(x: float) -> str:
+    """A change in % the Italian way: +1,7% or −12,0%."""
+    return f"{x * 100:+.1f}%".replace(".", ",").replace("-", "−")
+
+
 def evening_reasons(state: dict, prices: dict[str, float], open_interest: dict[str, float] | None,
                     morning_oi: dict | None, today: str) -> tuple[list[str], dict]:  # fmt: skip
     """The written reasons to meet again in the evening, measured from the morning's prices
@@ -247,11 +256,11 @@ def evening_reasons(state: dict, prices: dict[str, float], open_interest: dict[s
     if btc is not None:
         numbers["btc_pct"] = round(btc * 100, 2)
         if abs(btc) >= BTC_MOVE:
-            reasons.append(f"BTC {btc * 100:+.1f}% dalla mattina")
+            reasons.append(f"BTC {_it_pct(btc)} dalla mattina")
     big = sorted((c for c, m in moves.items() if abs(m) >= COIN_MOVE), key=lambda c: -abs(moves[c]))
     numbers["monete_oltre_10pct"] = {c: round(moves[c] * 100, 1) for c in big}
     if len(big) >= COINS_MOVED:
-        reasons.append(f"{len(big)} monete su {len(moves)} oltre il 10% dalla mattina")
+        reasons.append(f"{len(big)} monete su {len(moves)} mosse di oltre il 10% dalla mattina")
     numbers["portafogli_pct"] = {}
     for name, w in state["wallets"].items():
         after_meeting = next((e["value"] for e in w["equity"] if e["date"] == today), None)
@@ -260,14 +269,14 @@ def evening_reasons(state: dict, prices: dict[str, float], open_interest: dict[s
         change = judgment.equity(w, {**morning, **prices}) / after_meeting - 1
         numbers["portafogli_pct"][name] = round(change * 100, 2)
         if change <= WALLET_DROP:
-            reasons.append(f"il portafoglio a giudizio del {name.capitalize()} {change * 100:+.1f}% dalla mattina")
+            reasons.append(f"il portafoglio a giudizio {OF_AGENT.get(name, name)} {_it_pct(change)} dalla mattina")
     if open_interest and morning_oi:
         both = [c for c in open_interest if morning_oi.get(c)]
         if both:
             total = sum(open_interest[c] for c in both) / sum(morning_oi[c] for c in both) - 1
             numbers["open_interest_pct"] = round(total * 100, 2)
             if total <= CASCADE_OI and btc is not None and btc <= CASCADE_BTC:
-                reasons.append(f"CASCATA: open interest {total * 100:+.1f}% con BTC {btc * 100:+.1f}%")
+                reasons.append(f"CASCATA: open interest {_it_pct(total)} con BTC {_it_pct(btc)}")
     return reasons, numbers
 
 

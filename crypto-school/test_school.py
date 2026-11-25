@@ -501,9 +501,11 @@ def test_the_evening_reasons_to_meet():
     morning_oi = {c: 1e8 for c in data.COINS}
     now_oi = {c: 0.8e8 for c in data.COINS}
     reasons, numbers = school.evening_reasons(s, crash, now_oi, morning_oi, "2026-11-26")
-    assert any(r.startswith("BTC -12.0%") for r in reasons)
+    assert "BTC −12,0% dalla mattina" in reasons
     assert any("36 monete su 36" in r for r in reasons)
-    assert any("Falco" in r for r in reasons) and numbers["portafogli_pct"]["falco"] < -4
+    assert "CASCATA: open interest −20,0% con BTC −12,0%" in reasons
+    assert any(r.startswith("il portafoglio a giudizio del Falco −") for r in reasons)
+    assert numbers["portafogli_pct"]["falco"] < -4
     assert any(r.startswith("CASCATA") for r in reasons) and numbers["open_interest_pct"] == -20.0
     up = {c: 108.0 for c in data.COINS}
     reasons, _ = school.evening_reasons(s, up, now_oi, morning_oi, "2026-11-26")
