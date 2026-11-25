@@ -16,6 +16,12 @@ trading-desk/, after `uv sync --frozen`:
                             wallet agent and the Guardiano: DIR/contesto-<agent>.json
   execute STATE ORDERS      the agents' orders for their judgment wallets, at the last prices
   verify NOTEBOOK           score the notebook's predictions now due
+  palestra-casi DAY DIR     the Sunday gym: 20 anonymous past cases for each wallet agent,
+                            DIR/palestra-<agent>.json
+  palestra-voti DAY DIR     score the answers in DIR/palestra-risposte-<agent>.json against
+                            what happened next: DIR/palestra-esito.json
+  palestra-quaderno NOTEBOOK OUTCOME AGENT
+                            add the agent's gym session to its notebook
   limite STATE AGENT PCT    the most AGENT may risk on a position (the Preside's monthly call)
   history COIN [DAYS]       daily candles, for homework (at most 1,000 days)
 
@@ -26,11 +32,13 @@ they are given back. When BingX does not answer, the command prints {"error": ..
 from __future__ import annotations
 
 import json
+import pickle
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import data
+import gym
 import judgment
 import picture
 import rules
@@ -48,8 +56,13 @@ def _load(path: str, default: dict | None = None) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
-def _save(path: str, content: dict) -> None:
-    Path(path).write_text(json.dumps(content, ensure_ascii=False, indent=1), encoding="utf-8")
+def _save(path: str, content: dict, compact: bool = False) -> None:
+    text = (
+        json.dumps(content, ensure_ascii=False, separators=(",", ":"))
+        if compact
+        else json.dumps(content, ensure_ascii=False, indent=1)
+    )
+    Path(path).write_text(text, encoding="utf-8")
 
 
 def _print(content: dict) -> None:
@@ -212,6 +225,47 @@ def context(folder: str) -> dict:
     return {"scritti": [*written, "contesto-guardiano.json"]}
 
 
+# --- the Sunday gym ------------------------------------------------------------------------------
+
+
+def gym_market(session_day: str, folder: str) -> gym.Market:
+    """Three years of daily candles and a year and a half of funding, up to the session's day,
+    kept in DIR/palestra-dati.pkl so that drawing and scoring see the same data."""
+    cache = Path(folder) / "palestra-dati.pkl"
+    if cache.exists():
+        daily, rates = pickle.loads(cache.read_bytes())
+    else:
+        end = rules.ms_of(session_day)
+        daily = {data.pair(c): data.klines(c, "1d", rules.ms_of("2022-06-01"), end) for c in data.COINS}
+        rates = {data.pair(c): data.funding(c, end - 560 * DAY_MS, end) for c in data.COINS}
+        Path(folder).mkdir(parents=True, exist_ok=True)
+        cache.write_bytes(pickle.dumps((daily, rates)))
+    return gym.Market(daily, rates)
+
+
+def gym_cases(session_day: str, folder: str) -> dict:
+    m = gym_market(session_day, folder)
+    drawn = gym.draw(m, session_day)
+    for agent, cases in drawn.items():
+        _save(str(Path(folder) / f"palestra-{agent}.json"),
+              {"data": session_day, "agente": agent, "orizzonte_giorni": gym.HORIZON,
+               "casi": [gym.public(m, c) for c in cases]}, compact=True)  # fmt: skip
+    return {"data": session_day, "casi": {a: len(c) for a, c in drawn.items()},
+            "del_mestiere": {a: sum(c["tipo"] == "mestiere" for c in cs) for a, cs in drawn.items()}}  # fmt: skip
+
+
+def gym_scores(session_day: str, folder: str) -> dict:
+    m = gym_market(session_day, folder)
+    out = {}
+    for agent, cases in gym.draw(m, session_day).items():
+        answers = _load(str(Path(folder) / f"palestra-risposte-{agent}.json"), {"risposte": []})
+        rows = gym.score(agent, m, cases, answers.get("risposte", []))
+        out[agent] = {"riassunto": gym.summary(rows), "casi": rows}
+    _save(str(Path(folder) / "palestra-esito.json"), {"data": session_day, "orizzonte_giorni": gym.HORIZON,
+                                                       "agenti": out})  # fmt: skip
+    return {a: {k: v for k, v in x["riassunto"].items() if k != "calibrazione"} for a, x in out.items()}
+
+
 def main(argv: list[str]) -> None:
     command, args, now = (argv[1] if len(argv) > 1 else ""), argv[2:], datetime.now(UTC)
     if command == "new" and len(args) == 2:
@@ -223,6 +277,15 @@ def main(argv: list[str]) -> None:
         _print(day(args[0], args[1], args[2], now))
     elif command == "execute" and len(args) == 2:
         _print(execute(args[0], args[1], now))
+    elif command == "palestra-casi" and len(args) == 2:
+        _print(gym_cases(datetime.fromisoformat(args[0]).date().isoformat(), args[1]))
+    elif command == "palestra-voti" and len(args) == 2:
+        _print(gym_scores(datetime.fromisoformat(args[0]).date().isoformat(), args[1]))
+    elif command == "palestra-quaderno" and len(args) == 3:
+        notebook, outcome = _load(args[0]), _load(args[1])
+        stats = gym.into_notebook(notebook, outcome["data"], outcome["agenti"][args[2]]["casi"])
+        _save(args[0], notebook)
+        _print({"agente": args[2], **{k: v for k, v in stats.items() if k != "calibrazione"}})
     elif command == "contesto" and len(args) == 1:
         _print(context(args[0]))
     elif command == "verify" and len(args) == 1:

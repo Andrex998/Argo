@@ -69,6 +69,27 @@ rischio può prendere ogni portafoglio a giudizio: 0,5%, 1% o 2%.
 Alle **13:17** una seconda attività programmata, «Scuola Cripto · recupero», rifà la
 riunione solo se quella del mattino non c'è riuscita.
 
+## La palestra della domenica
+
+Nella riunione le risposte vere arrivano piano: una previsione a 7 giorni si verifica dopo
+7 giorni. Per allenarsi più in fretta, ogni **domenica alle 11:13** c'è la palestra
+([PALESTRA.md](PALESTRA.md)).
+- **I casi.** Falco, Tartaruga, Spazzino e Ragioniere ricevono 20 casi veri degli ultimi
+  tre anni, metà del loro mestiere e metà a caso.
+- **Cosa vedono.** Le ultime 30 candele e i numeri di quel giorno, senza moneta, senza
+  data e con i prezzi riscalati a 100, così l'IA non può ricordarsi com'è finita.
+- **Cosa decidono.** Per ogni caso: su o giù tra 7 giorni, con quale probabilità, e un
+  piano con lo stop.
+- **I voti.** Il motore guarda subito i 7 giorni dopo e dà i voti: la calibrazione delle
+  probabilità e il risultato del piano in R. Gioca gli stessi casi anche con la regola
+  scritta dell'agente, semplificata.
+- **Dopo.** Ognuno legge i suoi errori e scrive una lezione, e una regola nuova solo se i
+  numeri la sostengono. Lo Scettico controlla, e il consiglio del lunedì ne discute.
+
+Nel quaderno di ogni agente ci sono due calibrazioni: quella della palestra e quella della
+realtà. La palestra allena, ma l'esame vero resta il mercato di ogni giorno. Se dopo
+qualche settimana la palestra non migliora le previsioni vere, si toglie.
+
 Il primo trimestre va dal 26/11/2026 al 21/2/2027: [programma.md](programma.md).
 
 ## I file
@@ -79,11 +100,13 @@ Il primo trimestre va dal 26/11/2026 al 21/2/2027: [programma.md](programma.md).
 | `rules.py` | I quattro portafogli a regole. |
 | `judgment.py` | I quattro portafogli a giudizio, e la verifica delle previsioni. |
 | `picture.py` | Il quadro delle monete e i numeri del Guardiano. |
+| `gym.py` | La palestra: i casi anonimi del passato e i loro voti. |
 | `school.py` | I comandi del motore. |
 | `test_school.py` | Le prove del motore, senza rete. |
 | `programma.md`, `programma.json` | Gli 88 giorni del trimestre, con le date. |
 | `preside.md`, `agenti/*.md` | Chi sono i personaggi e come ragionano. |
 | `PROCEDURA.md` | La riunione del mattino, passo per passo. |
+| `PALESTRA.md` | La palestra della domenica, passo per passo. |
 
 ## Il motore
 

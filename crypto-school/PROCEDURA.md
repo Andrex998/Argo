@@ -60,7 +60,7 @@ La prima volta leggila con `get`, oppure crea il documento se non esiste.
 
 I campi:
 - `fase`: inizio, motore, briefing, posizioni, domande, risposte, ordini, chiusura oppure
-  fine;
+  fine (la palestra della domenica usa anche `palestra`);
 - `attore`: preside, falco, tartaruga, spazzino, ragioniere, guardiano, cronista, scettico
   oppure motore;
 - `testo`: una frase breve e concreta su cosa succede adesso, al massimo 160 caratteri;
@@ -175,7 +175,8 @@ Le regole del quaderno:
    - la riunione si fa lo stesso, con quello che c'è;
    - l'`avviso` del verbale lo dice.
 8. Leggi il verbale di ieri, `riunione/<ieri>`, se esiste. Ti servono la chiusura, i voti e
-   le domande rimaste aperte.
+   le domande rimaste aperte. Il lunedì leggi anche `palestra/<ieri>`, la palestra della
+   domenica, se esiste, e salvala in `LAVORO/palestra-ieri.json`.
 9. **I quaderni.** Leggi gli otto quaderni (`memoria/<chi>`), annota le loro versioni e
    salvali in `LAVORO/quaderno-<chi>.json`. Per ogni quaderno con previsioni lancia
    `MOTORE verify LAVORO/quaderno-<chi>.json`. Il motore confronta le previsioni arrivate a
@@ -307,7 +308,9 @@ Le regole per tutti:
 **Nei giorni speciali** ogni agente aggiunge dei campi:
 - **il lunedì:** `settimana`, 3 righe su cosa ha fatto il codice, cosa ha fatto lui con il
   giudizio e la differenza in dollari. Il Guardiano mette qui il confronto dei gemelli.
-  Ogni agente riscrive anche `chi_sono`, in 80-150 parole;
+  Gli agenti con un portafoglio aggiungono una riga sulla palestra di ieri: cosa gli ha
+  insegnato, con i numeri di `LAVORO/palestra-ieri.json` e del loro quaderno (alla voce
+  `palestra`). Ogni agente riscrive anche `chi_sono`, in 80-150 parole;
 - **nel giorno di accoglienza:** `chi_sono`.
 
 Se una risposta non è JSON valido, chiedila di nuovo una volta con SendMessage. Se è
@@ -353,7 +356,8 @@ guardiano e cronista.
 
 Il **lunedì** lo Scettico aggiunge `conti`: rifà a mano i conti di un'operazione chiusa
 (entrata, uscita, costi, funding, risultato), presa da `stato.json` o da `regole.json`, e
-dice se tornano.
+dice se tornano. Legge anche `LAVORO/palestra-ieri.json` e può usare come una delle sue
+due domande quella che ha preparato in palestra (`scettico.domanda_per_il_consiglio`).
 
 Salva la risposta in `LAVORO/scettico.json`. **Diretta**, fase `domande`, attore
 `scettico`: la prima domanda, accorciata.
@@ -428,7 +432,9 @@ Poi scrivi:
 
 **Nei giorni speciali** scrivi anche:
 - **Il lunedì (consiglio)**, l'oggetto `consiglio`:
-  - `testo`: 150-300 parole sulla settimana di ciascuno, regole contro giudizio;
+  - `testo`: 150-300 parole sulla settimana di ciascuno, regole contro giudizio, e sulla
+    palestra di ieri: la calibrazione in palestra contro quella vera, e chi ha scritto una
+    regola nuova;
   - `ipotesi_accettate`: le ipotesi del Cronista che metti in lista d'esame, al massimo 4
     al mese;
   - `autopsie`: una scheda per ogni perdita della settimana oltre 2R, o oltre il 3% di un

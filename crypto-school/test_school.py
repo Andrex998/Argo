@@ -5,6 +5,7 @@ From trading-desk/:  uv run --frozen pytest ../crypto-school/test_school.py -q
 
 from __future__ import annotations
 
+import json
 import random
 import sys
 from datetime import UTC, datetime
@@ -17,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from desk.models import Candle  # noqa: E402
 
 import data  # noqa: E402
+import gym  # noqa: E402
 import judgment  # noqa: E402
 import picture  # noqa: E402
 import rules  # noqa: E402
@@ -386,3 +388,95 @@ def test_a_morning_of_commands(tmp_path, fake_bingx):
     school._save(str(notebook), {"previsioni": [{"mercato": coin, "direzione": "sopra", "livello": price / 2,
                                                  "scadenza": start, "probabilita": 0.9}]})  # fmt: skip
     assert school.verify(str(notebook), now)["calibrazione"]["n"] == 1
+
+
+# --- the Sunday gym ----------------------------------------------------------------------------
+
+
+def lively(seed: int, days: int, start: str) -> list[Candle]:
+    """A random walk whose volume varies, with a surge now and then."""
+    rng = random.Random(1000 + seed)
+    out = []
+    for c in walk(seed, days, start=start):
+        surge = 3 if rng.random() < 0.08 else 1
+        out.append(Candle(c.ts, c.open, c.high, c.low, c.close, c.volume * (0.5 + rng.random()) * surge))
+    return out
+
+
+@pytest.fixture(scope="module")
+def gym_market():
+    names = ["BTC", *data.COINS[1:14]]
+    daily = {data.pair(c): lively(i, 1060, "2023-01-01") for i, c in enumerate(names)}
+    t0 = rules.ms_of("2025-07-01")
+    rates = {data.pair(c): {t0 + k * 8 * H: 0.0001 * ((i % 5) - 2) + 0.00001 * k % 7 for k in range(3 * 400)}
+             for i, c in enumerate(names)}  # fmt: skip
+    return gym.Market(daily, rates)
+
+
+def test_the_gym_draws_the_same_cases_for_the_same_day(gym_market):
+    first, again = gym.draw(gym_market, "2025-12-28"), gym.draw(gym_market, "2025-12-28")
+    assert first == again and first != gym.draw(gym_market, "2026-01-04")
+    for agent, cases in first.items():
+        assert [c["caso"] for c in cases] == [f"{gym.LETTER[agent]}{n:02d}" for n in range(1, 21)]
+        assert sum(c["tipo"] == "mestiere" for c in cases) == 10
+        assert all(gym.FIRST_DAY <= c["giorno"] <= "2025-11-28" for c in cases)
+        assert all(gym.of_the_trade(agent, gym_market, c["pair"], c["i"]) for c in cases if c["tipo"] == "mestiere")
+
+
+def test_a_case_shows_no_coin_no_date_and_no_price(gym_market):
+    case = gym.draw(gym_market, "2025-12-28")["ragioniere"][0]
+    seen = gym.public(gym_market, case)
+    assert set(seen) == {"caso", "candele", "numeri", "mercato"}
+    assert len(seen["candele"]) == gym.SHOWN and seen["candele"][-1][3] == 100.0
+    text = json.dumps(seen)
+    assert case["pair"].split("/")[0] not in text and "202" not in text
+
+
+def flat_market(path: list[tuple[float, float, float]]) -> gym.Market:
+    """One coin: ten quiet days at 100, then the days given as (high, low, close)."""
+    t0, candles, last = rules.ms_of("2025-01-01"), [], 100.0
+    for k in range(10):
+        candles.append(Candle(t0 + k * DAY, 100, 101, 99, 100, 1))
+    for k, (high, low, close) in enumerate(path, 10):
+        candles.append(Candle(t0 + k * DAY, last, high, low, close, 1))
+        last = close
+    return gym.Market({"SOL/USDT": candles}, {})
+
+
+def test_a_plan_is_played_on_the_days_after():
+    falling = flat_market([(100, 94, 95), (96, 90, 91), *[(91, 90, 91)] * 6])
+    out = gym.play(falling, "SOL/USDT", 9, "long", 5, 10)
+    assert out["uscita"] == "stop" and out["r"] == pytest.approx(-1.0, abs=0.01)
+    rising = flat_market([(104, 99, 103), (111, 103, 110), *[(110, 109, 110)] * 6])
+    out = gym.play(rising, "SOL/USDT", 9, "long", 5, 10)
+    assert out["uscita"] == "target" and out["r"] > 1.8
+    quiet = flat_market([(101, 99, 100)] * 8)
+    out = gym.play(quiet, "SOL/USDT", 9, "short", 5, None)
+    assert out["uscita"] == "scadenza" and -0.07 < out["r"] < 0
+
+
+def test_answers_are_scored_and_kept_in_the_notebook(gym_market):
+    cases = gym.draw(gym_market, "2025-12-28")["falco"]
+    answers = [{"caso": c["caso"], "direzione": "su", "probabilita": 0.7, "azione": "long", "stop_pct": 5,
+                "target_pct": 10, "perche": "prova"} for c in cases[:17]]  # fmt: skip
+    answers += [
+        {"caso": cases[17]["caso"], "direzione": "su", "probabilita": 0.3, "azione": "niente"},
+        {"caso": cases[18]["caso"], "direzione": "giu", "probabilita": 0.6, "azione": "short", "stop_pct": 40},
+    ]
+    rows = gym.score("falco", gym_market, cases, answers)
+    assert [r["valida"] for r in rows].count(True) == 17
+    assert {r["motivo"] for r in rows if not r["valida"]} == {
+        "la probabilità va da 0,5 a 0,99",
+        "lo stop va dall'1% al 25%",
+        "nessuna risposta",
+    }
+    good = [r for r in rows if r["valida"]]
+    assert all(r["brier"] == pytest.approx((0.7 - r["giusta"]) ** 2) for r in good)
+    assert all(r["giusta"] == (r["var_7g_dopo_pct"] > 0) for r in good)
+    assert all("r" in r["regola"] for r in rows)
+    notebook = {}
+    s = gym.into_notebook(notebook, "2025-12-28", rows)
+    assert s["valide"] == 17 and s["mestiere"]["n"] + s["a_caso"]["n"] == 20
+    assert notebook["palestra"]["calibrazione"]["n"] == 17
+    gym.into_notebook(notebook, "2025-12-28", rows)
+    assert len(notebook["palestra"]["sessioni"]) == 1 and len(notebook["palestra"]["casi"]) == 17
