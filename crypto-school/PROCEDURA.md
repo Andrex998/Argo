@@ -60,7 +60,7 @@ La prima volta leggila con `get`, oppure crea il documento se non esiste.
 
 I campi:
 - `fase`: inizio, motore, briefing, posizioni, domande, risposte, ordini, chiusura oppure
-  fine (la palestra della domenica usa anche `palestra`);
+  fine (la palestra della domenica usa anche `palestra`, il controllo della sera `sera`);
 - `attore`: preside, falco, tartaruga, spazzino, ragioniere, guardiano, cronista, scettico
   oppure motore;
 - `testo`: una frase breve e concreta su cosa succede adesso, al massimo 160 caratteri;
@@ -174,8 +174,9 @@ Le regole del quaderno:
    - oggi niente ordini;
    - la riunione si fa lo stesso, con quello che c'è;
    - l'`avviso` del verbale lo dice.
-8. Leggi il verbale di ieri, `riunione/<ieri>`, se esiste. Ti servono la chiusura, i voti e
-   le domande rimaste aperte. Il lunedì leggi anche `palestra/<ieri>`, la palestra della
+8. Leggi il verbale di ieri, `riunione/<ieri>`, se esiste. Ti servono la chiusura, i voti, le
+   domande rimaste aperte e, se c'è stata, la riunione straordinaria della sera (il campo
+   `sera`, vedi `crypto-school/SERA.md`). Il lunedì leggi anche `palestra/<ieri>`, la palestra della
    domenica, se esiste, e salvala in `LAVORO/palestra-ieri.json`.
 9. **I quaderni.** Leggi gli otto quaderni (`memoria/<chi>`), annota le loro versioni e
    salvali in `LAVORO/quaderno-<chi>.json`. Per ogni quaderno con previsioni lancia
@@ -535,18 +536,20 @@ stato del motore.
 
 ## 11. La fine del trimestre
 
-Dopo aver salvato l'ultimo giorno, spegni le tre attività programmate con `update_trigger`
-e `enabled: false`:
+Dopo aver salvato l'ultimo giorno, spegni le quattro attività programmate con
+`update_trigger` e `enabled: false`:
 - Scuola Cripto;
 - Scuola Cripto · recupero;
-- Scuola Cripto · palestra.
+- Scuola Cripto · palestra;
+- Scuola Cripto · sera.
 
-L'id dell'attività che ti ha avviato è nel messaggio d'avvio, insieme agli altri due.
+L'id dell'attività che ti ha avviato è nel messaggio d'avvio, insieme agli altri.
 
 Se lo strumento `update_trigger` non c'è, metti nell'`avviso` di `classe/stato`: «Il
 trimestre è finito: spegnete le attività programmate Scuola Cripto, Scuola Cripto ·
-recupero e Scuola Cripto · palestra». Lo stesso vale per ogni giorno dopo il 21/2/2027 in
-cui la sessione parte ancora: in quei giorni non fare nient'altro.
+recupero, Scuola Cripto · palestra e Scuola Cripto · sera». Lo stesso vale per ogni
+giorno dopo il 21/2/2027 in cui la sessione parte ancora: in quei giorni non fare
+nient'altro.
 
 ## Il recupero
 

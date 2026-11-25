@@ -69,6 +69,20 @@ rischio può prendere ogni portafoglio a giudizio: 0,5%, 1% o 2%.
 Alle **13:17** una seconda attività programmata, «Scuola Cripto · recupero», rifà la
 riunione solo se quella del mattino non c'è riuscita.
 
+## Il controllo della sera
+
+Ogni sera alle **20:41** il motore controlla se dalla riunione del mattino è successo
+qualcosa di grosso ([SERA.md](SERA.md)). Gli allarmi sono scritti prima:
+- BTC mosso del 7% o più;
+- almeno 10 monete mosse del 10% o più;
+- un portafoglio a giudizio giù del 4% o più;
+- una cascata dell'open interest con BTC in calo.
+
+Nelle sere tranquille la sessione scrive «tutto tranquillo» nella pagina e si ferma in
+un minuto. Con un allarme c'è una riunione straordinaria breve: il bollettino del
+Guardiano, cosa cambia per i quattro agenti con un portafoglio, eventuali ordini, e tre
+righe del Preside.
+
 ## La palestra della domenica
 
 Nella riunione le risposte vere arrivano piano: una previsione a 7 giorni si verifica dopo
@@ -107,6 +121,7 @@ Il primo trimestre va dal 26/11/2026 al 21/2/2027: [programma.md](programma.md).
 | `preside.md`, `agenti/*.md` | Chi sono i personaggi e come ragionano. |
 | `PROCEDURA.md` | La riunione del mattino, passo per passo. |
 | `PALESTRA.md` | La palestra della domenica, passo per passo. |
+| `SERA.md` | Il controllo della sera e la riunione straordinaria. |
 
 ## Il motore
 

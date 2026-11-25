@@ -603,6 +603,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
   const tone = (v) => isNum(v) && v > 0 ? "up" : isNum(v) && v < 0 ? "down" : "";
   const prob = (v) => { const n = toNum(v); return n === null ? "—" : Math.round(n * 100) + "%"; };
   const cap = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
+  const lowerFirst = (s) => /^[A-ZÀ-Ý][a-zà-ÿ]/.test(s) ? s[0].toLowerCase() + s.slice(1) : s;
   const listIt = (xs) => xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " e " + xs[xs.length - 1];
   const sign = (side) => side === "short" ? -1 : 1;
   const side = (s) => `<span class="side ${s === "short" ? "short" : "long"}">${esc(s || "?")}</span>`;
@@ -1208,13 +1209,13 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       return `<span class="tag">chiusa</span><span>${side(ev.side)} <b>${esc(ev.symbol)}</b> a <span class="num">${price(ev.exit)}</span>, ${esc(shortReason(ev.exit_reason))}: <span class="num ${tone(ev.pnl)}">${usd(ev.pnl, true)}</span>${isNum(ev.r) ? ` <span class="muted num">(${fmt(ev.r, 2, true)} R)</span>` : ""}${parts ? ` <span class="muted">· ${esc(parts)}</span>` : ""}</span>`;
     }
     const what = [o.side, o.symbol ? String(o.symbol).toUpperCase() : o.id].filter(Boolean).join(" ");
-    return `<span class="tag no">respinto</span><span>${esc(what)}${what ? ": " : ""}${esc(ev.reason)}</span>`;
+    return `<span class="tag no">respinto</span><span>${esc(what)}${what ? ": " : ""}${esc(human(ev.reason))}</span>`;
   }
   const shortEvent = (e) => {
     const o = obj(e.order) || {};
     if (e.event === "aperta") return `aperta: ${e.side} ${e.symbol} a ${price(e.entry)}`;
     if (e.event === "chiusa") return `chiusa: ${e.side || ""} ${e.symbol}, ${shortReason(e.exit_reason)}, ${usd(e.pnl, true)}`;
-    return `respinto: ${[o.side, o.symbol || o.id].filter(Boolean).join(" ")}: ${e.reason || ""}`;
+    return `respinto: ${[o.side, o.symbol || o.id].filter(Boolean).join(" ")}: ${human(e.reason || "")}`;
   };
   function matchOrders(who, orders, events) {
     const pool = events.filter((e) => obj(e) && e.wallet === who).map((e) => ({ e, used: false }));
@@ -1564,7 +1565,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       screen(null, "");
       // 1. the Preside opens
       go(["preside", "board"]);
-      say("preside", `Riunione ${n}${d.titolo ? ": " + plain(d.titolo, 110) : ""}.${theme ? " Il tema è " + plain(theme, 150).replace(/^./, (c) => c.toLowerCase()) + "." : ""}`, "Apre la riunione");
+      say("preside", `Riunione ${n}${d.titolo ? ": " + plain(d.titolo, 110) : ""}.${theme ? " Il tema è " + lowerFirst(plain(theme, 150)) + "." : ""}`, "Apre la riunione");
       go(["preside", "stand"]);
       // 2. the night, from the engine
       const night = arr(d.eventi_notte).filter(obj);
@@ -1613,7 +1614,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
         board("Le domande dello Scettico", qs.length ? `${qs.length} ${qs.length === 1 ? "domanda" : "domande"}, ognuna con un numero` : "");
         go(["scettico", "stand"]);
         if (welcome && Sc.chi_sono) say("scettico", plain(Sc.chi_sono, 220), "Si presenta");
-        qs.forEach((q, i) => say("scettico", `${NAMES[q.a] ? NAMES[q.a] + ", " : ""}${plain(q.testo, 210)}`, `Domanda ${i + 1}`, q.a));
+        qs.forEach((q, i) => say("scettico", NAMES[q.a] ? `${NAMES[q.a]}, ${lowerFirst(plain(q.testo, 210))}` : plain(q.testo, 210), `Domanda ${i + 1}`, q.a));
         say("scettico", plain(Sc.contrario, 230), "Il contrario");
         go(["scettico", "seat"]);
       }
@@ -1626,6 +1627,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       }
       // 8. the orders, from the engine
       const ev = arr(d.eventi_ordini).filter(obj);
+      board("Gli ordini a giudizio", ev.length ? "il motore li esegue, o li respinge se escono dalle regole" : "");
       screen(ev, "ORDINI");
       say("motore", ev.length ? ev.map((e) => `${NAMES[e.wallet] || e.wallet || ""}, ${shortEvent(e)}`).join(" · ") : welcome ? "All'accoglienza nessun ordine da eseguire." : "Oggi nessun ordine da eseguire.", "Gli ordini");
       // 9. the Preside closes
@@ -1758,8 +1760,8 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
       const scene = new T.Scene();
       const camera = new T.PerspectiveCamera(40, 16 / 9, 0.1, 100);
-      const look = new T.Vector3(0, 0.85, -0.9);
-      const cam = { yaw: 0, pitch: 0.52, dist: 11.4, touched: -1e9, fx: 0, fz: -0.9 };
+      const look = new T.Vector3(0, 0.95, -1.7);
+      const cam = { yaw: 0, pitch: 0.42, dist: 9.0, touched: -1e9, fx: 0, fz: -1.7 };
       const PAL = {
         light: { sky: 0xdfe6ee, floor: 0xb98d60, rug: 0x3d6a86, wall: 0xf0ebe1, trim: 0xcfc6b4, frame: 0x7a5a3a, wood: 0xa8764a, woodTop: 0xc49461, table: 0x8a5a36, tableTop: 0xb07c4f, metal: 0x6f7781, window: 0xcfe6ff, hemiSky: 0xffffff, hemiGround: 0xb59d7d, hemi: 0.95, sun: 0.62, lamp: 0.25, chalkboard: "#2c4a3a" },
         dark: { sky: 0x0d1317, floor: 0x5c4431, rug: 0x22445a, wall: 0x2d3633, trim: 0x232a28, frame: 0x4e3a27, wood: 0x6b4c31, woodTop: 0x7d5a3a, table: 0x4f3420, tableTop: 0x6e4b30, metal: 0x4b525b, window: 0x1c2f4a, hemiSky: 0xa9bccf, hemiGround: 0x3a3026, hemi: 0.62, sun: 0.3, lamp: 0.95, chalkboard: "#1e3529" },
@@ -1804,9 +1806,10 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       const floor = new T.Mesh(new T.PlaneGeometry(12, 9), mat("floor"));
       floor.rotation.x = -Math.PI / 2;
       scene.add(floor);
-      const rug = new T.Mesh(new T.PlaneGeometry(4.6, 6.2), mat("rug"));
+      const rug = new T.Mesh(new T.CircleGeometry(1, 48), mat("rug"));
       rug.rotation.x = -Math.PI / 2;
-      rug.position.set(0, 0.004, -0.55);
+      rug.scale.set(3.5, 2.7, 1);
+      rug.position.set(0, 0.004, -1.45);
       scene.add(rug);
       box(12, 3.4, 0.12, "wall", 0, 1.7, -4.56);
       box(0.12, 3.4, 9, "wall", -6.06, 1.7, 0);
@@ -1854,7 +1857,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       }
       // the prices running above the board
       const tickCanvas = document.createElement("canvas");
-      tickCanvas.width = 4096;
+      tickCanvas.width = 2048;
       tickCanvas.height = 64;
       const tickTex = new T.CanvasTexture(tickCanvas);
       tickTex.wrapS = T.RepeatWrapping;
@@ -1869,24 +1872,38 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
         tickKey = k;
         const c = tickCanvas.getContext("2d");
         c.fillStyle = "#101820";
-        c.fillRect(0, 0, 4096, 64);
-        c.font = "500 30px 'IBM Plex Mono', monospace";
+        c.fillRect(0, 0, 2048, 64);
+        c.font = "500 28px 'IBM Plex Mono', monospace";
         c.fillStyle = "#e9f1f7";
-        const text = COINS.filter((s) => isNum(p[s])).slice(0, 14).map((s) => `${s} ${price(p[s])}`).join("   ·   ") || "Prezzi di BingX in arrivo";
-        const w = c.measureText(text + "   ·   ").width;
-        for (let x = 20; x < 4096; x += w) c.fillText(text + "   ·   ", x, 43);
+        let text = "";
+        for (const s of COINS.filter((x) => isNum(p[x]))) {
+          const next = (text ? text + "   ·   " : "") + `${s} ${price(p[s])}`;
+          if (c.measureText(next).width > 1960) break;
+          text = next;
+        }
+        c.fillText(text || "Prezzi di BingX in arrivo", 24, 42);
         tickTex.needsUpdate = true;
       }
-      // the meeting table and the chairs
-      box(1.62, 0.07, 3.8, "tableTop", 0, 0.76, -0.5);
-      for (const x of [-0.68, 0.68]) for (const z of [-2.2, 1.2]) box(0.08, 0.72, 0.08, "table", x, 0.37, z);
-      box(1.3, 0.05, 0.05, "table", 0, 0.2, -2.2);
-      box(1.3, 0.05, 0.05, "table", 0, 0.2, 1.2);
+      // the meeting table: an oval, with the eight seats on an arc behind it, open toward the viewer.
+      // The Preside at the head, the four wallets on his right hand, the other three on his left.
+      const CX = 0, CZ = -1.3, LOOKZ = -1.7;
+      const tableTop = new T.Mesh(new T.CylinderGeometry(1, 1, 0.07, 48), mat("tableTop"));
+      tableTop.scale.set(1.75, 1, 1.05);
+      tableTop.position.set(CX, 0.76, CZ);
+      scene.add(tableTop);
+      const pillar = cyl(0.16, 0.2, 0.72, mat("table"), 16);
+      pillar.position.set(CX, 0.37, CZ);
+      scene.add(pillar);
+      const foot = new T.Mesh(new T.CylinderGeometry(1, 1, 0.04, 32), mat("table"));
+      foot.scale.set(0.7, 1, 0.45);
+      foot.position.set(CX, 0.02, CZ);
+      scene.add(foot);
       const H = Math.PI / 2;
-      const SEATS = {
-        preside: [0, -2.95, 0], falco: [-1.2, -1.75, H], tartaruga: [-1.2, -0.8, H], spazzino: [-1.2, 0.15, H], ragioniere: [-1.2, 1.1, H],
-        cronista: [1.2, -1.45, -H], guardiano: [1.2, -0.35, -H], scettico: [1.2, 0.75, -H],
-      };
+      const ARC = { preside: 0, falco: -27, tartaruga: -54, spazzino: -81, ragioniere: -108, cronista: 32, guardiano: 66, scettico: 100 };
+      const SEATS = Object.fromEntries(Object.entries(ARC).map(([k, deg]) => {
+        const t = (deg * Math.PI) / 180, x = CX + 2.45 * Math.sin(t), z = CZ - 1.75 * Math.cos(t);
+        return [k, [x, z, Math.atan2(CX - x, CZ - z), t]];
+      }));
       function chair(x, z, face) {
         const c = new T.Group();
         box(0.48, 0.05, 0.46, "wood", 0, 0.46, 0, c);
@@ -1899,8 +1916,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       for (const [, s] of Object.entries(SEATS)) {
         chair(s[0], s[1], s[2]);
         // a notepad on the table in front of each seat
-        const fx = s[0] + Math.sin(s[2]) * 0.62, fz = s[1] + Math.cos(s[2]) * 0.62;
-        box(0.24, 0.012, 0.3, lam(0xf4f1e8), fx, 0.8, fz).rotation.y = s[2];
+        box(0.24, 0.012, 0.3, lam(0xf4f1e8), CX + 1.75 * 0.8 * Math.sin(s[3]), 0.8, CZ - 1.05 * 0.8 * Math.cos(s[3])).rotation.y = s[2];
       }
       // the library on the left wall
       box(0.5, 2.4, 2.8, "wood", -5.75, 1.2, -1.6);
@@ -2103,17 +2119,17 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
           // the shell on the back, with its plates
           const shell = new T.Mesh(new T.SphereGeometry(0.34, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), lam(0x3c6e47));
           shell.rotation.x = -Math.PI / 2;
-          shell.scale.set(1, 0.62, 1.12);
+          shell.scale.set(1.15, 0.8, 1.25);
           shell.position.set(0, 1.04, -0.13);
           body.add(shell);
-          const rim = new T.Mesh(new T.TorusGeometry(0.34, 0.035, 6, 18), lam(0x8a6a3a));
-          rim.scale.set(1, 1.12, 1);
+          const rim = new T.Mesh(new T.TorusGeometry(0.34, 0.04, 6, 18), lam(0x8a6a3a));
+          rim.scale.set(1.15, 1.25, 1);
           rim.position.set(0, 1.04, -0.13);
           body.add(rim);
           const plate = new T.CylinderGeometry(0.075, 0.075, 0.03, 6);
           for (const [th, ph] of [[0, 0], [0.9, 0.6], [0.9, 2.2], [0.9, 3.8], [0.9, 5.4]]) {
             const local = new T.Vector3(Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)).multiplyScalar(0.34);
-            const p = new T.Vector3(local.x, local.z * 1.12, -local.y * 0.62);
+            const p = new T.Vector3(local.x * 1.15, local.z * 1.25, -local.y * 0.8);
             const m = new T.Mesh(plate, lam(0x5d8f4c));
             m.position.set(p.x, 1.04 + p.y, -0.13 + p.z);
             m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), p.clone().normalize());
@@ -2269,33 +2285,22 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       // where everyone can be: x, z, facing, pose, what the label says
       function spotOf(who, name) {
         const s = SEATS[who];
-        if (who === "preside") {
-          if (name === "board") return [-1.05, -3.95, Math.PI, "write", "alla lavagna"];
-          if (name === "stand") return [0, -3.5, 0, "stand", "in piedi"];
-          return [0, -2.95, 0, "sit", "a capotavola"];
-        }
-        if (name === "stand") return [s[0] + Math.sign(s[0]) * 0.5, s[1], s[2], "stand", "in piedi"];
-        if (name === "board") return [1.75, -3.75, -0.49, "stand", "alla lavagna"];
+        if (who === "preside" && name === "board") return [-1.0, -3.95, Math.PI, "write", "alla lavagna"];
+        if (name === "board") return [1.55, -3.8, Math.atan2(CX - 1.55, CZ + 3.8), "stand", "alla lavagna"];
         if (name === "shelf") return [-4.95, -1.6, -H, "read", "in biblioteca"];
-        return [s[0], s[1], s[2], "sit", "al tavolo"];
+        if (name === "stand") return [s[0] + 0.55 * Math.sin(s[3]), s[1] - 0.55 * Math.cos(s[3]), s[2], "stand", "in piedi"];
+        return [s[0], s[1], s[2], "sit", who === "preside" ? "a capotavola" : "al tavolo"];
       }
-      const LANE = 2.3, BACK = -3.9, FRONT = 2.15;
-      const zone = (x, z) => z < -2.6 ? "back" : x < 0 ? "left" : "right";
+      // longer walks go round the table on a wider oval, the shorter way
+      const angOf = (x, z) => Math.atan2(x - CX, CZ - z);
+      const ringAt = (t) => [CX + 3.25 * Math.sin(t), CZ - 2.55 * Math.cos(t)];
       function route(a, s) {
-        const fx = a.pos.x, fz = a.pos.z, tx = s[0], tz = s[1];
-        const zf = zone(fx, fz), zt = zone(tx, tz);
-        const lx = (zn) => zn === "left" ? -LANE : LANE;
-        if ((zf === zt && Math.abs(fz - tz) < 0.05) || (zf === "back" && zt === "back")) return [[tx, tz]];
+        if (Math.hypot(s[0] - a.pos.x, s[1] - a.pos.z) < 0.8) return [[s[0], s[1]]];
+        const t0 = angOf(a.pos.x, a.pos.z), d = wrap(angOf(s[0], s[1]) - t0);
+        const n = Math.max(1, Math.ceil(Math.abs(d) / 0.3));
         const pts = [];
-        if (zf === zt) pts.push([lx(zf), fz], [lx(zt), tz]);
-        else if (zf === "back") pts.push([lx(zt), BACK], [lx(zt), tz]);
-        else if (zt === "back") pts.push([lx(zf), fz], [lx(zf), BACK]);
-        else {
-          const viaBack = Math.abs(fz - BACK) + Math.abs(tz - BACK), viaFront = Math.abs(FRONT - fz) + Math.abs(FRONT - tz);
-          const zz = viaBack <= viaFront ? BACK : FRONT;
-          pts.push([lx(zf), fz], [lx(zf), zz], [lx(zt), zz], [lx(zt), tz]);
-        }
-        pts.push([tx, tz]);
+        for (let i = 0; i <= n; i++) pts.push(ringAt(t0 + (d * i) / n));
+        pts.push([s[0], s[1]]);
         return pts;
       }
       function place(a, name) {
@@ -2507,7 +2512,7 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
       window.addEventListener("pointercancel", () => (drag = null));
       $("aula-view").addEventListener("click", () => {
         cam.yaw = 0;
-        cam.pitch = 0.52;
+        cam.pitch = 0.42;
         cam.touched = -1e9;
       });
       function placeCamera(now, dt) {
@@ -2518,15 +2523,15 @@ footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
         const b = script[step];
         const moving = list.filter((a) => a.path.length);
         const who = b && b.kind === "say" ? speaker(b.who) : null;
-        let fx = 0, fz = -0.9;
+        let fx = 0, fz = LOOKZ;
         if (who) { fx = who.pos.x; fz = who.pos.z; }
         else if (moving.length) { fx = moving.reduce((s, a) => s + a.pos.x, 0) / moving.length; fz = moving.reduce((s, a) => s + a.pos.z, 0) / moving.length; }
         const k = reduce ? 1 : Math.min(1, dt * 1.2);
         cam.fx += (fx - cam.fx) * k;
         cam.fz += (fz - cam.fz) * k;
-        const reach = reduce ? 0 : aspect < 1 ? 0.8 : aspect < 1.4 ? 0.5 : 0.25;
+        const reach = reduce ? 0 : aspect < 1 ? 0.75 : aspect < 1.4 ? 0.45 : 0.25;
         look.x = cam.fx * reach;
-        look.z = -0.9 + (cam.fz + 0.9) * (reduce ? 0 : 0.25);
+        look.z = LOOKZ + (cam.fz - LOOKZ) * (reduce ? 0 : 0.2);
         const dist = cam.dist * (aspect < 0.8 ? 1.42 : aspect < 1.2 ? 1.2 : 1);
         camera.position.set(look.x + dist * Math.cos(cam.pitch) * Math.sin(yaw), look.y + dist * Math.sin(cam.pitch), look.z + dist * Math.cos(cam.pitch) * Math.cos(yaw));
         camera.lookAt(look);

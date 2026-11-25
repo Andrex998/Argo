@@ -16,6 +16,8 @@ trading-desk/, after `uv sync --frozen`:
                             wallet agent and the Guardiano: DIR/contesto-<agent>.json
   execute STATE ORDERS      the agents' orders for their judgment wallets, at the last prices
   verify NOTEBOOK           score the notebook's predictions now due
+  sera STATE OI             the evening check: did something big happen since the morning?
+                            {"allarme": true|false, "motivi": [...]}; it changes no file
   palestra-casi DAY DIR     the Sunday gym: 20 anonymous past cases for each wallet agent,
                             DIR/palestra-<agent>.json
   palestra-voti DAY DIR     score the answers in DIR/palestra-risposte-<agent>.json against
@@ -225,6 +227,67 @@ def context(folder: str) -> dict:
     return {"scritti": [*written, "contesto-guardiano.json"]}
 
 
+# --- the evening check ----------------------------------------------------------------------------
+
+BTC_MOVE = 0.07  # BTC this far from the morning's price
+COIN_MOVE, COINS_MOVED = 0.10, 10  # this many coins this far from the morning's price
+WALLET_DROP = -0.04  # a judgment wallet this far under its value after the meeting
+CASCADE_OI, CASCADE_BTC = -0.15, -0.08  # the library's cascade: open interest and BTC together
+
+
+def evening_reasons(state: dict, prices: dict[str, float], open_interest: dict[str, float] | None,
+                    morning_oi: dict | None, today: str) -> tuple[list[str], dict]:  # fmt: skip
+    """The written reasons to meet again in the evening, measured from the morning's prices
+    (those of the meeting) and from the open interest recorded in the morning."""
+    morning, reasons = state.get("prices", {}), []
+    numbers: dict = {"prezzi_della_mattina": state.get("prices_at")}
+    moves = {c: prices[c] / morning[c] - 1 for c in prices if morning.get(c)}
+    btc = moves.get("BTC")
+    if btc is not None:
+        numbers["btc_pct"] = round(btc * 100, 2)
+        if abs(btc) >= BTC_MOVE:
+            reasons.append(f"BTC {btc * 100:+.1f}% dalla mattina")
+    big = sorted((c for c, m in moves.items() if abs(m) >= COIN_MOVE), key=lambda c: -abs(moves[c]))
+    numbers["monete_oltre_10pct"] = {c: round(moves[c] * 100, 1) for c in big}
+    if len(big) >= COINS_MOVED:
+        reasons.append(f"{len(big)} monete su {len(moves)} oltre il 10% dalla mattina")
+    numbers["portafogli_pct"] = {}
+    for name, w in state["wallets"].items():
+        after_meeting = next((e["value"] for e in w["equity"] if e["date"] == today), None)
+        if not after_meeting:
+            continue
+        change = judgment.equity(w, {**morning, **prices}) / after_meeting - 1
+        numbers["portafogli_pct"][name] = round(change * 100, 2)
+        if change <= WALLET_DROP:
+            reasons.append(f"il portafoglio a giudizio del {name.capitalize()} {change * 100:+.1f}% dalla mattina")
+    if open_interest and morning_oi:
+        both = [c for c in open_interest if morning_oi.get(c)]
+        if both:
+            total = sum(open_interest[c] for c in both) / sum(morning_oi[c] for c in both) - 1
+            numbers["open_interest_pct"] = round(total * 100, 2)
+            if total <= CASCADE_OI and btc is not None and btc <= CASCADE_BTC:
+                reasons.append(f"CASCATA: open interest {total * 100:+.1f}% con BTC {btc * 100:+.1f}%")
+    return reasons, numbers
+
+
+def evening(state_path: str, oi_path: str, now: datetime) -> dict:
+    """Did something big happen since the morning? It changes no file."""
+    state, record, today = _load(state_path), _load(oi_path, {}), now.date().isoformat()
+    prices = data.tickers()
+    morning_oi = record.get(today)
+    open_interest = None
+    if morning_oi:
+        open_interest = {}
+        for coin in data.COINS:
+            try:
+                open_interest[coin] = data.open_interest(coin)
+            except (data.DataError, KeyError, TypeError, ValueError):
+                continue
+    reasons, numbers = evening_reasons(state, prices, open_interest, morning_oi, today)
+    return {"data": today, "ora": judgment.text(_now_ms(now)), "allarme": bool(reasons), "motivi": reasons,
+            "numeri": numbers}  # fmt: skip
+
+
 # --- the Sunday gym ------------------------------------------------------------------------------
 
 
@@ -277,6 +340,8 @@ def main(argv: list[str]) -> None:
         _print(day(args[0], args[1], args[2], now))
     elif command == "execute" and len(args) == 2:
         _print(execute(args[0], args[1], now))
+    elif command == "sera" and len(args) == 2:
+        _print(evening(args[0], args[1], now))
     elif command == "palestra-casi" and len(args) == 2:
         _print(gym_cases(datetime.fromisoformat(args[0]).date().isoformat(), args[1]))
     elif command == "palestra-voti" and len(args) == 2:

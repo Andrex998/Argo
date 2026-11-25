@@ -480,3 +480,31 @@ def test_answers_are_scored_and_kept_in_the_notebook(gym_market):
     assert notebook["palestra"]["calibrazione"]["n"] == 17
     gym.into_notebook(notebook, "2025-12-28", rows)
     assert len(notebook["palestra"]["sessioni"]) == 1 and len(notebook["palestra"]["casi"]) == 17
+
+
+# --- the evening check ------------------------------------------------------------------------------
+
+
+def test_a_quiet_evening_raises_nothing():
+    s = state_with()
+    open_long(s)
+    judgment.snapshot(s, "2026-11-26")
+    reasons, numbers = school.evening_reasons(s, {**s["prices"], "BTC": 61_000.0}, None, None, "2026-11-26")
+    assert reasons == [] and numbers["btc_pct"] == pytest.approx(1.67, abs=0.01)
+
+
+def test_the_evening_reasons_to_meet():
+    s = state_with({c: 100.0 for c in data.COINS})
+    open_long(s, stop=95, risk=2)  # SOL: a 5% fall costs the 2% at the stop
+    judgment.snapshot(s, "2026-11-26")
+    crash = {c: 88.0 for c in data.COINS}
+    morning_oi = {c: 1e8 for c in data.COINS}
+    now_oi = {c: 0.8e8 for c in data.COINS}
+    reasons, numbers = school.evening_reasons(s, crash, now_oi, morning_oi, "2026-11-26")
+    assert any(r.startswith("BTC -12.0%") for r in reasons)
+    assert any("36 monete su 36" in r for r in reasons)
+    assert any("Falco" in r for r in reasons) and numbers["portafogli_pct"]["falco"] < -4
+    assert any(r.startswith("CASCATA") for r in reasons) and numbers["open_interest_pct"] == -20.0
+    up = {c: 108.0 for c in data.COINS}
+    reasons, _ = school.evening_reasons(s, up, now_oi, morning_oi, "2026-11-26")
+    assert not any(r.startswith("CASCATA") for r in reasons)  # the open interest fell, but BTC rose
