@@ -220,6 +220,12 @@ class Setup:
     delay: int = 0  # candles an entry waits beyond the next open (research hooks)
     keep_trades: bool = False  # also return every closed trade, as "trade_list"
     keep_curve: bool = False  # also return the equity at each day's last close, as "curve"
+    # risk_scale(close_s, daily_marks) -> multiplier on the risk of new trades (research hooks)
+    risk_scale: object = None
+    # entry_gate(symbol, side, close_s, book, new_risk_pct) -> bool, after sizing; book lists
+    # (symbol, side, risk % of equity at the stop) for open and pending positions. False
+    # drops the setup and the candle's other setups: no substitutes (research hooks)
+    entry_gate: object = None
 
 
 def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
@@ -247,6 +253,8 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
     trades: list[dict] = []
     last_price: dict[str, float] = {}
     curve: dict[str, float] = {}
+    marks: list[float] = []  # equity at each midnight from the start
+    exposure_sum, exposure_n = 0.0, 0
 
     def equity_now() -> float:
         return cash + sum(
@@ -338,6 +346,12 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
         max_dd = max(max_dd, (1 - equity / peak) * 100)
         if setup.keep_curve and close_time * 1000 >= start:  # the last mark of each UTC day
             curve[datetime.fromtimestamp(close_time - 1, UTC).date().isoformat()] = equity
+        if close_time * 1000 >= start:
+            if close_time % 86400 == 0:
+                marks.append(equity)
+            gross = sum(p.qty * last_price.get(s, p.entry) for s, p in positions.items())
+            exposure_sum += gross / equity
+            exposure_n += 1
 
         # 4. New setups on the candles that just closed.
         if close_time * 1000 < start or leader not in bars:
@@ -378,6 +392,7 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
                 if plan:
                     candidates.append((rvol, symbol, *plan))
         candidates.sort(reverse=True)
+        scale = setup.risk_scale(close_time, marks) if setup.risk_scale else 1.0
         exposure = sum(p.qty * last_price.get(s, p.entry) for s, p in positions.items())
         exposure += sum(entry[5] for entry in pending)
         open_count = len(positions) + len(pending)
@@ -395,10 +410,20 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
             distance = abs(entry - stop)
             if 2 * (setup.fee + slip) * entry / distance > cfg.max_cost_r:
                 continue
-            notional = equity * cfg.risk_per_trade_pct / 100 / distance * entry
+            notional = equity * cfg.risk_per_trade_pct * scale / 100 / distance * entry
             notional = min(notional, equity * setup.cap_pos, equity * setup.cap_total - exposure)
             if notional < cfg.min_notional:
                 continue
+            if setup.entry_gate:
+                book = [
+                    (s, p.side, p.qty * max(0.0, p.side * (last_price.get(s, p.entry) - p.stop)))
+                    for s, p in positions.items()
+                ] + [(e[1], e[0], e[5] / e[2] * abs(e[2] - e[3])) for e in pending]
+                book = [(s, side_, risk / equity * 100) for s, side_, risk in book]
+                if not setup.entry_gate(
+                    symbol, side, close_time, book, notional / entry * distance / equity * 100
+                ):
+                    break
             pending.append((side, symbol, entry, stop, target, notional, setup.delay))
             exposure += notional
             open_count += 1
@@ -421,6 +446,7 @@ def replay(data: dict, setup: Setup, start: int, end: int) -> dict:
         "fees": round(fees, 1),
         "funding": round(paid_funding, 1),
         "liquidations": sum(t["reason"] == "liquidazione" for t in trades),
+        "exposure": round(exposure_sum / exposure_n, 3) if exposure_n else 0.0,
         "without_best2": round(
             (equity - sum(sorted((t["pnl"] for t in trades), reverse=True)[:2])) / 10 - 100, 1
         ),

@@ -323,3 +323,26 @@ def test_the_research_hooks_for_the_exams():
     assert "trade_list" not in research.replay(data, research.Setup(), START, T0 + BARS * H4)
     late = research.replay(data, research.Setup(keep_trades=True, delay=1), START, T0 + BARS * H4)
     assert late["trades"] > 0 and late["trade_list"] != trades
+
+
+def test_the_research_hooks_for_risk_layers():
+    """risk_scale sizes new trades and nothing else; an entry gate that always says yes
+    changes nothing, one that always says no leaves the desk flat."""
+    data, _ = history(4)
+    end = T0 + BARS * H4
+    plain = research.replay(data, research.Setup(), START, end)
+    assert 0 < plain["exposure"] < 1.5
+    half = research.replay(data, research.Setup(risk_scale=lambda close_s, marks: 0.5), START, end)
+    assert half["trades"] > 0 and half["exposure"] < plain["exposure"]
+    seen = []
+    yes = research.replay(
+        data, research.Setup(entry_gate=lambda *a: seen.append(a) or True), START, end
+    )
+    assert {k: yes[k] for k in ("trades", "ret", "dd")} == {
+        k: plain[k] for k in ("trades", "ret", "dd")
+    }
+    symbol, side, close_s, book, risk = seen[0]
+    assert side in (1, -1) and book == []
+    assert 0 < risk <= 1.0 + 1e-9  # 1% at the stop, less where the 10% position cap bites
+    no = research.replay(data, research.Setup(entry_gate=lambda *a: False), START, end)
+    assert no["trades"] == 0 and no["ret"] == 0.0
