@@ -23,6 +23,7 @@ import judgment  # noqa: E402
 import picture  # noqa: E402
 import rules  # noqa: E402
 import school  # noqa: E402
+import trust  # noqa: E402
 
 H = 3_600_000
 DAY = rules.DAY_MS
@@ -519,3 +520,95 @@ def test_falcos_times_are_read_as_seconds():
     out = school._readable("falco", result)
     assert out["trades"][0]["entry"] == "2026-11-26 00:00:00" and out["trades"][0]["exit"] == "2026-11-26 01:00:00"
     assert out["open"][0]["since"] == "2026-11-26 00:00:00" and "entry_ts" not in out["open"][0]
+
+
+# --- the sealed register, the traffic lights and the auditor ------------------------------------------
+
+
+def minutes_for(day: str) -> dict:
+    return {"data": day, "mercati_ora": f"{day} 05:50:00", "capitali": {"falco": {"regole": 10000, "giudizio": 9990}},
+            "briefing": {"previsioni": [{"id": f"cronista-{day}-1", "mercato": "BTC", "direzione": "sopra",
+                                         "livello": 60000, "scadenza": "2026-12-01", "probabilita": 0.6}]},
+            "posizioni": {"falco": {"ordini": [{"action": "open", "symbol": "SOL", "side": "short", "stop": 75}],
+                                    "previsioni": []}, "guardiano": {"bollettino": "calma"}},
+            "eventi_ordini": [{"wallet": "falco", "event": "aperta", "id": "falco-1", "symbol": "SOL",
+                               "side": "short", "entry": 70.0, "stop": 75.0, "units": 1.5}],
+            "scettico": {"previsioni": []}}  # fmt: skip
+
+
+def test_the_register_chains_each_meeting_to_the_one_before():
+    register = {}
+    first = trust.seal(register, minutes_for("2026-11-26"))
+    second = trust.seal(register, minutes_for("2026-11-27"))
+    assert first["precedente"] == trust.START and second["precedente"] == first["sigillo"]
+    assert trust.check(register) == {"sigilli": 2, "integra": True, "rotta_a": None, "ultimo": second["sigillo"]}
+    sealed = json.loads(first["testo"])
+    assert sealed["previsioni"][0]["probabilita"] == 0.6 and sealed["ordini"]["falco"][0]["symbol"] == "SOL"
+    assert sealed["esecuzioni"][0]["entry"] == 70.0 and "guardiano" not in sealed["ordini"]
+    tampered = json.loads(json.dumps(register))
+    tampered["giorni"][0]["testo"] = tampered["giorni"][0]["testo"].replace("0.6", "0.9")
+    assert trust.check(tampered)["rotta_a"] == "2026-11-26 mattina"
+    again = trust.seal(register, minutes_for("2026-11-27"))  # the last one may be sealed again
+    assert again["sigillo"] == second["sigillo"] and len(register["giorni"]) == 2
+    with pytest.raises(ValueError):
+        trust.seal(register, minutes_for("2026-11-26"))  # the past stays as it is
+    evening = trust.seal(
+        register,
+        {
+            **minutes_for("2026-11-27"),
+            "sera": {
+                "ora": "2026-11-27 19:45:00",
+                "posizioni": {"falco": {"ordini": [{"action": "close", "id": "falco-1"}]}},
+            },
+        },
+        "sera",
+    )
+    assert json.loads(evening["testo"])["ordini"] == {"falco": [{"action": "close", "id": "falco-1"}]}
+    assert trust.check(register)["integra"]
+
+
+def test_the_seal_command_writes_both_files(tmp_path):
+    minutes, register = tmp_path / "verbale.json", tmp_path / "registro.json"
+    school._save(str(minutes), minutes_for("2026-11-26"))
+    out = school.seal(str(minutes), str(register), "mattina")
+    assert out["catena"]["integra"] and school._load(str(minutes))["registro"]["sigillo"] == out["sigillo"]
+    assert len(school._load(str(register))["giorni"]) == 1
+
+
+def steady(days: int, daily: float, start: str = "2026-01-01", base: float = 10_000.0) -> dict[str, float]:
+    return {rules.day_of(rules.ms_of(start) + k * DAY): base * (1 + daily) ** k for k in range(days + 1)}
+
+
+def test_the_traffic_lights_follow_the_written_criteria():
+    btc = steady(200, 0.0005)
+    curves = {"falco_regole": steady(30, 0.002), "falco_giudizio": steady(200, 0.002),
+              "spazzino_regole": steady(200, -0.0005), "spazzino_giudizio": steady(200, 0.0003)}  # fmt: skip
+    noisy = {d: v * (1 + (0.02 if k % 2 else -0.02)) for k, (d, v) in enumerate(steady(200, 0.0006).items())}
+    curves["tartaruga_giudizio"] = noisy
+    crash = steady(200, 0.001)
+    crash[max(crash)] = 7_000.0
+    curves["tartaruga_regole"] = crash
+    out = trust.lights("2026-07-20", curves, {"falco_regole": 3}, btc)
+    colour = {n: w["colore"] for n, w in out["portafogli"].items()}
+    assert colour["falco_regole"] == "grigio" and colour["falco_giudizio"] == "verde"
+    assert colour["spazzino_regole"] == "rosso" and colour["tartaruga_regole"] == "rosso"
+    assert colour["spazzino_giudizio"] == "giallo"  # gains, but less than BTC held per unit of drawdown
+    assert colour["tartaruga_giudizio"] == "giallo"  # gains, but too noisy to tell from luck
+    assert out["portafogli"]["falco_giudizio"]["giorni_verdi"] == 1
+    assert out["giudizio_contro_regola"]["spazzino"]["verdetto"] == "aggiunge"
+    later = trust.lights("2026-07-21", curves, {}, btc, out)
+    assert later["portafogli"]["falco_giudizio"]["giorni_verdi"] == 2
+    assert trust.lights("2026-07-21", curves, {}, btc, later)["portafogli"]["falco_giudizio"]["giorni_verdi"] == 2
+
+
+def test_the_auditor_finds_books_that_do_not_add_up():
+    s = state_with()
+    open_long(s)
+    judgment.execute(s, {"falco": [{"action": "close", "id": "falco-1"}]}, {**s["prices"], "SOL": 104.0}, NOW)
+    assert school.accounts(s) == []
+    s["wallets"]["falco"]["closed"][0]["pnl"] += 5
+    assert {p["problema"] for p in school.accounts(s)} == {"il risultato netto non torna"} | {
+        p["problema"] for p in school.accounts(s) if p["problema"].startswith("contanti")
+    }
+    s["wallets"]["falco"]["cash"] += 100
+    assert any(p["problema"].startswith("contanti") for p in school.accounts(s))

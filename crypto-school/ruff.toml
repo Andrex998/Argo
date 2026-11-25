@@ -4,5 +4,5 @@ line-length = 120
 select = ["E", "F", "W", "B", "UP", "SIM", "I"]
 
 [lint.isort]
-known-first-party = ["data", "gym", "judgment", "picture", "rules", "school"]
+known-first-party = ["data", "gym", "judgment", "picture", "rules", "school", "trust"]
 known-third-party = ["desk", "perps", "trend"]

@@ -35,6 +35,8 @@ valgono sempre»):
    - il verbale non esiste o non è `completo`: senza la riunione del mattino non c'è un
      punto di partenza;
    - il verbale ha già il campo `sera`: la riunione straordinaria è già stata fatta.
+
+   Se vai avanti, salva il verbale in `LAVORO/verbale.json` e annotane la versione.
 3. Prepara il lavoro come al punto 1 della riunione del mattino:
    - prendi `crypto-school` e `trading-desk` dal ramo;
    - lancia `uv sync --frozen` in `trading-desk/`;
@@ -94,7 +96,11 @@ valgono sempre»):
    - cosa guardare domattina.
 
    Stasera niente voti.
-6. **Salva tutto** con un solo `batch` di ArtifactData:
+6. **Il sigillo.** Aggiungi il campo `sera` (la forma è qui sotto) a `LAVORO/verbale.json`.
+   Leggi `classe/registro` in `LAVORO/registro.json` e annotane la versione. Poi lancia
+   `MOTORE sigilla LAVORO/verbale.json LAVORO/registro.json sera`: le decisioni della sera
+   entrano nella catena, e il campo `sera` riceve il suo `registro`.
+7. **Salva tutto** con un solo `batch` di ArtifactData:
    - `update` di `riunione/<oggi>`, con `if_version` la versione letta, che aggiunge il
      campo `sera`:
 
@@ -110,7 +116,10 @@ valgono sempre»):
      - `rischio` è il contenuto di `LAVORO/rischio.json`.
    - `set` di `motore/giudizio` da `LAVORO/stato.json`;
    - `set` di `motore/oi` da `LAVORO/oi.json`;
-   - `set` di `motore/regole` da `LAVORO/regole.json`.
+   - `set` di `motore/regole` da `LAVORO/regole.json`;
+   - `set` di `classe/registro` da `LAVORO/registro.json`.
+
+   Il campo `sera` dell'`update` è quello di `LAVORO/verbale.json` dopo il sigillo.
 
    Poi **Diretta**, fase `fine`, attore `preside`: "Riunione della sera salvata".
 

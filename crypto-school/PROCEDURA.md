@@ -160,13 +160,17 @@ Le regole del quaderno:
    - registra il capitale di ogni portafoglio.
 
    I suoi `events` sono gli `eventi_notte` del verbale.
-4. **Regole, quadro e rischio.** Lancia `MOTORE giorno LAVORO/stato.json LAVORO/oi.json LAVORO > LAVORO/giorno.json`.
+4. **Regole, quadro, rischio e semaforo.** Prima leggi i documenti `classe/semaforo` e
+   `classe/registro`, se esistono: salvali in `LAVORO/semaforo.json` e `LAVORO/registro.json`
+   e annota le versioni. Poi lancia `MOTORE giorno LAVORO/stato.json LAVORO/oi.json LAVORO > LAVORO/giorno.json`.
    Ci mette circa un minuto e scrive:
    - `LAVORO/regole.json`: i quattro portafogli a regole, rifatti dall'inizio della scuola,
      con capitale, operazioni, posizioni e segnali di oggi;
    - `LAVORO/quadro.json`: le 36 monete sulle candele giornaliere e lo stato del mercato;
    - `LAVORO/rischio.json`: i numeri del Guardiano, il confronto tra regole e giudizio di
-     ogni agente, gli allarmi.
+     ogni agente, gli allarmi;
+   - `LAVORO/semaforo.json`: il semaforo degli 8 portafogli, con i criteri scritti prima,
+     il confronto con BTC tenuto e con i contanti, e i giorni di verde di fila.
 5. **I contesti.** Lancia `MOTORE contesto LAVORO`. Scrive un file per ogni agente con un
    portafoglio e per il Guardiano: `LAVORO/contesto-<chi>.json`.
 6. **Diretta**, fase `motore`, attore `motore`: cosa è successo nella notte e gli allarmi,
@@ -447,6 +451,9 @@ Poi scrivi:
   - Premia chi ammette un errore e cambia una regola.
 - **`riflessione_preside`:** 2-3 frasi su cosa ha funzionato oggi e cosa cambierai.
 
+Se un semaforo ha cambiato colore rispetto a ieri, lo dici in una delle 5 righe, con il
+motivo scritto in `semaforo.json`.
+
 **Nei giorni speciali** scrivi anche:
 - **Il lunedì (consiglio)**, l'oggetto `consiglio`:
   - `testo`: 150-300 parole sulla settimana di ciascuno, regole contro giudizio, e sulla
@@ -503,7 +510,8 @@ Come si riempiono i campi:
 - **Gli eventi.** `eventi_notte` sono gli `events` di `mark`, `eventi_ordini` quelli di
   `execute`.
 - **I numeri del motore.** `regole` è il campo `regole` di `LAVORO/giorno.json`. `rischio` è
-  il contenuto di `LAVORO/rischio.json`, `quadro` quello di `LAVORO/quadro.json`.
+  il contenuto di `LAVORO/rischio.json`, `quadro` quello di `LAVORO/quadro.json`, `semaforo`
+  quello di `LAVORO/semaforo.json`.
 - **I capitali.** `capitali` riporta, per ogni agente con portafoglio:
   - `regole`: il capitale del portafoglio a regole, da `rischio.json`;
   - `giudizio`: il capitale a giudizio dopo gli ordini, cioè l'`equity` di `execute`, o
@@ -538,6 +546,13 @@ esiste). Preparane la nuova versione in `LAVORO/classe-stato.json`:
 - in fondo alla lista `giorni`, l'oggetto `{"data", "giorno", "tipo", "stato", "titolo", "voti", "capitali"}`
   di oggi, senza doppioni per la stessa data.
 
+**Il sigillo.** Quando `LAVORO/verbale.json` è pronto, lancia
+`MOTORE sigilla LAVORO/verbale.json LAVORO/registro.json mattina`. Il motore scrive in un
+testo le decisioni di oggi: ordini, esecuzioni, previsioni con le probabilità, capitali. Le
+sigilla con un'impronta legata a quella della riunione precedente, e aggiunge al verbale il
+campo `registro`. Da quel momento il passato non si può cambiare senza rompere la catena.
+Se il comando dice che la catena non è `integra`, scrivilo nell'`avviso`.
+
 Salva tutto con **un solo `batch`** di ArtifactData. Usa `file_path` per ogni documento, e
 come `if_version` la versione letta (senza, se il documento non esisteva):
 - `set` di `riunione/<oggi>` da `LAVORO/verbale.json`;
@@ -545,6 +560,8 @@ come `if_version` la versione letta (senza, se il documento non esisteva):
 - `set` di `motore/oi` da `LAVORO/oi.json`;
 - `set` di `motore/regole` da `LAVORO/regole.json`;
 - `set` di `classe/stato` da `LAVORO/classe-stato.json`;
+- `set` di `classe/semaforo` da `LAVORO/semaforo.json`;
+- `set` di `classe/registro` da `LAVORO/registro.json`;
 - `set` di `memoria/<chi>` per gli otto quaderni.
 
 Dopo il batch, **Diretta**, fase `fine`, attore `preside`: "Riunione N salvata: <titolo>".

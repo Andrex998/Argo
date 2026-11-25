@@ -34,6 +34,8 @@ Quattro attività programmate fanno girare la scuola, tutte con l'ora italiana:
 | Scuola Cripto · recupero | ogni giorno alle 13:17 | la riunione, solo se quella del mattino non c'è stata |
 | Scuola Cripto · palestra | la domenica alle 11:13 | la palestra ([PALESTRA.md](PALESTRA.md)) |
 | Scuola Cripto · sera | ogni giorno alle 20:41 | il controllo della sera ([SERA.md](SERA.md)) |
+| Scuola Cripto · revisione | il 2 di ogni mese alle 10:23 | il revisore esterno ([REVISIONE.md](REVISIONE.md)), con un messaggio sul telefono |
+| Sentinella delle scuole | ogni giorno alle 09:13 e alle 21:13 | controlla che le due scuole abbiano lavorato ([SENTINELLA.md](SENTINELLA.md)), con un messaggio sul telefono |
 
 Le sessioni avviate dalle attività non possono spegnerle da sole: alla fine del trimestre
 vanno spente a mano, e la pagina lo ricorda.
@@ -88,6 +90,27 @@ rischio può prendere ogni portafoglio a giudizio: 0,5%, 1% o 2%.
 
 Alle **13:17** una seconda attività programmata, «Scuola Cripto · recupero», rifà la
 riunione solo se quella del mattino non c'è riuscita.
+
+## Perché fidarsi dei risultati
+
+- **Il registro sigillato.** Dopo ogni riunione il motore sigilla le decisioni appena
+  prese con un'impronta legata a quella della riunione precedente: ordini, esecuzioni,
+  previsioni con le probabilità, capitali. Cambiare il passato romperebbe la catena. La
+  pagina ricontrolla tutta la catena ogni volta che si apre (`trust.py`).
+- **Il semaforo.** Ogni portafoglio ha un colore, deciso da criteri scritti prima di ogni
+  risultato:
+  - **grigio:** troppo presto, meno di 180 giorni e meno di 100 operazioni;
+  - **rosso:** un calo oltre il 20%, o una perdita a campione completo;
+  - **verde:** guadagna più dei contanti, il guadagno si distingue dal caso al 90%, cala al
+    massimo del 20%, e per unità di calo rende più di BTC tenuto;
+  - **giallo:** il resto.
+
+  Solo dopo 365 giorni di verde di fila, il «veterano» della biblioteca, si può pensare a
+  una piccola prova con soldi veri. Quella decisione è solo del proprietario.
+- **Il giudizio contro la regola.** Per ogni agente il motore dice se il giudizio
+  «aggiunge», «toglie» o se «non si sa ancora», con un intervallo al 90%.
+- **Il revisore esterno.** Una volta al mese rifà tutti i conti dai dati grezzi.
+- **La sentinella.** Due volte al giorno avvisa sul telefono se qualcosa non ha funzionato.
 
 ## Il controllo della sera
 

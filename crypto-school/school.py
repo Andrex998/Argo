@@ -11,11 +11,17 @@ trading-desk/, after `uv sync --frozen`:
                             today's open interest added to the record OI
   giorno STATE OI DIR       the rules wallets replayed from the start, the picture of the
                             market and the Guardiano's numbers: DIR/regole.json,
-                            DIR/quadro.json, DIR/rischio.json
+                            DIR/quadro.json, DIR/rischio.json and the traffic lights in
+                            DIR/semaforo.json (yesterday's file there is read first)
   contesto DIR             from DIR/stato.json and the files of `giorno`, one file for each
                             wallet agent and the Guardiano: DIR/contesto-<agent>.json
   execute STATE ORDERS      the agents' orders for their judgment wallets, at the last prices
   verify NOTEBOOK           score the notebook's predictions now due
+  sigilla MINUTES REGISTER [mattina|sera]
+                            seal the meeting's decisions in the register (a chain of SHA-256)
+  registro REGISTER         check every seal of the chain
+  revisione DIR             the monthly auditor: from DIR/stato.json, regole.json, registro.json
+                            and quaderno-*.json, every number recomputed from BingX's data
   sera STATE OI             the evening check: did something big happen since the morning?
                             {"allarme": true|false, "motivi": [...]}; it changes no file
   palestra-casi DAY DIR     the Sunday gym: 20 anonymous past cases for each wallet agent,
@@ -44,6 +50,7 @@ import gym
 import judgment
 import picture
 import rules
+import trust
 
 DAY_MS = rules.DAY_MS
 HOUR_MS = 3_600_000
@@ -149,11 +156,30 @@ def day(state_path: str, oi_path: str, out_dir: str, now: datetime) -> dict:
     _save(str(folder / "regole.json"), {"giorno": today, "inizio": start_day, "portafogli": results})
     _save(str(folder / "quadro.json"), pic)
     _save(str(folder / "rischio.json"), numbers)
+    light = traffic_lights(state, results, k1d["BTC/USDT"], start_day, today, _load(str(folder / "semaforo.json"), {}))
+    _save(str(folder / "semaforo.json"), light)
     _save(state_path, state)
     return {"now": judgment.text(end), "regole": {n: {"capitale": numbers["portafogli"][f"{n}_regole"]["capitale"],
             "operazioni": r["n_trades"], "aperte": len(r["open"])} for n, r in results.items()},
             "confronto": numbers["confronto"], "allarmi": numbers["allarmi"], "note": numbers["note"],
+            "semaforo": {n: w["colore"] for n, w in light["portafogli"].items()},
             "mercato": m}  # fmt: skip
+
+
+def traffic_lights(state: dict, results: dict, btc_daily: list, start_day: str, today: str, before: dict) -> dict:
+    """The eight wallets' lights against BTC held and cash, from the class's start."""
+    curves, trades = {}, {}
+    for name in judgment.AGENTS:
+        curves[f"{name}_regole"] = dict(results[name]["curve"])
+        trades[f"{name}_regole"] = results[name].get("n_trades", 0)
+        wallet = state["wallets"][name]
+        curves[f"{name}_giudizio"] = {e["date"]: e["value"] for e in wallet["equity"] if e["date"] >= start_day}
+        trades[f"{name}_giudizio"] = len(wallet["closed"])
+    eve = rules.day_of(rules.ms_of(start_day) - DAY_MS)
+    closes = {rules.day_of(c.ts): c.close for c in btc_daily}
+    base = closes.get(eve)
+    btc = {d: round(judgment.CAPITAL * c / base, 2) for d, c in closes.items() if base and d >= eve}
+    return trust.lights(today, curves, trades, btc, before)
 
 
 def execute(state_path: str, orders_path: str, now: datetime) -> dict:
@@ -226,6 +252,105 @@ def context(folder: str) -> dict:
     _save(str(base / "contesto-guardiano.json"), {**numbers, "mercato": pic["mercato"],
           "posizioni_a_giudizio": held, "posizioni_a_regole": rules_open})  # fmt: skip
     return {"scritti": [*written, "contesto-guardiano.json"]}
+
+
+# --- the sealed register and the monthly auditor ------------------------------------------------------
+
+
+def seal(minutes_path: str, register_path: str, moment: str) -> dict:
+    minutes, register = _load(minutes_path), _load(register_path, {"giorni": []})
+    entry = trust.seal(register, minutes, moment)
+    if moment == "sera":
+        minutes.setdefault("sera", {})["registro"] = {"sigillo": entry["sigillo"], "precedente": entry["precedente"]}
+    else:
+        minutes["registro"] = {"sigillo": entry["sigillo"], "precedente": entry["precedente"]}
+    _save(minutes_path, minutes)
+    _save(register_path, register)
+    return {**{k: v for k, v in entry.items() if k != "testo"}, "catena": trust.check(register)}
+
+
+def accounts(state: dict) -> list[dict]:
+    """The judgment wallets' books must add up: every closed trade, and the cash."""
+    problems = []
+    for name, w in state["wallets"].items():
+        for t in w["closed"]:
+            sign = 1 if t["side"] == "long" else -1
+            move = sign * t["units"] * (t["exit"] - t["entry"])
+            costs = t["units"] * (t["entry"] + t["exit"]) * judgment.COST
+            if abs(move - t["price_pnl"]) > 0.02 or abs(costs - t["costs"]) > 0.02:
+                problems.append({"portafoglio": name, "operazione": t["id"], "problema": "prezzo o costi non tornano"})
+            if abs(t["price_pnl"] - t["costs"] - t["funding"] - t["pnl"]) > 0.03:
+                problems.append(
+                    {"portafoglio": name, "operazione": t["id"], "problema": "il risultato netto non torna"}
+                )
+        expected = judgment.CAPITAL + sum(t["pnl"] for t in w["closed"])
+        expected -= sum(p["entry_cost"] + p["funding"] for p in w["positions"])
+        if abs(expected - w["cash"]) > 0.05 * (1 + len(w["closed"])):
+            problems.append({"portafoglio": name, "problema": f"contanti {w['cash']:.2f} invece di {expected:.2f}"})
+    return problems
+
+
+def audit(folder: str, now: datetime) -> dict:
+    """The monthly auditor: every number the school shows, recomputed from BingX's raw data."""
+    base, end = Path(folder), _now_ms(now)
+    state, stored = _load(str(base / "stato.json")), _load(str(base / "regole.json"), {"portafogli": {}})
+    checks = []
+    found = accounts(state)
+    checks.append({"controllo": "i conti dei portafogli a giudizio", "esito": "ok" if not found else "problema",
+                   "dettagli": found})  # fmt: skip
+    found = []
+    for name, w in state["wallets"].items():
+        for t in w["closed"]:
+            if not t["exit_reason"].startswith(("stop", "target")) or end - judgment.ms(t["closed"]) > 35 * DAY_MS:
+                continue
+            at = judgment.ms(t["closed"])
+            candle = next((c for c in data.klines(t["symbol"], "1h", at, at + HOUR_MS) if c.ts == at), None)
+            if candle is None or not candle.low - 1e-9 <= t["exit"] <= candle.high + 1e-9:
+                found.append({"portafoglio": name, "operazione": t["id"], "problema": "uscita fuori dalla candela"})
+    checks.append({"controllo": "le uscite su stop e target del mese, contro le candele orarie",
+                   "esito": "ok" if not found else "problema", "dettagli": found})  # fmt: skip
+    start_day, start = state["school"]["start"], rules.ms_of(state["school"]["start"])
+    k4h, k1d, rates = {}, {}, {}
+    for coin in data.COINS:
+        s = data.pair(coin)
+        k4h[s] = data.klines(coin, "4h", start - 40 * DAY_MS, end)
+        k1d[s] = data.klines(coin, "1d", start - 400 * DAY_MS, end)
+        rates[s] = data.funding(coin, start - 10 * DAY_MS, end)
+    again = {"falco": rules.falco(k4h, rates, k1d["BTC/USDT"], start, max(end, start + DAY_MS)),
+             "tartaruga": rules.tartaruga(k1d, rates, start_day), "spazzino": rules.spazzino(k1d, rates, start_day),
+             "ragioniere": rules.ragioniere(k1d, rates, start_day)}  # fmt: skip
+    found = []
+    for name, r in again.items():
+        kept = stored["portafogli"].get(name, {}).get("curve", {})
+        for d, v in kept.items():
+            if d in r["curve"] and abs(r["curve"][d] - v) > 0.01:
+                found.append({"portafoglio": name, "giorno": d, "problema": f"{v} salvato, {r['curve'][d]} rifatto"})
+                break
+    checks.append({"controllo": "i portafogli a regole rifatti da capo", "esito": "ok" if not found else "problema",
+                   "dettagli": found})  # fmt: skip
+    found = []
+    for path in sorted(base.glob("quaderno-*.json")):
+        for p in _load(str(path)).get("previsioni", []):
+            if p.get("stato") != "verificata":
+                continue
+            coin, day_ = str(p["mercato"]).upper(), p["giorno_chiusura"]
+            close = {rules.day_of(c.ts): c.close for c in k1d.get(data.pair(coin), [])}.get(day_)
+            hit = close is not None and (
+                close > float(p["livello"]) if p["direzione"] == "sopra" else close < float(p["livello"])
+            )
+            if close is None or abs(close - float(p["chiusura"])) > 1e-6 * max(1.0, close) or int(hit) != p["esito"]:
+                found.append({"previsione": p.get("id"), "problema": "chiusura o esito diversi da quelli dei dati"})
+    checks.append(
+        {"controllo": "le previsioni verificate", "esito": "ok" if not found else "problema", "dettagli": found}
+    )
+    chain = trust.check(_load(str(base / "registro.json"), {"giorni": []}))
+    checks.append({"controllo": "la catena dei sigilli", "esito": "ok" if chain["integra"] else "problema",
+                   "dettagli": [] if chain["integra"] else [{"problema": f"rotta a {chain['rotta_a']}"}]})  # fmt: skip
+    report = {"data": now.date().isoformat(), "ora": judgment.text(end), "controlli": checks,
+              "problemi": sum(c["esito"] != "ok" for c in checks), "sigilli": chain["sigilli"],
+              "ultimo_sigillo": chain["ultimo"]}  # fmt: skip
+    _save(str(base / "revisione.json"), report)
+    return report
 
 
 # --- the evening check ----------------------------------------------------------------------------
@@ -350,6 +475,12 @@ def main(argv: list[str]) -> None:
         _print(day(args[0], args[1], args[2], now))
     elif command == "execute" and len(args) == 2:
         _print(execute(args[0], args[1], now))
+    elif command == "sigilla" and len(args) in (2, 3):
+        _print(seal(args[0], args[1], args[2] if len(args) == 3 else "mattina"))
+    elif command == "registro" and len(args) == 1:
+        _print(trust.check(_load(args[0], {"giorni": []})))
+    elif command == "revisione" and len(args) == 1:
+        _print(audit(args[0], now))
     elif command == "sera" and len(args) == 2:
         _print(evening(args[0], args[1], now))
     elif command == "palestra-casi" and len(args) == 2:
