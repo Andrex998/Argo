@@ -157,6 +157,15 @@ Misure: calo massimo, settimana peggiore, media del 5% dei giorni peggiori, MAR.
 
 **Ruolo atteso.** Dimensione: meno code e calo massimo, non più rendimento
 
+**Esito (25/11/2026, `research/risk_layers.py`).** **Passa.** Il confronto è a parità
+di esposizione media, sui tre anni:
+- V1 fa +191% contro +142% del rischio fisso, con un calo massimo del 12,9% contro il 13,5%
+  e un MAR di 3,30 contro 2,54;
+- V2 fa +191% contro +140% (calo 12,9% contro 13,4%, MAR 3,31 contro 2,54).
+
+Negli anni 2 e 3 V2 migliora le perdite estreme e il MAR in entrambi. V1 migliora il MAR
+nel 2, non nel 3.
+
 ### E04 · Filtro di regime BTC a tre stati, con riferimento minimo
 
 Famiglia: Regime e filtri di trend. Forza delle prove: **B buona**.
@@ -207,6 +216,15 @@ Placebo: scartare a caso la stessa quota di segnali, 1.000 simulazioni. Confront
 **Cosa la smentirebbe.** Se, a parità di esposizione media, calo massimo e settimana peggiore non migliorano più del placebo che scarta a caso gli stessi segnali, il tetto equivale solo a fare meno operazioni. Se taglia soprattutto le operazioni migliori dei trend forti (guadagno perso maggiore del calo evitato), è bocciato.
 
 **Ruolo atteso.** Dimensione
+
+**Esito (25/11/2026, `research/risk_layers.py`).** **Non passa, per un soffio.** Il tetto
+al 3% scarta il 37% dei segnali.
+- **Contro le 1.000 serie che scartano a caso:** batte il 99,9% sul calo massimo e il
+  100% sulla settimana peggiore.
+- **Contro il desk senza tetto alla stessa esposizione:** perde 0,9 punti di rendimento e
+  ne risparmia 0,7 di calo (MAR 2,61 contro 2,45).
+- **Le varianti:** S fa peggio (MAR 2,18 contro 2,46). Al 2,5% e al 3,5% i rendimenti sono
+  +71% e +103%.
 
 ### E06 · Freno anti-affollamento (funding in eccesso + open interest di mercato)
 

@@ -490,6 +490,54 @@ niente al desk a 4 ore. Prossimo nell'ordine della biblioteca: gli strati di ris
 
 Rifallo tu: `uv run python research/trend.py` (circa 10 secondi).
 
+### Esami E03 ed E05: gli strati di rischio (25/11/2026)
+
+`research/risk_layers.py` prova due regole di rischio sul desk dei perpetui, con le
+regole in uso (stop fino al 12%, regola C). Ognuna è confrontata con il desk senza la
+regola, a parità di esposizione media: il desk senza regola usa il rischio fisso che
+tiene investita la stessa quota di capitale.
+
+**E03, il rischio legato alla volatilità: passa.** Ogni giorno il rischio delle nuove
+operazioni si moltiplica per un fattore k, tra 0,25 e 1,5:
+- k è la volatilità tipica del capitale nell'anno 1 divisa per quella degli ultimi giorni;
+- la volatilità degli ultimi giorni è una media mobile esponenziale, con emivita di 10
+  giorni;
+- quando il capitale oscilla poco si rischia di più, quando oscilla tanto di meno.
+
+Nella variante V2 il rischio si dimezza ancora nei giorni di panico: BTC sotto la media
+a 50 giorni e volatilità nel 20% più alto dell'ultimo anno.
+
+| Tre anni | Rendimento | Calo massimo | Settimana peggiore | MAR |
+| --- | --- | --- | --- | --- |
+| Rischio fisso, stessa esposizione | +140% | 13,4% | -6,9% | 2,54 |
+| V1 | +191% | 12,9% | -6,7% | 3,30 |
+| V2 (con il panico) | +191% | 12,9% | -6,7% | 3,31 |
+
+Negli anni di verifica, il 2 e il 3:
+- V2 migliora le perdite estreme e il MAR in entrambi;
+- V1 migliora il MAR solo nel 2.
+
+La biblioteca prometteva meno perdite estreme, non più rendimento. Qui arrivano tutte e
+due, perché il desk investe di più nei periodi calmi, che per questo sistema sono quelli
+buoni.
+
+**E05, il tetto al rischio correlato: non passa, per un soffio.**
+- **Come funziona:** un'entrata passa solo se il rischio vero delle posizioni insieme
+  resta sotto il 3%. Il rischio vero conta le correlazioni, alzate ad almeno 0,6. Il tetto
+  scarta il 37% dei segnali.
+- **Contro lo scarto a caso:** batte le 1.000 serie in cui si scarta a caso la stessa
+  quota di segnali. Calo massimo e settimana peggiore sono migliori di quasi tutte
+  (99,9% e 100%).
+- **Contro il desk senza tetto alla stessa esposizione:** perde 0,9 punti di rendimento e
+  ne risparmia 0,7 di calo. Per la regola della biblioteca è bocciato.
+- **Le varianti:** il tetto al 2,5% e al 3,5% non cambiano il quadro. Il limite semplice
+  di 3 posizioni dalla stessa parte fa peggio.
+
+In pratica il tetto equivale quasi a fare operazioni più piccole.
+
+Rifallo tu: `uv run python research/risk_layers.py` (circa 15 minuti, per le 1.000 serie a
+caso).
+
 ### Quattro storici brevi (Kraken e BingX)
 
 Prima del test lungo, il 18/11/2026 il desk è stato rigiocato su quattro storici brevi,
