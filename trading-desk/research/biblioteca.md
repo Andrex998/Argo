@@ -382,6 +382,36 @@ Basta un criterio mancato per non passare.
 
 **Ruolo atteso.** Portafoglio a regole del Macro e del Tecnico nella Scuola Cripto, dopo la fusione.
 
+**Esito (25/11/2026, `research/fx_trend.py`).** **Non passa: manca tutti e quattro i
+criteri.** Dal 6/7/2007 al 24/11/2026, dopo i costi, perde il 17,3% (-1,0% l'anno), con
+una volatilità del 4,5% e un calo massimo del 26,5%.
+- **Il rendimento:** Sharpe -0,19, contro almeno 0,3. Anni solari positivi: 8 su 18
+  (2008-2025), contro almeno 11. Fino al 2010 fa +5,4% (Sharpe 0,26), dal 2011 -21,6%.
+- **Il placebo:** batte l'89,8% delle 1.000 serie con segni a caso, sotto il 95%. Le serie
+  a caso girano di segno più spesso e pagano in media 2.690 $ di costi; prima dei costi lo
+  Sharpe è +0,03 e ne batte il 55,5%. Qui il segno del trend non vale più di una moneta.
+- **Senza EUR/USD**, il mercato migliore (+278 $), perde il 20,6%.
+- **Gli ultimi 5 anni** (dal 25/11/2021): -1,7%.
+- **I costi:** 1.793 $ su 10.000 $ in 19 anni. I pesi cambiano 6.052 volte, 2.271 delle
+  quali girando di segno: 25 volte il capitale l'anno.
+
+È la smentita prevista dalla scheda: guadagna solo prima del 2010 e non batte i segni a
+caso.
+
+I limiti:
+- niente interessi del rollover;
+- SLV al posto dell'argento;
+- 5.000 candele per mercato: i dati partono dal 2007 per SLV e l'oro e da febbraio-maggio
+  2008 per le valute. Fino a marzo 2008 il portafoglio è solo SLV, e ha tutti e 9 i
+  mercati dal 31/10/2008. Il campione cade quasi tutto dopo il 2010, il periodo che la
+  scheda già dava più debole sulle valute;
+- errori nei dati di Twelve Data. EUR/USD 2008 ha 7 candele con giorno e mese scambiati (i
+  prezzi del 2-12 agosto stanno all'8 di altri mesi). EUR/USD dal 2011 al 2022 e GBP/USD
+  dal 2011 al 2024 hanno quasi sempre la chiusura uguale all'apertura, cioè il prezzo di
+  inizio giornata. Dal 2024-2025 le valute hanno anche candele di sabato e domenica, tolte
+  perché la regola conta i giorni di borsa. Toccano pochi giorni o l'ora del prezzo:
+  difficile che cambino un risultato così lontano dalle soglie.
+
 ## Il protocollo d'esame
 
 PROTOCOLLO D'ESAME. Vale per tutti, compreso il sistema attuale.

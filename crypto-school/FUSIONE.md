@@ -14,18 +14,18 @@ il corso è finito, e i due diplomati portano con sé quello che hanno imparato.
 - **Il Cronista legge la scuola forex.** Dalla riunione del 26/11/2026 legge ogni mattina
   il diario forex del giorno prima, solo in lettura (`PROCEDURA.md`, punto 4). Nel briefing
   porta quello che conta per le cripto: dollaro, tassi, oro.
-- **L'esame E11 è scritto.** È il trend lento su valute, oro e argento, nella biblioteca
-  (`trading-desk/research/biblioteca.md`). Le regole sono state salvate su git prima di
-  guardare i dati (commit 9c3b2b3). L'esito è nella stessa sezione.
+- **L'esame E11 è fatto, e non passa.** È il trend lento su valute, oro e argento, nella
+  biblioteca (`trading-desk/research/biblioteca.md`), con le regole salvate su git prima di
+  guardare i dati (commit 9c3b2b3). Dal 2007 al 2026, dopo i costi, perde il 17,3%: Sharpe
+  -0,19, e non batte i segni a caso. Guadagnava solo prima del 2010.
+
+  Quindi il Macro e il Tecnico entrano con il solo portafoglio a giudizio.
 
 ## Da fare tra metà dicembre e il 4/1/2027, insieme all'utente
 
-1. **L'esito di E11 decide il portafoglio a regole.**
-   - Se E11 passa, il Macro e il Tecnico hanno anche un portafoglio a regole su valute e
-     oro, rifatto ogni giorno dal codice dell'esame (`research/fx_trend.py`), come gli
-     altri quattro.
-   - Se non passa, hanno solo il portafoglio a giudizio. La loro misura sarà la
-     calibrazione delle previsioni e il confronto con il «non fare niente».
+1. **Il loro metro di misura.** Senza una regola promossa, il loro portafoglio a giudizio
+   si confronta con il «non fare niente» (i contanti), e la loro calibrazione con quella
+   degli altri. Una regola per valute e oro potrà arrivare solo da un nuovo esame.
 2. **I portafogli.** Il loro portafoglio a giudizio continua nel motore forex
    (`fx-school/school.py`), con il capitale del diploma, sugli stessi 9 mercati, con le
    stesse regole e la stessa fonte dei prezzi (Twelve Data). La riunione cripto lancia
