@@ -508,3 +508,12 @@ def test_the_evening_reasons_to_meet():
     up = {c: 108.0 for c in data.COINS}
     reasons, _ = school.evening_reasons(s, up, now_oi, morning_oi, "2026-11-26")
     assert not any(r.startswith("CASCATA") for r in reasons)  # the open interest fell, but BTC rose
+
+
+def test_falcos_times_are_read_as_seconds():
+    second = rules.ms_of("2026-11-26") // 1000
+    result = {"curve": {}, "trades": [{"symbol": "SOL", "entry_ts": second, "exit_ts": second + 3600, "pnl": 1.0}],
+              "open": [{"symbol": "BTC", "entry_ts": second}], "segnali": None}  # fmt: skip
+    out = school._readable("falco", result)
+    assert out["trades"][0]["entry"] == "2026-11-26 00:00:00" and out["trades"][0]["exit"] == "2026-11-26 01:00:00"
+    assert out["open"][0]["since"] == "2026-11-26 00:00:00" and "entry_ts" not in out["open"][0]

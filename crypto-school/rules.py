@@ -297,7 +297,10 @@ def spazzino(daily: dict[str, list[Candle]], rates: dict, start_day: str) -> dic
             units = side * min(book.equity * 0.005 / (3 * a), book.equity * 0.33 / closes[-1])
             pending[s] = (units, "RSI(2) nel verso del trend", closes[-1] - side * 3 * a)
             slots -= 1
-    return _summary(book, curve, {s.split("/")[0]: why for s, (u, why, _) in pending.items()})
+    summary = _summary(book, curve, {s.split("/")[0]: why for s, (u, why, _) in pending.items()})
+    for o in summary["open"]:  # the emergency stop of each open position
+        o["stop"] = held.get(f"{o['symbol']}/USDT", {}).get("stop")
+    return summary
 
 
 def volume_on(candles: list[Candle], day: str) -> float:

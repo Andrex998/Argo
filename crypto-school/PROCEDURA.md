@@ -307,7 +307,7 @@ Le regole per tutti:
   vuoto.
 
 **Nei giorni speciali** ogni agente aggiunge dei campi:
-- **il lunedì:** `settimana`, 3 righe su cosa ha fatto il codice, cosa ha fatto lui con il
+- **il lunedì:** `settimana`, un testo di 3 righe su cosa ha fatto il codice, cosa ha fatto lui con il
   giudizio e la differenza in dollari. Il Guardiano mette qui il confronto dei gemelli.
   Gli agenti con un portafoglio aggiungono una riga sulla palestra di ieri: cosa gli ha
   insegnato, con i numeri di `LAVORO/palestra-ieri.json` e del loro quaderno (alla voce
@@ -355,9 +355,10 @@ Lancia un agente (tipo general-purpose, modello `sonnet`). Nel suo messaggio met
 Le domande sono al massimo 2, e `a` è uno tra falco, tartaruga, spazzino, ragioniere,
 guardiano e cronista.
 
-Il **lunedì** lo Scettico aggiunge `conti`: rifà a mano i conti di un'operazione chiusa
-(entrata, uscita, costi, funding, risultato), presa da `stato.json` o da `regole.json`, e
-dice se tornano. Legge anche `LAVORO/palestra-ieri.json` e può usare come una delle sue
+Il **lunedì** lo Scettico aggiunge `conti`, nella forma
+`{"operazione": "falco-3", "testo": "i conti rifatti", "tornano": true}`: rifà a mano i conti
+di un'operazione chiusa (entrata, uscita, costi, funding, risultato), presa da `stato.json` o
+da `regole.json`, e dice se tornano. Legge anche `LAVORO/palestra-ieri.json` e può usare come una delle sue
 due domande quella che ha preparato in palestra (`scettico.domanda_per_il_consiglio`).
 
 Salva la risposta in `LAVORO/scettico.json`. **Diretta**, fase `domande`, attore
@@ -377,7 +378,9 @@ L'agente risponde solo con:
 ```
 
 `ordini` resta `null` se l'agente non cambia idea. Altrimenti è la nuova lista completa dei
-suoi ordini, che sostituisce quella del punto 5. Solo per gli agenti con un portafoglio.
+suoi ordini, che sostituisce quella del punto 5. Solo per gli agenti con un portafoglio. Nel
+verbale, in `posizioni.<chi>`, `ordini` diventa la lista nuova e quella di prima resta in
+`ordini_iniziali`.
 
 Se l'agente non risponde più, lancia un agente nuovo con il suo file, la sua posizione, la
 domanda e lo stesso formato. Aggiungi la risposta alla domanda in `LAVORO/scettico.json`,
@@ -437,10 +440,12 @@ Poi scrivi:
     palestra di ieri: la calibrazione in palestra contro quella vera, e chi ha scritto una
     regola nuova;
   - `ipotesi_accettate`: le ipotesi del Cronista che metti in lista d'esame, al massimo 4
-    al mese;
+    al mese, nella stessa forma del Cronista (`nome`, `regola`, `dati`, `smentita`);
   - `autopsie`: una scheda per ogni perdita della settimana oltre 2R, o oltre il 3% di un
-    portafoglio in un giorno. Tre domande: era nelle regole? era dentro l'atteso? c'era un
-    errore di dati o di codice?
+    portafoglio in un giorno, nella forma
+    `{"chi": "falco", "operazione": "falco-3", "nelle_regole": "...", "atteso": "...", "errore": "..."}`.
+    Le tre domande: era nelle regole? era dentro l'atteso? c'era un errore di dati o di
+    codice?
 - **Il primo lunedì del mese (scrutinio)**, in più l'oggetto `scrutinio`:
   - `testo`: la pagella del mese;
   - `pagella`: per ogni agente, `ragionamento`, `disciplina`, `risultato` e
@@ -453,7 +458,8 @@ Poi scrivi:
 - **L'ultimo giorno (fine)**, l'oggetto `fine`:
   - `testo`: 300-600 parole, il bilancio del trimestre;
   - `pagella`: come quella dello scrutinio;
-  - una riga per ogni agente: cosa ha imparato e cosa deve ancora imparare.
+  - `righe`: per ogni agente una riga, cosa ha imparato e cosa deve ancora imparare,
+    nella forma `{"falco": "..."}`.
 
 ## 10. Salva tutto nella pagina
 

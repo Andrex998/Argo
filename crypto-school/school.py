@@ -106,13 +106,14 @@ def mark(state_path: str, oi_path: str, now: datetime) -> dict:
 
 
 def _readable(name: str, result: dict) -> dict:
-    """A rules wallet's report, with times as text and only its last trades."""
+    """A rules wallet's report, with times as text (the replay keeps them in seconds) and only
+    its last trades."""
     out = dict(result)
     if name == "falco":
         out["trades"] = [{**{k: v for k, v in t.items() if not k.endswith("_ts")},
-                          "entry": judgment.text(t["entry_ts"]), "exit": judgment.text(t["exit_ts"])}
+                          "entry": judgment.text(t["entry_ts"] * 1000), "exit": judgment.text(t["exit_ts"] * 1000)}
                          for t in result["trades"]]  # fmt: skip
-        out["open"] = [{**{k: v for k, v in o.items() if k != "entry_ts"}, "since": judgment.text(o["entry_ts"])}
+        out["open"] = [{**{k: v for k, v in o.items() if k != "entry_ts"}, "since": judgment.text(o["entry_ts"] * 1000)}
                        for o in result["open"]]  # fmt: skip
     out["n_trades"] = len(result["trades"])
     out["trades"] = out["trades"][-TRADES_KEPT:]
