@@ -5,10 +5,18 @@ Generate il 26/11/2026 con il modello **Soul Cinema** di Higgsfield, nello stess
 ruolo, luce calda dorata, palette verde petrolio, antracite e oro, con un colore per
 personaggio. Sono personaggi inventati: nessun dato dell'utente nei prompt.
 
-Le immagini stanno ancora solo sull'account Higgsfield del proprietario. Per metterle
-nella pagina bisogna scaricarle: la rete della sessione deve permettere l'host
-`d8j0ntlcm91z4.cloudfront.net`, che oggi è bloccato. Poi vanno caricate nell'archivio
-della pagina con la capacità `assets`.
+Gli originali stanno sull'account Higgsfield del proprietario (l'ambiente "argo" ora
+permette l'host `d8j0ntlcm91z4.cloudfront.net`). Le versioni per la pagina sono in questa
+cartella, in WebP, e si pubblicano accanto alla pagina con la mappa `files`:
+
+- `copertina.webp` (1920×1080) e `copertina-piccola.webp` (960×540): la schermata del titolo;
+- `ritratto-<chi>.webp` (480×640): i dialoghi;
+- `figura-<chi>.webp` (alta 1100, sfondo trasparente): la scheda dei personaggi;
+- `stemma-<chi>.webp` e `stemma-scuola.webp` (alti 420, sfondo trasparente): porte,
+  stendardi e interfaccia.
+
+Lo sfondo è tolto con un riempimento dai bordi sul colore dello studio, poi il bordo è
+ristretto di un pixel e sfumato.
 
 | Chi | Uso | Formato | Job Higgsfield |
 | --- | --- | --- | --- |
@@ -22,24 +30,30 @@ della pagina con la capacità `assets`.
 | Scettico (viola) | ritratto | 3:4 | 5cfe77f2-9561-49aa-a485-d81bc5fb263c |
 | La scuola all'alba | copertina e schermata del titolo | 16:9, 2048×1152 | eff0390c-4bac-497d-b3d5-803faf57ff2a |
 
-## Figure intere per i modelli 3D
+## Figure intere per i modelli 3D e la scelta del personaggio
 
-Generate il 26/11/2026 con Soul Cinema, partendo ognuna dal ritratto dello stesso
-personaggio, così faccia e vestiti restano uguali. Sono in piedi, di fronte, a braccia
-leggermente aperte (la "posa ad A"), su fondo grigio chiaro senza ombre e con le mani vuote:
-è la foto che serve a Meshy (Higgsfield, modello 3D da immagine) per costruire il corpo e
-lo scheletro. Formato 9:16, 1152×2048.
+Generate il 26/11/2026 con Soul Cinema, **solo con la descrizione** del personaggio: in
+piedi, di fronte, a braccia leggermente aperte (la "posa ad A"), su fondo grigio chiaro e a
+mani vuote. È la foto che serve a Meshy (Higgsfield, modello 3D da immagine) per costruire
+il corpo e lo scheletro. Formato 9:16, 1152×2048.
 
 | Chi | Job Higgsfield |
 | --- | --- |
-| Preside | 56f3b774-8b5e-4455-9277-bacc57e48ae3 |
-| Falco | 61da3168-08ba-42ed-aba5-6ac10306c96a |
-| Tartaruga | f0452e2a-e3c8-464e-abe3-c60af132af19 |
-| Spazzino | 2d534728-500d-477b-a8bc-32f1459dba13 |
-| Ragioniere | 4d068314-e076-4f5f-a4e6-b8b70001b50c |
-| Guardiano | 559a91b1-50a8-41b2-9851-7c05423021d7 |
-| Cronista | 91f18731-11a6-4379-8cda-bedbab275d27 |
-| Scettico | 0f3f0a2a-401b-4ac9-b06f-89add3642c0f |
+| Preside | 99e38f05-65f6-458d-b05a-88a76a454754 |
+| Falco | a6039b42-3888-4115-a7d4-a24b7499d333 |
+| Tartaruga | c642b347-79d1-4255-8227-0f06a93df359 |
+| Spazzino | d0214a94-d929-4de8-955b-c7e5a63c983c |
+| Ragioniere | 22a078ff-3a9c-4433-931a-c05657bdf26c |
+| Guardiano | 981d1204-ed89-40a7-abb2-e574e8605127 |
+| Cronista | b5ab8b5b-080c-4c79-a1bc-2110305b299f |
+| Scettico | fe34190c-290d-4d52-b54a-01d4e4a120d6 |
+
+**Un tentativo andato storto, da non ripetere.** Il primo giro passava a Soul Cinema il
+ritratto come immagine di riferimento. Con un riferimento il modello **ignora il testo**
+(nel job il prompt risulta vuoto) e rifà il ritratto in versione fotografica a mezzo
+busto. Quegli otto job (56f3b774, 61da3168, f0452e2a, 2d534728, 4d068314, 559a91b1,
+91f18731, 0f3f0a2a) non sono figure intere e non si usano. Le facce delle figure buone
+quindi non sono identiche ai ritratti, ma la descrizione è la stessa.
 
 ## Stemmi
 
