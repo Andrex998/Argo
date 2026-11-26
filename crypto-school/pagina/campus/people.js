@@ -15,7 +15,7 @@
   const clamp = U.clamp, lerp = U.lerp, smooth = U.smooth;
   let T = null, ctx = null;
 
-  // ---- the eight looks (Appendix C, §3.3) ------------------------------------------------------------
+  // ---- the eight looks (Appendix C, §3.3)
   // h height · sw/hw shoulder/hip width · g girth · skin/eye/hair/brow/lip · sp walk speed (m/s)
   // gait: [step × h, arm swing (rad), bob (m), sway (m), foot lift (m), lean (rad)]
   const LOOK = {
@@ -56,7 +56,7 @@
     };
   }
 
-  // ---- geometry: a quad grid, lofts, ellipsoids, merging with skin weights -------------------------
+  // ---- geometry: a quad grid, lofts, ellipsoids, merging with skin weights
   const lin = (hex) => { const c = new T.Color(hex).convertSRGBToLinear(); return [c.r, c.g, c.b]; };
   function geo(pos, idx) {
     const g = new T.BufferGeometry();
@@ -170,7 +170,7 @@
     return g;
   }
 
-  // ---- the head: one analytic surface shared by the skin, the hair and the beard --------------------
+  // ---- the head: one analytic surface shared by the skin, the hair and the beard
   function headFn(J, key, noSocket) {
     const a = J.ha, b = J.hb, c = J.hd, L = LOOK[key];
     const jaw = key === "guardiano" ? 0.05 : L.fem ? 0.2 : key === "ragioniere" || key === "scettico" ? 0.17 : 0.11;
@@ -178,6 +178,7 @@
     return (dx, dy, dz) => {
       let x = dx * a, y = dy * b, z = dz * c;
       if (dz < 0) z *= 1 + 0.12 * -dz * smooth(-0.75, -0.1, dy);
+      if (dy > 0) x *= 1 + 0.3 * dy * dy;
       if (dy > 0.25) { y *= 1 - 0.09 * (dy - 0.25); if (dz > 0) z *= 1 - 0.12 * (dy - 0.25); }
       if (dy < 0) {
         const k = -dy;
@@ -203,12 +204,12 @@
   function faceGeom(J, key) {
     const hf = headFn(J, key, true), at = (x, y) => hf(x, y, Math.sqrt(max(0.01, 1 - x * x - y * y)));
     const re = 0.0125, e = at(0.42, 0.01), b = at(0.43, 0.22), m = at(0, -0.57);
-    return { eX: e[0], eY: J.hc + 0.001, eZ: J.hz + e[2] + 0.0024 - re, re, bX: b[0], bY: J.hc + 0.026, bZ: J.hz + b[2] + 0.0025, mY: J.hc + m[1], mZ: J.hz + m[2] + 0.0045 };
+    return { eX: e[0], eY: J.hc + 0.001, eZ: J.hz + e[2] + 0.0024 - re, re, bX: b[0], bY: J.hc + 0.026, bZ: J.hz + b[2] + 0.0025, mY: J.hc + m[1], mZ: J.hz + m[2] + 0.0012 };
   }
   // the eyelids: shells round the eye centre with almond edges; the upper one rides the blinking lid bone
   const lidEdge = (ph, up) => { const q = min(1.6, (ph / 1.08) ** 2); return up ? PI / 2 - 0.44 + 0.44 * q : PI / 2 + 0.47 - 0.47 * q; };
   const lidGeo = (F, ep, up, n) => { const r = F.re * (up ? 1.1 : 1.07); return surf(n, 6, (c, k) => { const ph = -1.35 + (2.7 * c) / n, e = lidEdge(ph, up), th = up ? (e * k) / 5 : PI - ((PI - e) * k) / 5; return [ep[0] + r * sin(th) * sin(ph), ep[1] + r * cos(th), ep[2] + r * sin(th) * cos(ph)]; }, { p0: true, flip: up }); };
-  // ---- building one person (bind pose: standing straight, arms hanging, facing +z) -------------------
+  // ---- building one person (bind pose: standing straight, arms hanging, facing +z)
   function bindPos(key, J) {
     const P = {}, s = J.s, it = ITEMS[key];
     const hc = J.hc, hz = J.hz;
@@ -346,7 +347,7 @@
     if (lvl) {
       const lipW = (jaw) => (x) => { const k = smooth(0.45, 1, abs(x) / mw); return [jaw ? B.jaw : HB, 1 - k, B.smile, k]; };
       add(at(ell(mw, 0.0041, 0.005, 12, 5, (q) => { q[1] -= 0.0016 * (q[0] / mw) ** 2 - 0.0007 * Math.exp(-((q[0] / 0.004) ** 2)) * (q[1] > 0); }), TR(0, mY + 0.0042, mZ - 0.0022)), mix(L.lip, skin, 0.12), lipW(false), [0.45, 0, 1]);
-      add(at(ell(mw * 0.86, 0.0052, 0.0054, 12, 5), TR(0, mY - 0.0052, mZ - 0.0026)), shade(mix(L.lip, skin, 0.05), 1.08), lipW(true), [0.38, 0, 1]);
+      add(at(ell(mw * 0.84, 0.0048, 0.0047, 12, 5), TR(0, mY - 0.005, mZ - 0.003)), mix(L.lip, skin, 0.12), lipW(true), [0.38, 0, 1]);
     }
     D.head({ add, J, s, hs, lvl, L, at, head, hc, F, shade, mix, seg });
 
@@ -408,7 +409,7 @@
     add(at0(loft(sole, lvl ? 10 : 6, { n: 3 }), TR(x, (boot ? 0.012 : 0.0075), 0, PI / 2)), 0x161413, fb, [0.85, 0]);
   }
 
-  // ---- props: hats on the head bone, items on their own bones ----------------------------------------
+  // ---- props: hats on the head bone, items on their own bones
   // tablet face with candles: built flat in x/y, facing +z
   function tabletParts(add, bone, m, s, glow) {
     add(Box(0.17, 0.24, 0.009).applyMatrix4(m), 0x1a1d22, bone, [0.35, 0]);
@@ -482,11 +483,10 @@
         const zz = bc - 0.074 * Math.sqrt(max(0.05, 1 - (hx / 0.13) ** 2 - (hy / 0.17) ** 2));
         add(hex.clone().applyMatrix4(TR(hx, by + hy, zz, PI / 2 - hy * 2.5, hx * 3, 0).multiply(TR(0, 0, 0, 0, PI / 6, 0))), hy > 0.08 || hy < -0.05 ? 0x6b9a55 : 0x5d8f4c, B.back, [0.6, 0]);
       }
-      for (const sd of [1, -1]) add(Box(0.03, 0.3, 0.012).applyMatrix4(TR(sd * 0.085, J.chest + 0.02, (0.118 * LOOK[key].g + 0.03), -0.12)), 0x2d4f34, B.back, [0.8, 0]);
     }
   }
 
-  // ---- hair, hats, glasses: helpers on the head surface ---------------------------------------------
+  // ---- hair, hats, glasses: helpers on the head surface
   // a cap over the head: angle a from the front (+z) towards +x; th(a) the lowest polar angle (0 = top);
   // thick(a, t) the offset from the scalp (t = 0 at the edge, 1 at the crown)
   function capGeo(head, hc, cols, rows, th, thick, f) {
@@ -504,12 +504,14 @@
       const g = Tor(r, 0.0016 * (shape === "rect" ? 1.4 : 1.1), 4, seg);
       if (shape !== "round") g.scale(1.15, shape === "half" ? 0.62 : 0.78, 1);
       add(g.applyMatrix4(TR(sd * F.eX, F.eY + yOff, F.eZ + F.re * 1.45 + zOff)), color, B.head, [0.3, 0]);
-      add(Box(0.0025, 0.003, J.hd * 0.95).applyMatrix4(TR(sd * (J.ha * 0.96), F.eY + yOff + 0.002, F.eZ + zOff - J.hd * 0.42)), color, B.head, [0.3, 0]);
+      const z0 = F.eZ + F.re * 1.45 + zOff, x0 = F.eX + r * (shape === "round" ? 0.95 : 1.1), x1 = J.ha * 1.01;
+      add(Box(x1 - x0, 0.003, 0.003).applyMatrix4(TR(sd * (x0 + x1) / 2, F.eY + yOff + 0.002, z0)), color, B.head, [0.3, 0]);
+      add(Box(0.0025, 0.003, J.hd * 0.95).applyMatrix4(TR(sd * x1, F.eY + yOff + 0.002, z0 - J.hd * 0.475, 0.05)), color, B.head, [0.3, 0]);
     }
     add(Box(F.eX * 2 - r * 2.1, 0.0025, 0.003).applyMatrix4(TR(0, F.eY + yOff + 0.004, F.eZ + F.re * 1.5 + zOff)), color, B.head, [0.3, 0]);
   }
 
-  // ---- the dresses ---------------------------------------------------------------------------------
+  // ---- the dresses
   // torso({TOR...}), neck colour, head({...}) for hair/hats/face extras, arm({...}), leg({...}), shoe, boot
   const sleeve = (c, cuff, o = {}) => ({ add, S, sd, x, armW, J, s, seg, lvl }) => {
     const sh = J.shY, el = J.elY, wr = J.wrY, b = o.bell || 0, k = o.k || 1;
@@ -573,6 +575,11 @@
     const g = capGeo(head, hc, hs[0], max(5, (hs[1] >> 1) + 2), spec.th, spec.thick, spec.f);
     add(g, null, B.head, [spec.r || 0.7, 0, 2], spec.cf || ((x, y, z) => lin(color)));
   }
+  // a patch of hair laid on the face (beards): rows from y0 to y1, half-width w(t), thickest in the middle
+  const patch = (o, y0, y1, w, th, n) => surf(n, n, (c, r) => {
+    const J = o.J, t = r / (n - 1), u = (2 * c) / (n - 1) - 1, y = lerp(y0, y1, t), x = u * w(t), d = (y - J.hc) / J.hb, dx = x / J.ha;
+    return [x, y, J.hz + o.head(dx, d, Math.sqrt(max(0.01, 1 - dx * dx - d * d)))[2] + 0.0008 + th * (1 - u * u) * (0.35 + 0.65 * smooth(0, 0.45, t))];
+  }, { flip: y1 < y0 });
   const curls = (o, color, n, region, size) => {
     const { add, head, hc, s, lvl } = o;
     const rand = U.rng("curls|" + n);
@@ -609,7 +616,7 @@
       },
       head(o) {
         const { add, J, s, lvl, F, L } = o;
-        hairCap(o, L.hair, { th: hairline(0.95, 1.5, 1.95), thick: (a, t) => lerp(0.0055 * smooth(0, 0.2, t) + 0.002, -0.007, smooth(0.3, 0.5, t) * smooth(-0.75, -0.3, cos(a))), r: 0.85 });
+        hairCap(o, null, { th: hairline(1.0, 1.5, 1.95), thick: (a, t) => 0.0016 + 0.0042 * smooth(0, 0.25, t) - 0.0035 * smooth(0.45, 0.85, t), r: 0.85, cf: (x, y, z) => lin(mix(L.hair, L.skin, 0.62 * smooth(J.hc + 0.06, J.hc + 0.1, y) * smooth(J.hz - 0.04, J.hz + 0.03, z))) });
         glasses(add, J, s, F, 0x1c1c1e, "rect", lvl);
         // the mortarboard (hat bone: only in the meeting and gym modes)
         add(Cyl(0.098, 0.093, 0.07, lvl ? 16 : 8).applyMatrix4(TR(0, J.hc + J.hb * 0.72, J.hz - 0.005, -0.1)), 0x141318, B.hat, [0.8, 0]);
@@ -633,7 +640,7 @@
       head(o) {
         const { add, J, s, L } = o;
         // undercut: shaved sides and back, a longer top swept back with a small quiff
-        hairCap(o, null, { th: hairline(0.92, 1.62, 1.9), thick: (a, t) => 0.002 + 0.016 * smooth(0.42, 0.75, t) * (0.55 + 0.45 * max(0, cos(a))), cf: (x, y) => lin(y > J.hc + J.hb * 0.5 ? L.hair : mix(L.hair, L.skin, 0.45)), r: 0.6, f: (p, a, t) => { if (t > 0.55) p[2] += 0.007 * max(0, cos(a)) * smooth(0.55, 0.9, t); } });
+        hairCap(o, null, { th: hairline(0.92, 1.62, 1.9), thick: (a, t) => 0.002 + 0.012 * smooth(0.42, 0.75, t) * (0.75 + 0.25 * max(0, cos(a))), cf: (x, y) => lin(y > J.hc + J.hb * 0.5 ? L.hair : mix(L.hair, L.skin, 0.45)), r: 0.6, f: (p, a, t) => { if (t > 0.55) p[2] += 0.007 * max(0, cos(a)) * smooth(0.55, 0.9, t); } });
         // aviator sunglasses pushed up on the head
         for (const sd of [1, -1]) {
           add(Circ(0.026, 12).applyMatrix4(TR(sd * 0.032, J.hc + J.hb * 1.02, J.hz + J.hd * 0.55, -1.0, sd * 0.15, 0, 1, 0.8)), 0x101318, B.hat, [0.06, 0]);
@@ -656,6 +663,8 @@
         add(plate(TOR, 0.008, J.neck + 0.004, J.neck - 0.17, 0.07, 0.004), 0xefe6d2, torsoW, [0.85, 0]);
         for (let i = 0; i < 4; i++) { const y = J.neck - 0.19 - i * 0.065; add(Sph(0.007, 6, 4).applyMatrix4(TR(0, y, sz(0, y, 0.008) + 0.002)), 0x8a6a45, torsoW, [0.5, 0]); }
         for (const sd of [1, -1]) add(Sph(0.058, seg, 8).applyMatrix4(TR(sd * 0.055, J.chest + 0.005, sz(sd * 0.055, J.chest) - 0.035, 0, 0, 0, 1, 0.9, 0.75)), 0x3f7a49, B.breath, [0.95, 0]);
+        // the backpack straps over the shoulders, on the backpack's bone
+        for (const sd of [1, -1]) add(strip([0, 1, 2, 3, 4, 5].map((i) => { const y = J.shY + 0.005 - i * 0.05, x = sd * (0.088 + i * 0.004); return [x, y, sz(x, y, 0.008) + 0.004]; }), 0.028), 0x2d4f34, B.back, [0.8, 0]);
         // the cord of her reading glasses, round the neck
         add(Tor(0.085, 0.0015, 3, 16, PI * 1.2).applyMatrix4(TR(0, J.neck - 0.05, 0.03, PI / 2 + 0.6, 0, PI * 0.4 + PI)), 0x3b2a1a, B.breath, [0.6, 0]);
       },
@@ -806,10 +815,9 @@
         const { add, J, s, L } = o;
         hairCap(o, L.hair, { th: hairline(0.95, 1.55, 1.9), thick: (a, t) => 0.008 * smooth(0, 0.3, t) + 0.003, r: 0.55, cf: (x, y, z) => lin(abs(x + 0.03) < 0.0025 && z > J.hz - 0.02 && y > J.hc + J.hb * 0.55 ? 0x070707 : L.hair) });
         // the goatee and the moustache
-        const mY = o.F.mY, mZ = o.F.mZ + 0.002;
-        add(Tor(0.022, 0.0042, 4, 10, PI).applyMatrix4(TR(0, mY + 0.001, mZ, 0, 0, 0, 1.15, 0.62, 1)), 0x1a1a1a, (x) => (abs(x) > 0.013 ? [B.smile, 0.6, B.head, 0.4] : B.head), [0.9, 0, 2]);
-        add(at0(ell(0.017, 0.022, 0.012, 8, 6), TR(0, mY - 0.03, mZ - 0.007, 0.25)), 0x1a1a1a, B.jaw, [0.9, 0, 2]);
-        add(at0(ell(0.007, 0.011, 0.006, 6, 4), TR(0, mY - 0.013, mZ + 0.001)), 0x1a1a1a, B.jaw, [0.9, 0, 2]);
+        const mY = o.F.mY;
+        add(patch(o, mY + 0.0125, mY + 0.0052, (t) => 0.0215 - 0.002 * t, 0.0026, 7), 0x1a1a1a, (x) => (abs(x) > 0.013 ? [B.smile, 0.6, B.head, 0.4] : B.head), [0.9, 0, 2]);
+        add(patch(o, mY - 0.0105, J.hc - 0.112, (t) => 0.0095 + 0.011 * t, 0.0045, 7), 0x1a1a1a, B.jaw, [0.9, 0, 2]);
       },
       arm: sleeve(0x5a3e9a, null, { r: 0.95 }),
       leg: trousers(0x25262c, { w: 0.92 }),
@@ -818,7 +826,7 @@
   };
   const mixHex = (h1, h2, t) => new T.Color(h1).lerp(new T.Color(h2), t).getHex(), mix = mixHex;
 
-  // ---- the shared material: vertex colours, per-vertex roughness, glow and surface kind, a soft rim -------
+  // ---- the shared material: vertex colours, per-vertex roughness, glow and surface kind, a soft rim
   // matp = [roughness, glow + 10·kind]; kind 1 skin (a warm subsurface fill), 2 hair (strands), 3 cloth
   // (weave and soft folds). The micro detail lives in the bind-pose position and fades out beyond ~8 m.
   let MAT = null, PROXY = null, BLOBS = null, RING = null;
@@ -842,7 +850,7 @@
     return m;
   }
 
-  // ---- channels of the pose ------------------------------------------------------------------------
+  // ---- channels of the pose
   const CH = ["px", "py", "pz", "hx", "hy", "hz", "sx", "sy", "sz", "cx", "cy", "cz", "nx", "ny", "nz", "kx", "ky", "kz", "jaw", "mo", "sm", "ex", "ey", "lid", "bL", "bR", "tL", "tR"];
   for (const S of "LR") CH.push(...["ce", "cp", "af", "aa", "at", "ef", "et", "wf", "wd", "fc", "ic", "tc", "lf", "la", "lt", "kn", "an"].map((n) => n + S));
   const blank = () => { const o = {}; for (const c of CH) o[c] = 0; return o; };
@@ -851,7 +859,7 @@
   const arm = (o, S, v) => { for (let i = 0; i < v.length; i++) if (v[i] !== undefined) o[ARM[i] + S] = v[i]; };
   const REST = [0, 0, 0.03, 0.1, 0.12, 0.2, 0.55, 0.06, 0, 0.42, 0.32, 0.3];
 
-  // ---- the people ---------------------------------------------------------------------------------
+  // ---- the people
   const PP = {}; // key -> person
   let detail = "medium", cmdSeq = 0, bubSeq = 0, clk = 0, followed = null, lastUpd = 0, overlayEl = null, motore = null;
   const pending = []; // events for the next frame
@@ -912,7 +920,7 @@
     mesh.geometry.boundingSphere.radius = J.h * 0.78;
   }
 
-  // ---- posture placement ----------------------------------------------------------------------------
+  // ---- posture placement
   // pelvis heights in the body's own units (the root is scaled by J.k)
   const seatY = (p, a) => (a && U.isNum(a.seatH) ? a.seatH : 0.46) / p.J.k + 0.05 * p.J.h;
   const lieY = (p, a) => (a && U.isNum(a.seatH) ? a.seatH : 0.52) / p.J.k + 0.1;
@@ -945,7 +953,7 @@
     return null;
   }
 
-  // ---- commands -----------------------------------------------------------------------------------
+  // ---- commands
   function emitLater(name, payload) { pending.push([name, payload]); }
   function command(key, cmd) {
     const p = PP[key];
@@ -1046,7 +1054,7 @@
     bus.emit("people:arrived", { key: p.key, id: c.id, to: c.to });
   }
 
-  // ---- locomotion: path following with steering and separation ----------------------------------------
+  // ---- locomotion: path following with steering and separation
   function locomote(p, dt) {
     if (p.phase === 1 || p.phase === 3 || p.phase === 4) {
       const tr = p.tr; tr.t += dt;
@@ -1129,7 +1137,7 @@
   }
   const segLen = (path, i) => { let l = 0; for (let j = i; j < path.length - 1; j++) l += hyp(path[j + 1].x - path[j].x, path[j + 1].z - path[j].z); return l; };
 
-  // ---- look-at targets ------------------------------------------------------------------------------
+  // ---- look-at targets
   function lookPoint(p, out) {
     const t = p.look;
     if (t == null) return false;
@@ -1156,7 +1164,7 @@
     return false;
   }
 
-  // ---- the pose library ------------------------------------------------------------------------------
+  // ---- the pose library
   // fills p.T for the current posture, state and time; legs come later (IK)
   function poseTargets(p, t, dt) {
     const o = p.T, J = p.J, k = p.key, st = p.state, post = postureNow(p), rm = ctx && ctx.reduceMotion;
@@ -1379,7 +1387,7 @@
     return tr.t / tr.dur > 0.5 ? tr.to : tr.from;
   }
 
-  // ---- legs: two-bone IK in the hips frame ----------------------------------------------------------
+  // ---- legs: two-bone IK in the hips frame
   function legIK(p, S, ax, ay, az, o, pitch) {
     const J = p.J, sd = S === "L" ? 1 : -1;
     E1.set(o.hx, o.hy, o.hz); Q1.setFromEuler(E1);
@@ -1424,7 +1432,7 @@
       sh.t -= dt;
       if (sh.t <= 0) { sh.side = -sh.side; sh.t = 4 + p.rnd() * 4; }
       sh.v = U.damp(sh.v, sh.side, 1.6, dt);
-      wx = sh.v * (p.state === "stand" ? 0.012 : 0.028); roll = sh.v * (p.state === "stand" ? 0.01 : 0.035);
+      const st = p.state === "stand"; wx = sh.v * (st ? 0.012 : 0.036); roll = sh.v * (st ? 0.01 : 0.055); o.py -= st ? 0 : 0.008 * abs(sh.v); o.ky -= st ? 0 : 0.05 * sh.v;
     }
     o.px += wx; o.hz += roll; o.sz -= roll * 0.7; o.cz -= roll * 0.4;
     let fz = 0, py = o.py, lean = 0;
@@ -1448,7 +1456,7 @@
     legIK(p, "R", -fx - (p.key === "guardiano" ? 0.03 : 0), J.ank, fz - 0.01, o, 0);
   }
 
-  // ---- the walk cycle: overrides pelvis, spine, arms and legs ------------------------------------------
+  // ---- the walk cycle: overrides pelvis, spine, arms and legs
   function walkPose(p, o, dt) {
     const J = p.J, [stepK, armA, bob, sway, lift, lean] = p.L.gait, v = p.walk.v;
     const step = stepK * J.h * clamp(0.75 + 0.25 * v / p.L.sp, 0.75, 1.1);
@@ -1494,7 +1502,7 @@
     }
   }
 
-  // ---- applying a pose to the bones --------------------------------------------------------------------
+  // ---- applying a pose to the bones
   function applyBones(p, o) {
     const b = p.bones, J = p.J;
     b[B.hips].position.set(o.px, o.py, o.pz);
@@ -1556,7 +1564,7 @@
     I.carry = !!it.carry && post === "stand" && !["read", "write", "gesture", "drink", "type", "think"].includes(st);
   }
 
-  // ---- one frame of one person --------------------------------------------------------------------------
+  // ---- one frame of one person
   function animate(p, t, dt) {
     p.adt = dt;
     itemsFor(p);
@@ -1600,7 +1608,7 @@
     else { pr.rotation.set(0, 0, 0); pr.position.set(0, 0, 0); pr.scale.y = p.J.h; }
   }
 
-  // ---- the DOM overlay: tags, bubbles, thought clouds ---------------------------------------------------
+  // ---- the DOM overlay: tags, bubbles, thought clouds
   const CSS = `
 .cp-p-tag,.cp-p-bubble,.cp-p-thought{position:absolute;left:0;top:0;will-change:transform;contain:layout style}
 .cp-p-tag{display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 6px;border-radius:999px;background:var(--sheet);color:var(--ink);font:600 .74rem/1.3 var(--font-head);box-shadow:0 2px 8px rgba(0,0,0,.22);white-space:nowrap;border:1px solid var(--who,var(--rule));z-index:1;transition:opacity .3s,box-shadow .2s}
@@ -1818,7 +1826,7 @@
     p.tagEl.w = 0;
   }
 
-  // ---- the public API ------------------------------------------------------------------------------------
+  // ---- the public API
   const P = {
     ready: false,
     init(c) {

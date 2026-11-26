@@ -87,6 +87,7 @@ const ICON = {
   sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
   map: '<path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  chev: '<path d="M6 14.5l6-6 6 6"/>',
   play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/>',
   pause: '<path d="M8 5.5v13M16 5.5v13" stroke-width="3"/>',
   spark: '<path d="M12 3l1.9 5.6L19.5 10.5l-5.6 1.9L12 18l-1.9-5.6L4.5 10.5l5.6-1.9z" fill="currentColor" stroke="none"/>',
@@ -138,10 +139,10 @@ const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { retur
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } };
 const sig = (v) => { try { return JSON.stringify(v); } catch (e) { return String(Math.random()); } };
 const sinceTxt = (s) => {
-  const d = U.utc(s);
+  const d = isNum(s) ? new Date(s) : U.utc(s);
   if (!d) return "";
   const m = Math.max(0, Math.floor((C.clock.now().getTime() - d.getTime()) / 60000));
-  return m < 1 ? "da adesso" : m < 60 ? `da ${m} min` : `da ${Math.floor(m / 60)} h ${m % 60} min`;
+  return m < 1 ? "da poco" : m < 60 ? `da ${m} min` : `da ${Math.floor(m / 60)} h ${m % 60} min`;
 };
 
 // ---- state
@@ -222,6 +223,7 @@ const publicCareers = () => {
   return o;
 };
 const presideMeetings = () => D.held().filter((g) => g.stato === "completo").length;
+const ledTxt = (n) => (n ? `ha guidato ${n} ${n === 1 ? "riunione" : "riunioni"}` : "la prima riunione completa deve ancora arrivare");
 function season() {
   const f = D.fund(), g = D.graduation();
   return { capitale: f ? f.capitale : null, pct: f ? f.pct : null, quota: f ? f.quota : null, giorno: g.giorno, totale: g.totale, days: g.days, tesi: g.tesi || null };
@@ -286,12 +288,13 @@ const CSS = `
 .cp-u-mind{border-radius:14px;padding:12px 14px 14px;display:grid;gap:10px;width:100%;border-top:3px solid var(--who);align-content:start}
 .cp-u-mind-side .cp-u-mind{border-radius:0;border-width:0 0 1px;box-shadow:none;border-top:3px solid var(--who);background:var(--sheet)}
 .cp-u-mhd{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start}
-.cp-u-ava{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:700 .95rem/1 var(--font-head);color:#fff;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.45),transparent 55%),var(--who);box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--who),0 4px 12px rgba(0,0,0,.25)}
+.cp-u .cp-u-ava{width:40px;height:40px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font:700 .95rem/1 var(--font-head);color:#fff;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.45),transparent 55%),var(--who);box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--who),0 4px 12px rgba(0,0,0,.25)}
 .cp-u-mhd h3{font-size:1.08rem;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .cp-u-mhd h3 small{font:600 .66rem/1 var(--font-head);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .cp-u-mhd p{font-size:.78rem;color:var(--ink-2);line-height:1.35;margin-top:2px}
 .cp-u-x{width:36px;height:36px;border-radius:50%;border:1px solid var(--rule);background:var(--sheet);display:grid;place-items:center}
 .cp-u-x:hover{border-color:var(--ink-2)}
+.cp-u-min[aria-expanded=false] svg{transform:rotate(180deg)}
 .cp-u-ms{display:grid;gap:3px;padding:0}
 .cp-u-ms+.cp-u-ms{border-top:1px solid color-mix(in srgb,var(--rule) 70%,transparent);padding-top:9px}
 .cp-u-ms h4{font-size:.64rem;letter-spacing:.1em}
@@ -676,7 +679,7 @@ function drawMap(cv, w, hh, big) {
     g.fillStyle = fillOf(r.kind, t);
     for (const q of arr(r.rects)) g.fillRect(X(q[0]), Z(q[1]), (q[2] - q[0]) * s, (q[3] - q[1]) * s);
     const ow = r.kind === "dormitorio" ? r.owner || String(r.id).replace(/^dorm_/, "") : null;
-    if (ow && t.c[ow]) { g.fillStyle = t.c[ow]; g.globalAlpha = t.dark ? 0.24 : 0.16; for (const q of arr(r.rects)) g.fillRect(X(q[0]), Z(q[1]), (q[2] - q[0]) * s, (q[3] - q[1]) * s); g.globalAlpha = 1; }
+    if (ow && t.c[ow]) { g.fillStyle = t.c[ow]; g.globalAlpha = t.dark ? 0.17 : 0.15; for (const q of arr(r.rects)) g.fillRect(X(q[0]), Z(q[1]), (q[2] - q[0]) * s, (q[3] - q[1]) * s); g.globalAlpha = 1; }
   }
   // the garden: gravel cross and the fountain
   g.fillStyle = t.dark ? "#3c5a35" : "#c9dcbc";
@@ -911,7 +914,7 @@ function afterFollow() {
   drawMinimap();
   bus.emit("ui:follow", { key: followKey });
 }
-let mindEl = null, mindBody = null, mindKey = null, mindSig = "";
+let mindEl = null, mindBody = null, mindKey = null, mindSig = "", mindMin = false;
 function buildMind() {
   if (mindEl) { mindEl.remove(); mindEl = null; }
   mindKey = followKey;
@@ -922,8 +925,11 @@ function buildMind() {
     h("div", { class: "cp-u-mhd" },
       h("span", { class: "cp-u-ava", "aria-hidden": "true", text: NM[k].slice(0, 1) }),
       h("div", null, h("h3", null, h("small", { text: "La mente" }), NM[k]), h("p", { text: ROLE[k] || "" })),
-      h("button", { class: "cp-u-x", "aria-label": "Smetti di seguire", title: "Smetti di seguire", onclick: () => follow(null) }, icon("x"))),
+      h("span", { style: "display:flex;gap:6px" },
+        h("button", { class: "cp-u-x cp-u-min", "aria-label": "Riduci la scheda", title: "Riduci o apri la scheda", "aria-expanded": String(!mindMin), onclick: (e) => { mindMin = !mindMin; e.currentTarget.setAttribute("aria-expanded", String(!mindMin)); show(mindBody, !mindMin); } }, icon("chev")),
+        h("button", { class: "cp-u-x", "aria-label": "Smetti di seguire", title: "Smetti di seguire", onclick: () => follow(null) }, icon("x")))),
     mindBody);
+  show(mindBody, !mindMin);
   placeMind();
   renderMind();
 }
@@ -972,7 +978,7 @@ function mindModel(k) {
   if (C.GRADED.includes(k)) {
     const c = careers()[k];
     if (c) out.push(["Carriera", "career", c]);
-  } else out.push(["Carriera", "t", `Ha guidato ${presideMeetings()} riunioni`]);
+  } else out.push(["Carriera", "t", U.cap(ledTxt(presideMeetings()))]);
   if (!data) out.push(["", "empty", "Il suo quaderno è ancora vuoto."]);
   return out;
 }
@@ -1043,7 +1049,7 @@ function buildSide() {
   panel.attivita.append(el.acts);
   // 3. «Fateli parlare»
   buildTalk();
-  el.side = h("div", { class: "cp u cp-u cp-u-side" + (ctx.reduceMotion ? " cp-u-rmo" : "") }, el.mindSide, el.tabs, el.wait, TABS.map(([n]) => panel[n]));
+  el.side = h("div", { class: "cp-u cp-u-side" + (ctx.reduceMotion ? " cp-u-rmo" : "") }, el.mindSide, el.tabs, el.wait, TABS.map(([n]) => panel[n]));
   side.append(el.side);
 }
 function tabVisible(n) {
@@ -1354,6 +1360,8 @@ function renderSeason() {
     b.append(h("p", { class: "cp-u-src", text: f.source === "portafogli" ? `Somma degli 8 portafogli ai prezzi di BingX${when ? " del " + when : ""}.` : `Il fondo calcolato dal Guardiano${when ? " nella riunione del " + when : ""}.` }));
   }
 }
+// the avatar of a career card: follows the agent and brings the campus into view
+const avaBtn = (k) => h("button", { class: "cp-u-ava", "aria-label": `Segui ${withArt(k)} nel campus`, title: `Segui ${withArt(k)} nel campus`, onclick: () => { follow(k); const st = C.ctx && C.ctx.stage; if (st && st.scrollIntoView) st.scrollIntoView({ behavior: ctx.reduceMotion ? "auto" : "smooth", block: "center" }); } }, NM[k].slice(0, 1));
 function renderCareers() {
   const c = careers(), pres = presideMeetings();
   const sg = sig([c, pres, C.TRADERS]);
@@ -1361,8 +1369,8 @@ function renderCareers() {
   careersSig = sg;
   const b = el.careers;
   b.textContent = "";
-  b.append(h("div", { class: "cp-u-pres k-preside" }, h("span", { class: "cp-u-ava", "aria-hidden": "true", text: "P" }),
-    h("div", null, h("b", { text: `Il Preside · ha guidato ${pres} riunioni` }), h("p", { class: "cp-u-sub", text: "Non ha un livello: è lui che dà i voti." }))));
+  b.append(h("div", { class: "cp-u-pres k-preside" }, avaBtn("preside"),
+    h("div", null, h("b", { text: `Il Preside · ${ledTxt(pres)}` }), h("p", { class: "cp-u-sub", text: "Non ha un livello: è lui che dà i voti." }))));
   const grid = h("div", { class: "cp-u-cards" });
   for (const k of C.GRADED) {
     const r = c[k];
@@ -1383,7 +1391,7 @@ function renderCareers() {
       medals.append(btn);
     }
     grid.append(h("article", { class: "cp-u-card k-" + k },
-      h("div", { class: "cp-u-ch" }, h("span", { class: "cp-u-ava", "aria-hidden": "true", text: NM[k].slice(0, 1) }),
+      h("div", { class: "cp-u-ch" }, avaBtn(k),
         h("div", null, h("h4", { text: NM[k] }), h("p", { text: `Livello ${r.level} · ${r.levelName}` })),
         h("span", { class: "cp-u-lv", title: "Livello " + r.level }, h("span", null, h("small", { text: "liv" }), String(r.level)))),
       careerLine(r, true), medals, info));
