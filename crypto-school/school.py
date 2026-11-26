@@ -17,6 +17,9 @@ trading-desk/, after `uv sync --frozen`:
                             wallet agent and the Guardiano: DIR/contesto-<agent>.json
   execute STATE ORDERS      the agents' orders for their judgment wallets, at the last prices
   verify NOTEBOOK           score the notebook's predictions now due
+  gara-nuova STATE          the night contest of 26/11/2026: four separate wallets, leverage 10
+  gara-ordini STATE ORDERS  each agent's one trade, at the last prices
+  gara-conti STATE          liquidations, stops, targets and the end at 15:00 Italian time
   sigilla MINUTES REGISTER [mattina|sera]
                             seal the meeting's decisions in the register (a chain of SHA-256)
   registro REGISTER         check every seal of the chain
@@ -46,6 +49,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import data
+import gara
 import gym
 import judgment
 import picture
@@ -252,6 +256,32 @@ def context(folder: str) -> dict:
     _save(str(base / "contesto-guardiano.json"), {**numbers, "mercato": pic["mercato"],
           "posizioni_a_giudizio": held, "posizioni_a_regole": rules_open})  # fmt: skip
     return {"scritti": [*written, "contesto-guardiano.json"]}
+
+
+# --- the night contest of 26/11/2026 ------------------------------------------------------------------
+
+
+def contest_orders(state_path: str, orders_path: str, now: datetime) -> dict:
+    state, orders, prices = _load(state_path), _load(orders_path), data.tickers()
+    when, events = judgment.text(_now_ms(now)), []
+    for name in gara.AGENTS:
+        mine = orders.get(name)
+        for order in mine if isinstance(mine, list) else [mine] if isinstance(mine, dict) else []:
+            events.append(gara.open_trade(state, name, order, prices, when))
+    _save(state_path, state)
+    return {"now": when, "events": events, "situazione": gara.standings(state, prices)}
+
+
+def contest_accounts(state_path: str, now: datetime) -> dict:
+    state, end = _load(state_path), _now_ms(now)
+    held = [p for w in state["wallets"].values() for p in w["positions"]]
+    candles = {p["symbol"]: data.klines(p["symbol"], "1h", judgment.ms(p["checked"]), end) for p in held}
+    rates = {p["symbol"]: data.funding(p["symbol"], judgment.ms(p["funded"]), end) for p in held}
+    events = gara.mark(state, candles, rates)
+    prices = data.tickers()
+    _save(state_path, state)
+    over = end >= judgment.ms(gara.DEADLINE)
+    return {"now": judgment.text(end), "events": events, "situazione": gara.standings(state, prices, over)}
 
 
 # --- the sealed register and the monthly auditor ------------------------------------------------------
@@ -475,6 +505,13 @@ def main(argv: list[str]) -> None:
         _print(day(args[0], args[1], args[2], now))
     elif command == "execute" and len(args) == 2:
         _print(execute(args[0], args[1], now))
+    elif command == "gara-nuova" and len(args) == 1:
+        _save(args[0], gara.new_state())
+        _print({"creata": args[0], "scadenza_utc": gara.DEADLINE})
+    elif command == "gara-ordini" and len(args) == 2:
+        _print(contest_orders(args[0], args[1], now))
+    elif command == "gara-conti" and len(args) == 1:
+        _print(contest_accounts(args[0], now))
     elif command == "sigilla" and len(args) in (2, 3):
         _print(seal(args[0], args[1], args[2] if len(args) == 3 else "mattina"))
     elif command == "registro" and len(args) == 1:

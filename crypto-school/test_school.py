@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from desk.models import Candle  # noqa: E402
 
 import data  # noqa: E402
+import gara  # noqa: E402
 import gym  # noqa: E402
 import judgment  # noqa: E402
 import picture  # noqa: E402
@@ -612,3 +613,44 @@ def test_the_auditor_finds_books_that_do_not_add_up():
     }
     s["wallets"]["falco"]["cash"] += 100
     assert any(p["problema"].startswith("contanti") for p in school.accounts(s))
+
+
+# --- the night contest -------------------------------------------------------------------------------
+
+
+def contest_with(order: dict, name: str = "falco") -> tuple[dict, dict]:
+    s = gara.new_state()
+    e = gara.open_trade(s, name, {"symbol": "SOL", "side": "long", "margine_pct": 10, **order}, {"SOL": 100.0},
+                        "2026-11-26 02:30:00")  # fmt: skip
+    return s, e
+
+
+def test_the_contest_opens_one_trade_at_ten_times_its_margin():
+    s, e = contest_with({"stop": 95, "target": 110})
+    assert e["event"] == "aperta" and e["margin"] == 1000 and e["units"] == pytest.approx(100)
+    assert e["liquidazione"] == pytest.approx(90.5)
+    assert s["wallets"]["falco"]["cash"] == pytest.approx(10_000 - 10_000 * judgment.COST)
+    again = gara.open_trade(s, "falco", {"symbol": "ETH", "side": "long", "margine_pct": 5}, {"ETH": 1.0}, "x")
+    assert "una sola" in again["reason"]
+    assert "tra il prezzo e la liquidazione" in contest_with({"stop": 89})[1]["reason"]
+    assert "dall'1% al 100%" in contest_with({"margine_pct": 150})[1]["reason"]
+    assert "ora di chiusura" in contest_with({"chiudi_alle_utc": "2026-11-26 18:00:00"})[1]["reason"]
+
+
+def test_the_contest_liquidates_stops_and_ends_at_three_pm():
+    hour = lambda h, o, hi, lo, c: candle(f"2026-11-26 {h:02d}:00:00", o, hi, lo, c)  # noqa: E731
+    s, _ = contest_with({})  # no stop: a fall of 9.5% takes the margin
+    events = gara.mark(s, {"SOL": [hour(3, 100, 101, 95, 96), hour(4, 96, 97, 90, 91)]}, {})
+    assert events[0]["exit_reason"] == "liquidazione" and events[0]["pnl"] < -1000
+    s, _ = contest_with({"stop": 97})
+    events = gara.mark(s, {"SOL": [hour(3, 100, 101, 96, 98)]}, {})
+    assert events[0]["exit_reason"] == "stop" and events[0]["exit"] == 97
+    s, _ = contest_with({}, "spazzino")
+    events = gara.mark(s, {"SOL": [hour(3, 100, 102, 99, 101), hour(13, 104, 106, 103, 105)]}, {})
+    assert events[0]["exit_reason"] == "fine della gara" and events[0]["exit"] == 105
+    assert events[0]["pnl"] == pytest.approx(500 - 100 * (100 + 105) * judgment.COST, abs=0.01)
+    table = gara.standings(s, {})
+    assert table["finita"] is False  # the other three never opened: their wallets stay at 10,000
+    s, _ = contest_with({"chiudi_alle_utc": "2026-11-26 05:00:00", "target": 120}, "ragioniere")
+    events = gara.mark(s, {"SOL": [hour(3, 100, 102, 99, 101), hour(5, 102, 103, 101, 102)]}, {})
+    assert events[0]["exit_reason"] == "all'ora scelta" and events[0]["exit"] == 102
