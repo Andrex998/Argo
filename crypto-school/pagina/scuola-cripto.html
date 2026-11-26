@@ -948,7 +948,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   $("registro").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-date]");
     if (!b) return;
-    selectDay(b.dataset.date, { autostart: false });
+    selectDay(b.dataset.date);
     $("verbale").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   });
   function selectDay(date, o = {}) {

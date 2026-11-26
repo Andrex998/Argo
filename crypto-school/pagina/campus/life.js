@@ -371,6 +371,8 @@
   const WKEY = /\b(falco|tartaruga|spazzino|ragioniere)_(giudizio|regole)\b/;
   const ult = () => obj(C.data.ultimo);
   const alarms = () => { const u = ult(); return arr(u && obj(u.rischio) && u.rischio.allarmi).filter((x) => typeof x === "string" && x.trim()); };
+  // the alarms belong to the last meeting: «oggi» only when that meeting is today's (Rome)
+  const alarmWhen = () => { const u = ult(); return u && u.data === U.rome().date ? "oggi" : u && U.isoDay(u.data) ? "nella riunione del " + U.dm(u.data) : "nell'ultima riunione"; };
   const alarmTarget = (s) => { const m = WKEY.exec(String(s || "")); return m ? m[1] : null; };
   function mods() {
     if (MODS && MODS.v === C.data.version) return MODS;
@@ -527,7 +529,14 @@
   function errorOf(k) { const m = mem(k); const e = arr(m && m.errori).filter((x) => obj(x) && x.testo && isNum(U.toNum(x.volte)) && U.toNum(x.volte) >= 2); return e.length ? e.reduce((p, x) => (U.toNum(x.volte) > U.toNum(p.volte) ? x : p)) : null; }
   function gymOf(k) { const m = mem(k), s = arr(m && obj(m.palestra) && m.palestra.sessioni).filter(obj); return lastOf(s); }
   function semOf(k) { const s = obj(C.data.semaforo), p = s && obj(s.portafogli); return p && obj(p[k + "_giudizio"]) && p[k + "_giudizio"].colore ? p[k + "_giudizio"] : null; }
-  function marketOf() { const u = ult(), m = u && obj(u.quadro) && obj(u.quadro.mercato), mb = m && obj(m.btc), px = D.prices().BTC; return isNum(px) && mb ? { px, mb, btc: obj(u.quadro.monete) && obj(u.quadro.monete.BTC) } : null; }
+  // the quadro's numbers are computed on the daily close: the lines quote that close and its day
+  function marketOf() {
+    const u = ult(), m = u && obj(u.quadro) && obj(u.quadro.mercato), mb = m && obj(m.btc), px = D.prices().BTC;
+    const btc = mb && obj(u.quadro.monete) && obj(u.quadro.monete.BTC), cl = U.toNum(mb && mb.chiusura) ?? U.toNum(btc && btc.chiusura);
+    return isNum(px) && mb ? { px, mb, btc, cl, day: U.isoDay(u.quadro.giorno) } : null;
+  }
+  const atClose = (c) => (c.day ? `alla chiusura del ${f(U.dm(c.day))}` : "all'ultima chiusura");
+  const closeTxt = (c) => (isNum(c.cl) ? `${U.cap(atClose(c))} BTC era a ${f(U.price(c.cl))}` : `${U.cap(atClose(c))} BTC era`);
   function newsOf() { const u = ult(), n = u && obj(u.briefing) && arr(u.briefing.notizie).filter((x) => obj(x) && x.testo)[0]; return n || null; }
   function fundOf() { const r = ult() && obj(ult().rischio) && obj(ult().rischio.fondo); return r && isNum(r.netta_beta_pct) ? r : null; }
   function myContest(k) { const c = recentContest(); if (!c) return null; const rk = ranking(c); const i = rk.findIndex((x) => x.k === k); return i < 0 ? null : { c, rk, i, me: rk[i] }; }
@@ -542,12 +551,13 @@
     falco: ["Regola, rischio, stop. Il resto è rumore.", "Torno al terminale.", "Poche parole: lo scrivo."],
     tartaruga: ["Piano piano. Ci vediamo dopo.", "Vado a rileggere il quaderno.", "Senza fretta, come sempre."],
     spazzino: ["Io aspetto chi è costretto a vendere.", "Mai il coltello che cade.", "Torno a guardare i ribassi."],
-    ragioniere: ["Lo annoto. I conti si chiudono stasera.", "Prezzo, funding e costi: separati.", "Chi mi paga, e perché? Ci penso."],
+    ragioniere: ["Lo annoto, con la data.", "Prezzo, funding e costi: separati.", "Chi mi paga, e perché? Ci penso."],
     guardiano: ["Ricorda: lo stop si scrive prima.", "Io intanto controllo il rischio.", "Speriamo di non sentirci stanotte."],
     cronista: ["Lo segno nel taccuino, con l'ora.", "Prima il fatto, poi l'opinione.", "Ottimo: è un fatto, non un'opinione."],
     scettico: ["Allora portami un numero, domani.", "Vedremo se regge con costi doppi.", "Una prova, non un'opinione."],
   };
   const BYE = ["A dopo.", "Ci vediamo alla riunione.", "Torno al lavoro.", "D'accordo. A più tardi."];
+  const NEUTRAL_CLOSE = ["Ci penso.", "Bene. Ne riparliamo.", "Grazie, lo tengo a mente.", "D'accordo."];
   const alarmTxt = (s, max) => { const t = U.plain(U.human(s), max), m = /^([A-ZÀ-Ü]{3,}):\s*(.*)$/s.exec(t); return f(m ? `${m[1]}: ${m[2]}` : t); };
   const calSide = (c) => { const e = c.cal && c.cal.eccesso_di_sicurezza; return !isNum(e) ? 0 : e > 0.05 ? 1 : e < -0.05 ? -1 : 0; };
   const TOPIC = {
@@ -616,7 +626,7 @@
       },
       reply: {
         _: [(c) => calSide(c) > 0 ? "Lo so: abbasso le probabilità." : calSide(c) < 0 ? "Allora sono troppo prudente: posso alzarle un po'." : "Bene: le probabilità tornano.",
-          (c) => calSide(c) > 0 ? "Hai ragione: dove mi sento sicuro, esagero." : calSide(c) < 0 ? "Meglio prudente che troppo sicuro. Ma lo correggo." : "Lo tengo così, allora.",
+          (c) => calSide(c) > 0 ? `Hai ragione: dove mi sento sicur${gx(c.b, "o", "a")}, esagero.` : calSide(c) < 0 ? `Meglio prudente che troppo sicur${gx(c.b, "o", "a")}. Ma lo correggo.` : "Lo tengo così, allora.",
           () => "Lo scrivo nel quaderno, accanto alle previsioni."],
         falco: [(c) => calSide(c) > 0 ? "Lo so. Meno sicurezza, stessi stop." : "Stessi stop, stesse regole. Il resto lo dice il motore."],
         tartaruga: [(c) => calSide(c) > 0 ? "Sono lenta anche a correggermi, ma lo faccio." : "Piano: i numeri dicono che va bene così."],
@@ -652,12 +662,12 @@
       label: "Il mercato",
       can: (a) => (has(["falco", "spazzino", "tartaruga", "cronista"], a) ? marketOf() : null),
       open: {
-        _: [(c) => isNum(c.mb.da_media200_pct) ? `BTC è a ${f(U.price(c.px))}, ${f(U.pct(c.mb.da_media200_pct))} dalla media a 200 giorni.` : `BTC è a ${f(U.price(c.px))}.`,
+        _: [(c) => isNum(c.mb.da_media200_pct) ? `${closeTxt(c)}, ${f(U.pct(c.mb.da_media200_pct))} dalla media a 200 giorni.` : `BTC è a ${f(U.price(c.px))}.`,
           (c) => isNum(c.mb.vol20_annua_pct) ? `BTC a ${f(U.price(c.px))}, volatilità a 20 giorni ${f(U.pct(c.mb.vol20_annua_pct, 1, false))} l'anno.` : null,
-          (c) => isNum(c.mb.da_media50_pct) ? `BTC sta ${f(U.pct(c.mb.da_media50_pct))} dalla media a 50 giorni.` : null],
-        tartaruga: [(c) => isNum(c.mb.da_media50_pct) ? `BTC è ${f(U.pct(c.mb.da_media50_pct))} dalla media a 50 giorni: il trend lento è ${c.mb.da_media50_pct < 0 ? "ancora giù" : "su"}.` : null],
-        falco: [(c) => c.btc && isNum(c.btc.da_max20_pct) ? `BTC a ${f(U.price(c.px))}, ${f(U.pct(c.btc.da_max20_pct))} dal massimo a 20 giorni. Aspetto la rottura giusta.` : null],
-        spazzino: [(c) => c.btc && isNum(c.btc.rsi2) ? `BTC a ${f(U.price(c.px))}, RSI a 2 periodi a ${f(U.small(c.btc.rsi2))}: ${c.btc.rsi2 < 10 ? "qui qualcuno è costretto a vendere" : c.btc.rsi2 > 90 ? "troppo caldo, aspetto" : "niente di forzato"}.` : null],
+          (c) => isNum(c.mb.da_media50_pct) ? `${U.cap(atClose(c))} BTC era ${f(U.pct(c.mb.da_media50_pct))} dalla media a 50 giorni.` : null],
+        tartaruga: [(c) => isNum(c.mb.da_media50_pct) ? `${U.cap(atClose(c))} BTC era ${f(U.pct(c.mb.da_media50_pct))} dalla media a 50 giorni: il trend lento è ${c.mb.da_media50_pct < 0 ? "ancora giù" : "su"}.` : null],
+        falco: [(c) => c.btc && isNum(c.btc.da_max20_pct) ? `${closeTxt(c)}, ${f(U.pct(c.btc.da_max20_pct))} dal massimo a 20 giorni. Aspetto la rottura giusta.` : null],
+        spazzino: [(c) => c.btc && isNum(c.btc.rsi2) ? `${U.cap(atClose(c))} BTC aveva l'RSI a 2 periodi a ${f(U.small(c.btc.rsi2))}: ${c.btc.rsi2 < 10 ? "qui qualcuno è costretto a vendere" : c.btc.rsi2 > 90 ? "troppo caldo, aspetto" : "niente di forzato"}.` : null],
         cronista: [(c) => { const at = obj(C.data.giudizio) && C.data.giudizio.prices_at; return at ? `Fatto: BTC a ${f(U.price(c.px))} USDT, prezzi di BingX delle ${f(U.romeClock(U.utc(at)))}.` : null; }],
       },
       reply: {
@@ -684,7 +694,7 @@
       label: "L'allarme",
       can: (a, b) => { if (a !== "guardiano") return null; const al = alarms(); const x = al.find((s) => alarmTarget(s) === b); return x ? { al: x, n: al.length } : null; },
       open: {
-        _: [(c) => `${nm(c.b)}, c'è un allarme ${alarmTxt(c.al, 150)}`, (c) => `${nm(c.b)}, il mio allarme di oggi riguarda te: ${alarmTxt(c.al, 140)}`, (c) => `${nm(c.b)}, leggi qui, allarme ${alarmTxt(c.al, 130)} È un allarme, non un divieto.`],
+        _: [(c) => `${nm(c.b)}, c'è un allarme ${alarmTxt(c.al, 150)}`, (c) => `${nm(c.b)}, il mio allarme ${alarmWhen() === "oggi" ? "di oggi" : alarmWhen()} riguarda te: ${alarmTxt(c.al, 140)}`, (c) => `${nm(c.b)}, leggi qui, allarme ${alarmTxt(c.al, 130)} È un allarme, non un divieto.`],
       },
       reply: {
         _: [() => "Lo vedo. Ne parliamo alla riunione.", () => "Ricevuto. Lo scrivo nel quaderno.", () => "Hai ragione a segnalarlo."],
@@ -727,7 +737,7 @@
         preside: [(c) => `Il fondo comune è a ${f(U.fmt(c.F.capitale, 2))} USDT su 80.000: si vince in squadra.`],
       },
       reply: {
-        _: [() => "D'accordo: tutto si divide tra tutti.", () => "Allora porto il mio errore alla riunione: serve a tutti.", () => "In squadra. Anche quando perdo io."],
+        _: [() => "D'accordo: tutto si divide tra tutti.", (c) => (errorOf(c.b) ? "Allora porto il mio errore alla riunione: serve a tutti." : null), () => "In squadra. Anche quando perdo io."],
         scettico: [(c) => `E quanto di quel ${f(U.pct(c.F.pct))} viene dal caso?`], guardiano: [() => "Il fondo si difende prima di tutto: niente salti in una notte."],
       },
     },
@@ -749,9 +759,9 @@
       label: "I voti",
       can: (a) => { if (!has(GR, a)) return null; const v = D.votes(a), p = v && obj(v.preside); return p && isNum(U.toNum(p.ragionamento)) && isNum(U.toNum(p.disciplina)) ? { v, p, s: obj(v.auto) } : null; },
       open: {
-        _: [(c) => c.s && isNum(U.toNum(c.s.ragionamento)) && isNum(U.toNum(c.s.disciplina)) ? `Il Preside mi ha dato ${f(U.small(c.p.ragionamento))} e ${f(U.small(c.p.disciplina))}; io mi ero dato ${f(U.small(c.s.ragionamento))} e ${f(U.small(c.s.disciplina))}.` : null,
+        _: [(c) => c.s && isNum(U.toNum(c.s.ragionamento)) && isNum(U.toNum(c.s.disciplina)) ? `Il Preside mi ha dato ${f(U.small(c.p.ragionamento))} e ${f(U.small(c.p.disciplina))}; io mi ero dat${gx(c.a, "o", "a")} ${f(U.small(c.s.ragionamento))} e ${f(U.small(c.s.disciplina))}.` : null,
           (c) => `Ultimi voti: ragionamento ${f(U.small(c.p.ragionamento))}, disciplina ${f(U.small(c.p.disciplina))}.`,
-          (c) => c.s && isNum(U.toNum(c.s.disciplina)) ? `Mi sono dato ${f(U.small(c.s.disciplina))} in disciplina, il Preside ${f(U.small(c.p.disciplina))}.` : null],
+          (c) => c.s && isNum(U.toNum(c.s.disciplina)) ? `Mi sono dat${gx(c.a, "o", "a")} ${f(U.small(c.s.disciplina))} in disciplina, il Preside ${f(U.small(c.p.disciplina))}.` : null],
       },
       reply: {
         _: [() => "Il prossimo lo alzi con i numeri.", () => "Severo ma giusto.", () => "Conta il ragionamento, più del risultato."],
@@ -792,7 +802,7 @@
         _: [(c) => { const w = D.wallet(c.b); return w && isNum(w.gap) ? `Il fatto è questo: a giudizio ${f(U.fmt(w.judg, 2))} USDT, contro la regola ${f(U.fmt(w.gap, 2, true))}.` : null; },
           (c) => { const l = D.lesson(c.b); return l ? `Ho scritto nel quaderno: «${q(l.testo, 120)}»` : null; },
           (c) => { const p = D.openPrediction(c.b); return p && p.mercato && isNum(U.toNum(p.livello)) ? `Ho in registro ${f(U.predText(p))}. È una previsione, non un fatto.` : null; },
-          () => "Oggi niente di nuovo: scrivi che i numeri sono fermi."],
+          () => "Per ora non ho un fatto nuovo da darti: ripassa più tardi."],
       },
     },
   };
@@ -841,7 +851,7 @@
     for (const fn of tp.ordered ? listFor(tp.reply, l) : shuffle(listFor(tp.reply, l))) { second = mk(fn); if (second && second !== first) break; second = null; }
     if (!second) return null;
     const lines = [{ who: o, to: l, text: first }, { who: l, to: o, text: second }];
-    if (R() < 0.55) { const t3 = mk(() => (id === "saluto" ? pick(BYE) : pick(CLOSE[o] || CLOSE.preside))); if (t3) lines.push({ who: o, to: l, text: t3 }); if (lines.length === 3 && id !== "saluto" && R() < 0.4) lines.push({ who: l, to: o, text: pick(BYE) }); }
+    if (R() < 0.55) { const t3 = mk(() => (id === "saluto" ? pick(BYE) : (INTEREST[o] && INTEREST[o][id] ? pick(CLOSE[o] || CLOSE.preside) : pick(NEUTRAL_CLOSE)))); if (t3) lines.push({ who: o, to: l, text: t3 }); if (lines.length === 3 && id !== "saluto" && R() < 0.4) lines.push({ who: l, to: o, text: pick(BYE) }); }
     return { topic: id, label: tp.label, lines };
   }
   function shuffle(xs) { const a = xs.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
@@ -1015,7 +1025,7 @@
       return ["sereno", why || "i portafogli non hanno ancora numeri"];
     }
     if (late) return sleepy;
-    if (k === "guardiano") { const n = alarms().length; return [n >= 2 ? "teso" : n === 1 ? "concentrato" : "sereno", n ? `${n} ${n === 1 ? "allarme" : "allarmi"} oggi` : "nessun allarme oggi"]; }
+    if (k === "guardiano") { const n = alarms().length; return [n >= 2 ? "teso" : n === 1 ? "concentrato" : "sereno", n ? `${n} ${n === 1 ? "allarme" : "allarmi"} ${alarmWhen()}` : `nessun allarme ${alarmWhen()}`]; }
     if (k === "cronista") {
       const u = ult(), n = arr(u && obj(u.briefing) && u.briefing.notizie).filter(obj).length;
       return [A[k].act && A[k].act.id === "notizie" ? "concentrato" : "curioso", n ? `${n} ${n === 1 ? "notizia" : "notizie"} nel briefing` : "aspetta le notizie di domattina"];
@@ -1034,9 +1044,9 @@
       const [mood, why] = moodOf(k, r), a = A[k];
       if (mood === a.mood && why === a.moodWhy) continue;
       const changed = mood !== a.mood;
-      a.mood = mood; a.moodLabel = mood; a.moodWhy = why;
+      a.mood = mood; a.moodLabel = fem(k) ? mood.replace(/o$/, "a") : mood; a.moodWhy = why;
       if (changed) P("setMood", k, mood);
-      bus.emit("life:mood", { key: k, mood, label: mood, why });
+      bus.emit("life:mood", { key: k, mood, label: a.moodLabel, why });
     }
   }
 
@@ -1302,7 +1312,10 @@
     if (sera) sera = null;
     const g = arr(obj(C.data.programma) && C.data.programma.giorni).find((x) => x && x.data === date) || null;
     const { beats, items } = dayScript(d, g);
-    rep = { kind: "replica", date, beats, step: 0, playing: opts.autostart !== false, speed: 1, phase: "raduno", cast: KEYS.slice(), spot: {}, actId: "riunione", actLabel: "alla riunione", feedLive: false, source: "verbale del " + U.dm(date) };
+    // a replay started while the stage is off screen (a register click scrolls to the verbale) waits there,
+    // and starts when the campus comes into view
+    const away = opts.autostart !== false && !!(C.stats && C.stats().visible === false);
+    rep = { kind: "replica", date, beats, step: 0, playing: opts.autostart !== false && !away, autoPaused: away, speed: 1, phase: "raduno", cast: KEYS.slice(), spot: {}, actId: "riunione", actLabel: "alla riunione", feedLive: false, source: "verbale del " + U.dm(date) };
     rep.onStep = () => { syncReplayState(); emitReplay("step"); };
     rep.onEnd = () => stopReplay();
     for (const k of KEYS) { A[k].lock = "replica"; A[k].enc = null; }
@@ -1342,7 +1355,7 @@
   function replayControl(o = {}) {
     if (!rep) return;
     if (o.restart) settle(rep, 0);
-    if (o.playing !== undefined) rep.playing = !!o.playing;
+    if (o.playing !== undefined) { rep.playing = !!o.playing; rep.autoPaused = false; }
     if (o.speed && has([1, 2, 4], +o.speed)) rep.speed = +o.speed;
     syncReplayState();
     emitReplay("step");
@@ -1436,7 +1449,9 @@
       for (const k of sc.cast) if (k !== ln.who) { setState(k, "listen"); lookAt(k, ln.who); }
       if (ln.to) lookAt(ln.who, ln.to);
       feed({ who: ln.who, to: ln.to || null, kind: ln.kind, label: ln.label, text: ln.text, room: roomOf(ln.who) || sc.room || null, source: ln.source || null });
-      focus({ keys: [ln.who, ln.to].filter((x) => x && x !== "tutti"), room: roomOf(ln.who) || sc.room, priority: ln.kind === "claude" ? 3 : 2, holdS: sc.dur, reason: sc.kind });
+      // a Claude dialog keeps the camera for the rest of the scene: no thought or chatter cuts it short
+      const rest = ln.kind === "claude" ? sc.lines.slice(sc.i + 1).reduce((a, x) => a + U.sayMs(x.text) / 1000 + (sc.gap || 0.4), sc.dur + (sc.hold || 0)) : sc.dur;
+      focus({ keys: [ln.who, ln.to].filter((x) => x && x !== "tutti"), room: roomOf(ln.who) || sc.room, priority: ln.kind === "claude" ? 3 : 2, holdS: rest, reason: sc.kind });
       if (sc.onLine) sc.onLine(sc, ln);
       return;
     }
@@ -1782,12 +1797,12 @@
     if (F && isNum(F.capitale)) out.push(`Il fondo comune: ${U.fmt(F.capitale, 2)} USDT su 80.000 (${U.pct(F.pct)}). Mancano ${g.days} giorni alla laurea.`);
     else out.push(`Mancano ${g.days} giorni alla laurea.`);
     const al = alarms().filter((s) => has(keys, "guardiano") || has(keys, alarmTarget(s))).slice(0, 2);
-    if (al.length) out.push(`Allarmi del Guardiano oggi: ${al.map((s) => U.plain(U.human(s), 160)).join(" · ")}`);
+    if (al.length) out.push(`Allarmi del Guardiano ${alarmWhen()}: ${al.map((s) => U.plain(U.human(s), 160)).join(" · ")}`);
     const cs = D.contests()[0];
     if (cs) {
       const rk = ranking(cs), mine = rk.filter((x) => has(keys, x.k));
-      const parts = mine.map((x) => `${nm(x.k)} ${U.usd(x.risultato, true)} (${rankWord(x.k, rk.indexOf(x))} su ${rk.length})`);
-      out.push(`La gara ${contestName(cs.id)}${cs.open ? " (aperta)" : cs.doc.finita ? " (finita)" : " (chiusa, in attesa dei conti)"}${parts.length ? ": " + parts.join(", ") : ""}${cs.scadenza ? (cs.open ? `; si chiude ${U.romeTime(cs.scadenza)}` : `; si è chiusa ${U.romeTime(cs.scadenza)}`) : ""}.`);
+      const parts = mine.map((x) => `${nm(x.k)} ${U.usd(x.risultato, true)} (${cs.opening ? "solo i costi d'ingresso" : placeTxt(x) + " su " + rk.length})`);
+      out.push(`La gara ${contestName(cs.id)}${cs.open ? " (aperta)" : cs.doc.finita ? " (finita)" : " (chiusa, in attesa dei conti)"}${cs.opening ? ", classifica all'apertura" : ""}${parts.length ? ": " + parts.join(", ") : ""}${cs.scadenza ? (cs.open ? `; si chiude ${U.romeTime(cs.scadenza)}` : `; si è chiusa ${U.romeTime(cs.scadenza)}`) : ""}.`);
     }
     const u = ult();
     if (u && u.data && (u.titolo || u.tema)) out.push(`L'ultima riunione (${U.dm(u.data)}): «${U.plain(u.titolo || u.tema, 160).replace(/\.$/, "")}».`);
@@ -1798,7 +1813,7 @@
     const label = TOPIC_LABEL[topic] || TOPIC_LABEL.libero;
     const persone = keys.map((k) => {
       const [indole, voce, difetto] = PERSONA[k];
-      return `- ${nm(k)} (${k}): ${ROLE[k].replace(/\.$/, "")}. ${U.cap(indole)}. Come parla: ${voce}. Il suo difetto: ${difetto}. Oggi è ${fem(k) ? A[k].mood.replace(/o$/, "a") : A[k].mood}${A[k].moodWhy ? ` (${elide(A[k].moodWhy)})` : ""}.`;
+      return `- ${nm(k)} (${k}): ${ROLE[k].replace(/\.$/, "")}. ${U.cap(indole)}. Come parla: ${voce}. Il suo difetto: ${difetto}. Oggi è ${A[k].moodLabel}${A[k].moodWhy ? ` (${elide(A[k].moodWhy)})` : ""}.`;
     });
     const D5 = dati(keys, topic);
     const prompt = [
@@ -1919,6 +1934,8 @@
       talkEmit("walking");
       const lines = v.lines.map((b) => ({ who: b.chi, to: b.a && b.a !== "tutti" ? b.a : null, text: b.testo, kind: "claude", label: v.titolo, source: "dialogo chiesto da te", state: b.gesto === "listen" ? "talk" : b.gesto }));
       const sc = sceneStart({ kind: "dialogo", cast: ks, spots, states, lines, actId: "dialogo", actLabel: label, room: null, hold: 1, gap: 0.4 });
+      // the owner asked for this dialog: the camera follows the two of them while they walk to meet
+      focus({ keys: ks, priority: 3, holdS: 20, shot: "medium", reason: "dialogo" });
       for (const k of ks) { A[k].act.label = "dialogo con " + theList(ks.filter((x) => x !== k)); P("setTag", k, { act: A[k].act.label }); }
       sc.look = Object.fromEntries(ks.map((k, i) => [k, ks[(i + 1) % ks.length]]));
       sc.onPlay = () => { L.talkState = "playing"; talkEmit("playing"); };
@@ -2048,7 +2065,12 @@
     for (const k of KEYS) { const an = anchorOf(`dorm_${k}.spot`); if (an) A[k].pos = { x: an.x, z: an.z }; }
     bus.on("data:change", ({ keys }) => onData(keys || []));
     bus.on("people:arrived", ({ key, id }) => { const a = A[key]; if (a && id && id === a.cmd && !a.arrived) arrive(key); });
-    bus.on("campus:visibility", ({ visible, hiddenFor }) => { if (visible && hiddenFor > 20) { replaceAll(); jumpPending = true; } });
+    bus.on("campus:visibility", ({ visible, hiddenFor }) => {
+      if (visible && hiddenFor > 20) { replaceAll(); jumpPending = true; }
+      // nobody watches an off-screen replay: it pauses, and goes on when the campus is back in view
+      if (rep && !visible && rep.playing) { rep.playing = false; rep.autoPaused = true; syncReplayState(); emitReplay("step"); }
+      else if (rep && visible && rep.autoPaused) { rep.playing = true; rep.autoPaused = false; syncReplayState(); emitReplay("step"); }
+    });
     bus.on("campus:degraded", () => { if (!has3d()) for (const k of KEYS) { const a = A[k], an = a.act && anchorOf(a.act.anchor); if (an) a.pos = { x: an.x, z: an.z }; a.arrived = true; } });
     bus.on("ui:follow", ({ key }) => { followKey = key || null; });
     bus.on("clock:override", () => { if (!ownClock) jumpPending = true; });
@@ -2109,7 +2131,7 @@
     replay, replayControl, replayJump, stopReplay, talk, cancelTalk,
     buildTalkPrompt: (keys, topic) => { const { prompt, numbers } = buildTalkPrompt(keys, topic); return { prompt, numbers }; },
     _advance: advance, _templates: templates,
-    _pure: { dayScript, nrm, numberOk, textNumbersOk, talkNumbersOk, signedOf, allowedOf, blockOf, times, schoolDay, validateTalk, chat, moodOf },
+    _pure: { dayScript, nrm, numberOk, textNumbersOk, talkNumbersOk, signedOf, allowedOf, talkAllowed: (k, t) => buildTalkPrompt(k, t).allowed, blockOf, times, schoolDay, validateTalk, chat, moodOf },
   });
   Object.defineProperty(L, "talkTopics", {
     enumerable: true,

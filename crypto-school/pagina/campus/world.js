@@ -1639,10 +1639,12 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
       return { title, prices: priceList().slice(0, 9) };
     },
     ticker: () => ({ items: tickerPages[tickerPage % tickerPages.length] || [] }),
+    // the change since the last daily close of the quadro, at the price shown (not the day before's change)
     price: () => {
-      const items = priceList(), q = ult() && U.obj(ult().quadro) && U.obj(ult().quadro.monete);
+      const items = priceList(), qd = ult() && U.obj(ult().quadro), q = qd && U.obj(qd.monete), px = D.prices();
       if (!items.length) return { empty: true };
-      return { at: U.romeTime(g0() && g0().prices_at), cells: items.map(([s, p]) => { const m = q && U.obj(q[s]), v = m && U.obj(m.var_pct) ? m.var_pct["1g"] : null; return [s, p, U.isNum(v) ? U.pct(v, 2, true) : "", U.isNum(v) ? Math.sign(v) : 0]; }) };
+      const since = (s) => { const m = q && U.obj(q[s]), cl = m && U.toNum(m.chiusura); return U.isNum(cl) && cl > 0 && U.isNum(px[s]) ? (px[s] / cl - 1) * 100 : null; };
+      return { at: U.romeTime(g0() && g0().prices_at), ref: qd && U.dm(qd.giorno) ? "variazione dalla chiusura del " + U.dm(qd.giorno) : "", cells: items.map(([s, p]) => { const v = since(s); return [s, p, U.isNum(v) ? U.pct(v, 2, true) : "", U.isNum(v) ? Math.sign(Math.round(v * 100)) : 0]; }) };
     },
     mon: () => {
       const cells = {}, G = g0(), R = U.obj(C.data.regole), u = ult(), Ri = u && U.obj(u.rischio), Bf = u && U.obj(u.briefing);
@@ -1748,7 +1750,8 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
       c.fillStyle = "#0c131a"; c.fillRect(0, 0, W, H);
       if (m.empty) { say(c, "In attesa dei prezzi", W / 2, H / 2 + 12, `600 40px ${FONT.head}`, "#c9d6e2", "center"); return; }
       c.fillStyle = "#13202b"; c.fillRect(0, 0, W, 58);
-      say(c, "Prezzi BingX" + (m.at ? " · " + m.at : ""), 22, 40, `700 30px ${FONT.head}`, "#f4efe2", "left", W - 40);
+      say(c, "Prezzi BingX" + (m.at ? " · " + m.at : ""), 22, 40, `700 30px ${FONT.head}`, "#f4efe2", "left", m.ref ? W * 0.55 : W - 40);
+      if (m.ref) say(c, m.ref, W - 22, 38, `500 19px ${FONT.head}`, "#9fb2c4", "right", W * 0.42);
       const cw = W / 6, ch = (H - 66) / 6;
       m.cells.slice(0, 36).forEach(([s, p, chg, sg], i) => {
         const x = (i % 6) * cw, y = 64 + Math.floor(i / 6) * ch;
@@ -2091,7 +2094,7 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
       H[w.i] = st.h >= WALL_H - 1e-4 ? 99 : st.h + 0.002;
     });
   }
-  const occupied = new Set();
+  const occupied = new Set(), asleep = new Set();
   let occAcc = 9, lightAcc = 9;
   function lampsUpdate(dt, instant) {
     const sky = C.render && C.render.sky, now = C.clock.now();
@@ -2100,16 +2103,25 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
     UNI.night.value = night;
     occAcc += dt;
     if (occAcc > 1) {
-      occAcc = 0; occupied.clear();
-      if (C.people && C.people.ready && C.ctx && C.ctx.has3d) for (const k of KEYS) { const p = C.people.positionOf(k); const r = p && roomAt(p.x, p.z); if (r) occupied.add(r); }
+      occAcc = 0; occupied.clear(); asleep.clear();
+      if (C.people && C.people.ready && C.ctx && C.ctx.has3d) for (const k of KEYS) {
+        const p = C.people.positionOf(k), r = p && roomAt(p.x, p.z);
+        if (r) (C.people.stateOf(k) === "sleep" ? asleep : occupied).add(r);
+      }
     }
     const lit = UNI.roomLit.value; lit.fill(0);
     const colr = TMPC || (TMPC = new T.Color());
     let changed = false, poolChanged = false;
     LAMPS.forEach((l, i) => {
       const hidden = l.wall && UNI.wallH.value[l.wall] < l.y;
-      const interior = l.room && roomById[l.room] && roomById[l.room].kind !== "esterno" && l.room !== "portico";
-      l.target = hidden ? 0 : night > 0.35 || (interior && occupied.has(l.room) && alt < 15) ? 1 : 0;
+      // a room's lights are on when someone awake is in it after sunset; a sleeper's dorm keeps only a
+      // dim glow (the Guardiano his night light); outside, the passages and the street: on after dark
+      const kind = l.room && roomById[l.room] ? roomById[l.room].kind : "esterno";
+      const interior = kind === "interno" || kind === "dormitorio";
+      l.target = hidden ? 0 : !interior ? (night > 0.35 ? 1 : 0)
+        : l.kind === "night" ? (night > 0.35 && asleep.has(l.room) ? 1 : 0)
+          : occupied.has(l.room) && alt < 15 ? 1
+            : l.kind === "room" && kind === "dormitorio" && asleep.has(l.room) ? 0.16 * night : 0;
       const prev = l.level;
       l.level = instant || ctx.reduceMotion ? l.target : U.damp(l.level, l.target, 4, dt);
       if (abs(l.level - l.target) < 0.004) l.level = l.target;
@@ -2183,6 +2195,10 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
     anchor: (id) => ANC[id] || null, anchorsIn, reserve, release, occupant, roomAt, findPath, clear, minimap,
     ready: false, build, update,
     pickables: () => PICK,
+    // what can stand between the camera and a face: monitors, lamps, columns, trees (outdoor: trees only)
+    // how lit a room is now (0..1), from its lamps
+    litOf: (room) => (ROOMIX[room] ? UNI.roomLit.value[ROOMIX[room]] : 0),
+    occluders: (outdoor) => Object.keys(MESH).filter((k) => MESH[k] && MESH[k].isInstancedMesh && (outdoor ? /^(cr_|trunk$)/ : /^(monitor|shade|globe|column|trunk|cr_)/).test(k)).map((k) => MESH[k]),
     setCutawayFocus: (room) => { focusHint = room && roomById[room] ? room : null; },
     surfaceScale: 1,
     surfaces: {

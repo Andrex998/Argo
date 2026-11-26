@@ -18,6 +18,7 @@ const obj = U.obj, arr = U.arr, isNum = U.isNum;
 
 // ---- fixed Italian texts (Appendix F)
 const NO3D = "Qui il campus non si vede in 3D: questo dispositivo non mostra la grafica 3D. Ecco la piantina, con chi c'è in ogni stanza.";
+const PAUSE3D = "La grafica 3D è in pausa: torna da sola. Intanto ecco la piantina, con chi c'è in ogni stanza.";
 const WAIT = "Il campus si sta preparando…";
 const ROLE = {
   preside: "Dirige la riunione e dà i voti. Allo scrutinio decide quanto rischio può prendere ognuno.",
@@ -346,6 +347,7 @@ const CSS = `
 .cp-u-plan-legend b{white-space:nowrap}
 .cp-u-plan-legend span{color:var(--ink-2);overflow-wrap:anywhere}
 .cp-stage.cp-no3d{height:auto;min-height:360px;background:var(--paper)}
+.cp-stage.cp-no3d .cp-r-veil{display:none}
 .cp-stage.cp-no3d>.cp-hud{position:relative;inset:auto;pointer-events:auto}
 .cp-u-hud.cp-u-no3d{position:relative;inset:auto;display:grid;gap:0;pointer-events:auto}
 .cp-u-hud.cp-u-no3d .cp-u-top{position:static;padding:10px 10px 0}
@@ -356,6 +358,18 @@ const CSS = `
 .cp-u-hud.cp-u-compact .cp-u-qual{padding:0;width:42px;justify-content:center}
 .cp-u-hud.cp-u-compact .cp-u-seg button{padding:0 10px;font-size:.8rem}
 .cp-u-hud.cp-u-compact .cp-u-picker{top:58px}
+.cp-u-hud.cp-u-compact .cp-u-top{flex-wrap:nowrap;gap:6px;left:8px;right:8px;top:8px}
+.cp-u-hud.cp-u-compact .cp-u-ctl{flex-wrap:nowrap;gap:4px}
+.cp-u-hud.cp-u-compact .cp-u-clock{min-width:0;flex:0 1 auto;overflow:hidden}
+.cp-u-hud.cp-u-compact .cp-u-clock .cp-u-ic{display:none}
+.cp-u-hud.cp-u-compact .cp-u-seg button{min-height:34px;min-width:0;padding:0 8px;font-size:.76rem}
+.cp-u-hud.cp-u-compact .cp-u-qual{width:38px;min-height:40px}
+.cp-u-replay.cp-u-rmini{flex-wrap:nowrap;padding:4px;gap:4px;position:relative;border-radius:14px}
+.cp-u-rmini .cp-u-rday{flex:1 1 auto}
+.cp-u-rmini .cp-u-rinfo b{font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-u-rmini .cp-u-rinfo span{font-size:.68rem}
+.cp-u-rmini .cp-u-btn{padding:0 10px}
+.cp-u-rmore{position:absolute;right:0;bottom:calc(100% + 6px);display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:14px;align-items:stretch}
 .cp-u-side{display:flex;flex-direction:column;flex:1;min-height:0;font-size:.9rem}
 .cp-u-tabs{display:flex;gap:2px;padding:6px 6px 0;border-bottom:1px solid var(--rule);flex:none}
 .cp-u-tabs button{flex:1 1 0;min-width:0;min-height:42px;padding:6px 6px 9px;border:0;background:transparent;font-weight:600;font-size:.84rem;color:var(--muted);border-bottom:3px solid transparent;border-radius:8px 8px 0 0;line-height:1.15}
@@ -841,13 +855,16 @@ function setPlan(on) {
   show(el.plan, on);
   show(el.ctl, !on);
   show(el.map, !on);
+  // a lost GPU context is a pause, not a device without 3D
+  const note = el.plan.querySelector(".cp-u-plan-note");
+  if (note) note.textContent = lost && C.ctx && C.ctx.has3d ? PAUSE3D : NO3D;
   if (on) { closePicker(); renderPlanLegend(); requestAnimationFrame(drawPlan); }
   placeMind();
 }
 const planWanted = () => !(C.ctx && C.ctx.has3d) || lost;
 
 // ---- the replay bar
-let repSig = "";
+let repSig = "", repMore = false;
 function renderReplay() {
   if (!el.replay) return;
   const l = noLife ? null : L();
@@ -861,10 +878,11 @@ function renderReplay() {
     m = { k: "rep", date: rs.date, step: rs.step, total: rs.total, playing: rs.playing !== false, speed: rs.speed || 1, phase: rs.phase, prev, next };
   } else if (replayMsg) m = { k: "msg", text: replayMsg };
   else if (["vita", "notte", "riunione"].includes(mode) && obj(C.data.ultimo) && U.isoDay(C.data.ultimoData)) m = { k: "rev", date: C.data.ultimoData };
-  const sg = sig(m);
+  const sg = sig([m, compact, repMore]);
   if (sg === repSig) return;
   repSig = sg;
   const box = el.replay;
+  box.classList.toggle("cp-u-rmini", compact && !!m && m.k === "rep");
   if (!m) { box.hidden = true; box.textContent = ""; return; }
   const keep = box.contains(document.activeElement) ? document.activeElement.dataset.act : null;
   box.textContent = "";
@@ -875,17 +893,22 @@ function renderReplay() {
   } else {
     const tot = isNum(m.total) && m.total > 0 ? m.total : 0, st = isNum(m.step) ? Math.min(m.step + 1, tot) : 0;
     const pct = tot ? Math.round((st / tot) * 100) : 0;
+    const stopB = h("button", { class: "cp-u-btn strong", "data-act": "stop", onclick: () => { repMore = false; const lf = L(); if (lf && lf.stopReplay) safe(() => lf.stopReplay()); renderReplay(); } }, "Torna al presente");
+    const speedB = h("button", { class: "cp-u-btn", "data-act": "speed", title: "Cambia la velocità", onclick: () => ctl({ speed: m.speed === 1 ? 2 : m.speed === 2 ? 4 : 1 }) }, `Velocità ${m.speed}×`);
+    const restartB = h("button", { class: "cp-u-btn", "data-act": "restart", onclick: () => ctl({ restart: true }) }, "Da capo");
+    const playB = h("button", { class: "cp-u-btn", "data-act": "play", "aria-pressed": String(!m.playing), "aria-label": m.playing ? "Pausa" : "Riprendi", title: m.playing ? "Pausa" : "Riprendi", onclick: () => ctl({ playing: !m.playing }) }, icon(m.playing ? "pause" : "play"), compact ? null : m.playing ? "Pausa" : "Riprendi");
     box.append(h("span", { class: "cp-u-rday" },
       h("button", { class: "cp-u-btn", "data-act": "prev", "aria-label": "La riunione prima", title: "La riunione prima", disabled: !m.prev, onclick: () => m.prev && select(m.prev) }, "‹"),
       h("span", { class: "cp-u-rinfo" },
         h("b", { text: "Replica di " + U.longDay(m.date) }),
         h("span", { text: m.phase === "raduno" ? "Si siedono al tavolo" : m.phase === "fine" ? "La riunione è finita" : tot ? `Battuta ${st} di ${tot}` : "" }),
         h("span", { class: "cp-u-prog" }, h("i", { style: `width:${pct}%` }))),
-      h("button", { class: "cp-u-btn", "data-act": "next", "aria-label": "La riunione dopo", title: "La riunione dopo", disabled: !m.next, onclick: () => m.next && select(m.next) }, "›")),
-      h("button", { class: "cp-u-btn", "data-act": "play", "aria-pressed": String(!m.playing), onclick: () => ctl({ playing: !m.playing }) }, icon(m.playing ? "pause" : "play"), m.playing ? "Pausa" : "Riprendi"),
-      h("button", { class: "cp-u-btn", "data-act": "speed", title: "Cambia la velocità", onclick: () => ctl({ speed: m.speed === 1 ? 2 : m.speed === 2 ? 4 : 1 }) }, `Velocità ${m.speed}×`),
-      h("button", { class: "cp-u-btn", "data-act": "restart", onclick: () => ctl({ restart: true }) }, "Da capo"),
-      h("button", { class: "cp-u-btn strong", "data-act": "stop", onclick: () => { const lf = L(); if (lf && lf.stopReplay) safe(() => lf.stopReplay()); renderReplay(); } }, "Torna al presente"));
+      h("button", { class: "cp-u-btn", "data-act": "next", "aria-label": "La riunione dopo", title: "La riunione dopo", disabled: !m.next, onclick: () => m.next && select(m.next) }, "›")), playB);
+    // on a narrow stage one row: the rest behind «⋯»
+    if (compact) {
+      box.append(h("button", { class: "cp-u-btn", "data-act": "more", "aria-expanded": String(repMore), "aria-label": "Altri comandi della replica", title: "Velocità, da capo, torna al presente", onclick: () => { repMore = !repMore; renderReplay(); } }, "⋯"));
+      if (repMore) box.append(h("div", { class: "cp-u-rmore cp-u-glass" }, speedB, restartB, stopB));
+    } else box.append(speedB, restartB, stopB);
   }
   if (keep) { const b = box.querySelector(`[data-act="${keep}"]`); if (b && !b.disabled) b.focus({ preventScroll: true }); }
 }
@@ -1168,12 +1191,13 @@ function onFeed(entry) {
   show(el.feedEmpty, false);
   if (stick) feedBottom(false); else show(el.newChip, true);
 }
+// the scroll waits for the next frame: reading scrollHeight in the middle of a render forces a layout
+let feedRaf = 0;
 function feedBottom(force) {
   if (!el.feed) return;
   if (force) stick = true;
-  if (!stick) return;
-  el.feed.scrollTop = el.feed.scrollHeight;
-  show(el.newChip, false);
+  if (!stick || feedRaf) return;
+  feedRaf = requestAnimationFrame(() => { feedRaf = 0; if (!stick) return; el.feed.scrollTop = el.feed.scrollHeight; show(el.newChip, false); });
 }
 function markReplay() {
   const l = L(), rs = l && obj(l.replayState);

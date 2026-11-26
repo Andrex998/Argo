@@ -1619,6 +1619,13 @@
 .cp-p-tag.cp-p-speaking{box-shadow:0 0 0 2px var(--who),0 2px 8px rgba(0,0,0,.22)}
 .cp-p-tag.cp-p-followed{box-shadow:0 0 0 2px var(--who),0 0 14px var(--who)}
 .cp-p-compact .cp-p-tag{font-size:.66rem;padding:1px 6px 1px 5px;gap:4px}
+.cp-p-tag.cp-p-mini{padding:2px;gap:0;pointer-events:auto;cursor:pointer}
+.cp-p-mini .cp-p-name,.cp-p-mini .cp-p-act,.cp-p-mini .cp-p-grades,.cp-p-mini .cp-p-lead{display:none}
+.cp-p-mini .cp-p-dot{width:10px;height:10px}
+.cp-p-lead{position:absolute;left:50%;top:100%;width:1px;margin-left:-.5px;background:var(--who,var(--ink-2));opacity:.75;transform-origin:50% 0;pointer-events:none}
+.cp-p-bubble[data-tail=t]::after{top:-8px;bottom:auto;transform:translateX(-50%) rotate(225deg)}
+.cp-p-bubble[data-tail=l]::after{left:0;top:var(--tail,50%);bottom:auto;transform:translate(-50%,-50%) rotate(135deg)}
+.cp-p-bubble[data-tail=r]::after{left:100%;top:var(--tail,50%);bottom:auto;transform:translate(-50%,-50%) rotate(-45deg)}
 .cp-p-compact .cp-p-act{display:none}
 .cp-p-compact .cp-p-grades em{font-size:.92rem;margin-left:2px}
 .cp-p-bubble{max-width:min(310px,76%);padding:7px 11px 8px;border-radius:12px;background:var(--sheet);color:var(--ink);border:2px solid var(--who,var(--rule));box-shadow:0 6px 18px rgba(0,0,0,.25);font:13px/1.42 var(--font-read);z-index:3;overflow-wrap:anywhere}
@@ -1645,7 +1652,9 @@
       el("i", "cp-p-dot", tag);
       el("span", "cp-p-name", tag).textContent = C.NAMES[k];
       const act = el("span", "cp-p-act", tag), gr = el("span", "cp-p-grades", tag);
-      p.tagEl = { el: tag, act, gr, w: 0, h: 0, x: -1e4, y: -1e4, op: -1, vis: true, cls: "" };
+      tag.title = C.NAMES[k];
+      p.tagEl = { el: tag, act, gr, w: 0, h: 0, x: -1e4, y: -1e4, op: -1, vis: true, cls: "", mini: false, peek: 0, lead: null, leadKey: "" };
+      tag.addEventListener("click", () => { p.tagEl.peek = performance.now() + 3000; });
     }
     motore = { key: "motore", bubble: null };
   }
@@ -1731,64 +1740,124 @@
   const setT = (o, e, x, y) => { if (abs(o.x - x) > 0.5 || abs(o.y - y) > 0.5) { o.x = x; o.y = y; e.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`; } };
   const show = (o, e, on) => { if (o.vis !== on) { o.vis = on; e.classList.toggle("cp-p-off", !on); if (on) o.dirty = true; } };
   const PT = { x: 0, y: 0, ok: false };
+  // the HUD's glass boxes (clock, camera switch, minimap, replay bar, mind card) in overlay pixels,
+  // read twice a second: tags and bubbles keep out of them
+  let HUD = [], hudAt = -1e9;
+  function hudBoxes() {
+    const now = performance.now();
+    if (now - hudAt < 500) return HUD;
+    hudAt = now; HUD = [];
+    const st = (ctx && ctx.stage) || overlayEl.parentElement;
+    if (!st) return HUD;
+    const o = overlayEl.getBoundingClientRect();
+    for (const e of st.querySelectorAll(".cp-u-glass")) {
+      const r = e.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) HUD.push({ x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height });
+    }
+    return HUD;
+  }
+  const INDOOR = ["interno", "dormitorio"];
+  // at eye level inside a room, the people of other rooms are behind walls: their tags stay hidden
+  function eyeRoom() {
+    const w = C.world;
+    if (!w || !w.roomAt || V3.y >= 3.3) return null;
+    const id = w.roomAt(V3.x, V3.z), r = id && arr(w.rooms).find((x) => x.id === id);
+    return r && INDOOR.includes(r.kind) ? id : null;
+  }
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  const overlap = (a, x, y, bw, bh, pad) => a.some((r) => x < r.x + r.w + pad && x + bw + pad > r.x && y < r.y + r.h + pad && y + bh + pad > r.y);
+  const LEAD_PX = 24, MINI = 16;
   function updateOverlay(camera, w, h) {
     if (!P.ready || !overlayEl || !camera) return;
     tickBubbles();
     const compact = w < 600;
     if (overlayEl.classList.contains("cp-p-compact") !== compact) { overlayEl.classList.toggle("cp-p-compact", compact); for (const k of KEYS) { PP[k].tagEl.w = 0; renderGrades(PP[k]); } }
     camera.getWorldPosition(V3);
-    const list = [];
+    const hud = hudBoxes(), room = eyeRoom(), now = performance.now(), list = [];
     for (const k of KEYS) {
       const p = PP[k], te = p.tagEl;
       const dist = hyp(p.top.x - V3.x, p.top.y - V3.y, p.top.z - V3.z);
+      const elsewhere = room && k !== followed && C.world.roomAt(p.top.x, p.top.z) !== room;
       project(p.top.x, p.top.y + 0.1, p.top.z, camera, w, h, PT);
       const keep = k === followed || !!p.bubble;
-      const vis = PT.ok && (dist <= 60 || keep);
-      const op = (dist < 18 ? 1 : dist < 40 ? lerp(1, 0.35, (dist - 18) / 22) : 0.35) * p.fade;
+      const vis = PT.ok && !elsewhere && (dist <= 60 || keep);
       if (!vis) { show(te, te.el, false); continue; }
-      show(te, te.el, true);
-      if (abs(te.op - op) > 0.02) { te.op = op; te.el.style.opacity = op.toFixed(2); }
-      const cls = (p.bubble ? " cp-p-speaking" : "") + (k === followed ? " cp-p-followed" : "");
-      if (cls !== te.cls) { te.cls = cls; te.el.classList.toggle("cp-p-speaking", !!p.bubble); te.el.classList.toggle("cp-p-followed", k === followed); }
-      if (!te.w) { te.w = te.el.offsetWidth; te.h = te.el.offsetHeight; }
-      list.push({ p, x: PT.x, y: PT.y, dist });
+      const x = PT.x, y = PT.y;
+      project(p.top.x, p.top.y - 0.32, p.top.z, camera, w, h, PT);
+      list.push({ p, x, y, cy: max(y + 8, PT.y), dist });
     }
-    // tags: nearest first (lowest on screen), stacking upwards on overlap
-    list.sort((a, b) => b.y - a.y);
-    const placed = [];
-    for (const it of list) {
-      const te = it.p.tagEl;
-      let x = clamp(it.x - te.w / 2, 2, max(2, w - te.w - 2)), y = it.y - te.h - 4;
-      for (let i = 0; i < 10; i++) {
-        const hit = placed.find((r) => x < r.x + r.w + 3 && x + te.w + 3 > r.x && y < r.y + r.h + 2 && y + te.h + 2 > r.y);
-        if (!hit) break;
-        y = hit.y - te.h - 3;
-      }
-      placed.push({ x, y, w: te.w, h: te.h });
-      setT(te, te.el, x, y);
-      it.ax = x + te.w / 2; it.ay = y;
-    }
-    // bubbles: at most 3 — the followed agent, then priority ≥ 2, then the newest
+    // the bubbles first chosen (at most 3): the followed agent, then priority ≥ 2, then the newest
     const anchors = {};
     for (const it of list) anchors[it.p.key] = it;
     const cands = [];
     for (const k of KEYS) if (PP[k].bubble) cands.push(PP[k]);
     if (motore.bubble) cands.push(motore);
     cands.sort((a, b) => ((b.key === followed) - (a.key === followed)) || (b.bubble.prio - a.bubble.prio) || (b.bubble.t0 - a.bubble.t0));
-    const boxes = [];
-    let shown = 0;
+    const talking = new Set(), heard = new Set();
+    for (const p of cands) if (talking.size < 3 && (p === motore || anchors[p.key])) { talking.add(p.key); if (p.bubble.to) heard.add(p.bubble.to); }
+    // tags: nearest first; a tag that collides moves sideways, then up; when 4 or more crowd, the minor ones
+    // become a coloured dot at the head (the name on hover or tap); a moved tag keeps a thin leader line
+    list.sort((a, b) => b.y - a.y);
+    const placed = [], crowd = list.length >= 4;
+    for (const it of list) {
+      const p = it.p, te = p.tagEl, k = p.key;
+      // the speaker's name is in the bubble's header: the tag steps aside, unless it carries the grades
+      if (talking.has(k) && !p.grades) { show(te, te.el, false); it.ax = it.x; it.ay = it.y - 4; continue; }
+      show(te, te.el, true);
+      const op = (it.dist < 18 ? 1 : it.dist < 40 ? lerp(1, 0.35, (it.dist - 18) / 22) : 0.35) * p.fade;
+      if (abs(te.op - op) > 0.02) { te.op = op; te.el.style.opacity = op.toFixed(2); }
+      const cls = (p.bubble ? " cp-p-speaking" : "") + (k === followed ? " cp-p-followed" : "");
+      if (cls !== te.cls) { te.cls = cls; te.el.classList.toggle("cp-p-speaking", !!p.bubble); te.el.classList.toggle("cp-p-followed", k === followed); }
+      if (!te.w) { if (te.mini) te.el.classList.remove("cp-p-mini"); te.w = te.el.offsetWidth; te.h = te.el.offsetHeight; if (te.mini) te.el.classList.add("cp-p-mini"); }
+      const major = k === followed || talking.has(k) || heard.has(k) || !!p.grades || te.peek > now;
+      const nx = clamp(it.x - te.w / 2, 2, max(2, w - te.w - 2)), ny = it.y - te.h - 4;
+      const free = (x, y) => y >= 2 && !overlap(placed, x, y, te.w, te.h, 2) && !overlap(hud, x, y, te.w, te.h, 2);
+      let spot = null;
+      const levels = major ? 6 : crowd ? 1 : 3;
+      for (let L = 0; L <= levels && !spot; L++) for (const dx of [0, -0.55, 0.55]) {
+        const x = clamp(nx + dx * te.w, 2, max(2, w - te.w - 2)), y = ny - L * (te.h + 3);
+        if (free(x, y)) { spot = [x, y]; break; }
+      }
+      if (!spot && !major) {
+        // a dot at the head; under the HUD it hides
+        const mx = it.x - MINI / 2, my = it.y - MINI - 2;
+        if (overlap(hud, mx, my, MINI, MINI, 0)) { show(te, te.el, false); continue; }
+        if (!te.mini) { te.el.classList.add("cp-p-mini"); te.mini = true; }
+        placed.push({ x: mx, y: my, w: MINI, h: MINI });
+        setT(te, te.el, mx, my); lead(te, 0);
+        it.ax = it.x; it.ay = my;
+        continue;
+      }
+      const [x, y] = spot || [nx, ny];
+      if (te.mini) { te.el.classList.remove("cp-p-mini"); te.mini = false; }
+      placed.push({ x, y, w: te.w, h: te.h });
+      setT(te, te.el, x, y);
+      // the leader: from the tag's bottom centre down to the head
+      const dx = it.x - (x + te.w / 2), dy = it.y - (y + te.h);
+      lead(te, hyp(dx, dy) > LEAD_PX ? [dx, dy] : 0);
+      it.ax = x + te.w / 2; it.ay = y;
+    }
+    // bubbles: never on the HUD, the tags, the speaker's own head or the head it talks to
+    const boxes = hud.concat(placed);
+    for (const k of talking) {
+      for (const kk of [k, PP[k] && PP[k].bubble && PP[k].bubble.to]) {
+        const a = kk && anchors[kk];
+        if (a) { const hw = max(18, (a.cy - a.y) * 0.75); boxes.push({ x: a.x - hw, y: a.y - 4, w: hw * 2, h: a.cy - a.y + 10, head: kk === k }); }
+      }
+    }
     for (const p of cands) {
       const b = p.bubble, d = b.d;
-      let ax, ay;
-      if (p === motore) { const sp = motorePoint(); project(sp.x, sp.y + 0.25, sp.z, camera, w, h, PT); if (!PT.ok) { show(b, d.el, false); continue; } ax = PT.x; ay = PT.y - 6; }
-      else { const a = anchors[p.key]; if (!a) { show(b, d.el, false); continue; } ax = a.ax; ay = a.ay - 4; }
-      if (shown >= 3) { show(b, d.el, false); continue; }
-      show(b, d.el, true); shown++;
+      if (!talking.has(p.key)) { show(b, d.el, false); continue; }
+      let a;
+      if (p === motore) { const sp = motorePoint(); project(sp.x, sp.y + 0.25, sp.z, camera, w, h, PT); if (!PT.ok) { show(b, d.el, false); continue; } a = { ax: PT.x, ay: PT.y - 6, x: PT.x, y: PT.y, cy: PT.y + 30 }; }
+      else a = anchors[p.key];
+      show(b, d.el, true);
       if (b.dirty || !b.w) { b.w = d.el.offsetWidth; b.h = d.el.offsetHeight; b.dirty = false; }
-      const [bx, by] = freeSpot(boxes, ax, ay - 10, b.w, b.h, w);
+      const [bx, by, side] = bubbleSpot(boxes, a, b.w, b.h, w, h);
       boxes.push({ x: bx, y: by, w: b.w, h: b.h });
       setT(b, d.el, bx, by);
-      const tail = clamp(ax - bx, 16, max(16, b.w - 16));
+      if (b.side !== side) { b.side = side; if (side) d.el.dataset.tail = side; else delete d.el.dataset.tail; }
+      const tail = side === "l" || side === "r" ? clamp((a.y + a.cy) / 2 - by, 14, max(14, b.h - 14)) : clamp(a.ax - bx, 16, max(16, b.w - 16));
       if (abs((b.tail || 0) - tail) > 0.5) { b.tail = tail; d.el.style.setProperty("--tail", tail.toFixed(1) + "px"); }
     }
     // thought clouds: at most 2 — the followed agent first, then the newest
@@ -1796,7 +1865,7 @@
     let nc = 0;
     for (const p of clouds) {
       const c = p.cloud, a = anchors[p.key];
-      if (!a || nc >= 2) { show(c, c.e, false); continue; }
+      if (!a || a.ay === undefined || nc >= 2) { show(c, c.e, false); continue; }
       show(c, c.e, true); nc++;
       if (c.dirty || !c.w) { c.w = c.e.offsetWidth; c.h = c.e.offsetHeight; c.dirty = false; const is = c.e.querySelectorAll("i"); [[10, 0], [7, 1], [5, 2]].forEach(([sz, i]) => { Object.assign(is[i].style, { width: sz + "px", height: sz + "px" }); }); }
       const sp = freeSpot(boxes, a.ax + c.w * 0.2, a.ay - 26, c.w, c.h, w, h);
@@ -1809,15 +1878,47 @@
       [[0.25, 10], [0.6, 7], [0.95, 5]].forEach(([f, sz], i) => { is[i].style.left = (sx0 + dx * k * f - sz / 2).toFixed(1) + "px"; is[i].style.top = (c.h + 3 + max(0, dy) * k * f - sz / 2).toFixed(1) + "px"; is[i].style.display = dy < -4 ? "none" : ""; });
     }
   }
-  // the first free place for a box above an anchor: centred, then sideways, then higher; with h (clouds),
-  // also below the head, or null; never under the HUD's top row
-  function freeSpot(boxes, ax, ay, bw, bh, w, h) {
-    const hit = (x, y) => boxes.some((r) => x < r.x + r.w + 4 && x + bw + 4 > r.x && y < r.y + r.h + 4 && y + bh + 4 > r.y), T0 = w < 600 ? 140 : 60;
-    for (const dy of h ? [0, 1, 2, -1, -2] : [0, 1, 2]) for (const dx of [0, -0.6, 0.6, -1.2, 1.2]) {
-      const x = clamp(ax - bw / 2 + dx * bw, 6, max(6, w - bw - 6)), y = dy >= 0 ? ay - bh - dy * (bh * 0.6 + 8) : ay + 70 + (-dy - 1) * (bh + 8);
-      if (y >= T0 && (!h || y + bh <= h - 6) && !hit(x, y)) return [x, y];
+  // a tag's leader line: 0 hides it, [dx, dy] runs from the tag's bottom centre to the head
+  function lead(te, v) {
+    const key = v ? v[0].toFixed(0) + "," + v[1].toFixed(0) : "";
+    if (te.leadKey === key) return;
+    te.leadKey = key;
+    if (!v) { if (te.lead) te.lead.style.display = "none"; return; }
+    if (!te.lead) te.lead = el("i", "cp-p-lead", te.el);
+    const L = hyp(v[0], v[1]), ang = Math.atan2(-v[0], v[1]);
+    Object.assign(te.lead.style, { display: "", height: L.toFixed(1) + "px", transform: `rotate(${ang.toFixed(3)}rad)` });
+  }
+  // a speech bubble's place: above the anchor (centred, then sideways, then higher), else beside the
+  // head at its height, else below the chin; when all collide, the place that covers least, and never
+  // the speaker's own face. Returns [x, y, tail side: "" below the bubble, "t" above, "l"/"r" beside]
+  function bubbleSpot(boxes, a, bw, bh, w, h) {
+    const T0 = 6, cx = (x) => clamp(x, 6, max(6, w - bw - 6)), hw = max(18, (a.cy - a.y) * 0.75), mid = (a.y + a.cy) / 2;
+    const C2 = [];
+    for (const dy of [0, 1, 2]) for (const dx of [0, -0.6, 0.6, -1.2, 1.2]) C2.push([cx(a.ax - bw / 2 + dx * bw), a.ay - 10 - bh - dy * (bh * 0.6 + 8), ""]);
+    C2.push([a.x + hw + 22, mid - bh / 2, "l"], [a.x - hw - 22 - bw, mid - bh / 2, "r"]);
+    for (const dx of [0, -0.6, 0.6]) C2.push([cx(a.x - bw / 2 + dx * bw), a.cy + 14, "t"]);
+    let best = null, bestCost = Infinity;
+    for (const [x, y, side] of C2) {
+      if (y < T0 || y + bh > h - 6 || x < 2 || x + bw > w - 2) continue;
+      let cost = 0;
+      for (const r of boxes) {
+        const ox = min(x + bw + 4, r.x + r.w) - max(x - 4, r.x), oy = min(y + bh + 4, r.y + r.h) - max(y - 4, r.y);
+        if (ox > 0 && oy > 0) cost += ox * oy * (r.head ? 12 : 1);
+      }
+      if (!cost) return [x, y, side];
+      if (cost < bestCost) { bestCost = cost; best = [x, y, side]; }
     }
-    return h ? null : [clamp(ax - bw / 2, 6, max(6, w - bw - 6)), max(T0, ay - bh)];
+    return best || [cx(a.ax - bw / 2), clamp(a.ay - 10 - bh, T0, max(T0, h - bh - 6)), ""];
+  }
+  // the first free place for a thought cloud above an anchor: centred, then sideways, then higher, then
+  // below the head, or null
+  function freeSpot(boxes, ax, ay, bw, bh, w, h) {
+    const hit = (x, y) => boxes.some((r) => x < r.x + r.w + 4 && x + bw + 4 > r.x && y < r.y + r.h + 4 && y + bh + 4 > r.y), T0 = 6;
+    for (const dy of [0, 1, 2, -1, -2]) for (const dx of [0, -0.6, 0.6, -1.2, 1.2]) {
+      const x = clamp(ax - bw / 2 + dx * bw, 6, max(6, w - bw - 6)), y = dy >= 0 ? ay - bh - dy * (bh * 0.6 + 8) : ay + 70 + (-dy - 1) * (bh + 8);
+      if (y >= T0 && y + bh <= h - 6 && !hit(x, y)) return [x, y];
+    }
+    return null;
   }
   function renderGrades(p) {
     const gr = p.tagEl && p.tagEl.gr;
@@ -1919,6 +2020,7 @@
     stateOf(key) { const p = PP[key]; return p ? (p.phase ? "walk" : p.state) : null; },
     postureOf(key) { const p = PP[key]; return p ? (p.phase === 2 ? "stand" : postureNow(p)) : null; },
     isBusy(key) { const p = PP[key]; return !!(p && (p.phase || p.tr)); },
+    anchorOf(key) { const p = PP[key]; return p && !p.phase ? p.at || null : null; },
     pickables() { return KEYS.filter((k) => PP[k]).map((k) => PP[k].proxy); },
     command,
     place(key, where, state) {

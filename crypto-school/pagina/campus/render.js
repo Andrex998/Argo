@@ -207,6 +207,8 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
   }
 
   // ---- the sky follows Rome's clock ------------------------------------------------------------------------
+  let roomBoost = 0, shadowN = 0, shadowAt = "";
+  const SHADOW_EVERY = 2;
   let skyInit = false, dAlt = 0, dAz = 180, pAlt = 0, pAz = 180, blending = false, romeAt = -1e9, lastNowMs = 0, skyEmitAt = -1e9;
   function sunVec(alt, az, out) { return out.set(Math.sin(az * DEG) * Math.cos(alt * DEG), Math.sin(alt * DEG), -Math.cos(az * DEG) * Math.cos(alt * DEG)); }
   function updateSky(dt, wdt = dt) {
@@ -247,18 +249,26 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     scene.fog.color.copy(hor); renderer.setClearColor(hor, 1);
     hemi.color.copy(mix3(tmp.c, "hemiD", "hemiG", g * 0.6, "hemiN", night)).convertSRGBToLinear();
     hemi.groundColor.copy(PAL.grD).lerp(PAL.grN, night).convertSRGBToLinear();
-    hemi.intensity = U.lerp(0.85, 0.16, night);
+    // inside a lit room after dark the room's own light carries the shot: a warm fill and more exposure
+    const fr = R.focusRoom, rr = fr && roomOf(fr), inside = !!rr && (rr.kind === "interno" || rr.kind === "dormitorio") && camera.position.y < 3.4 && inRoom(fr, camera.position.x, camera.position.z, 0);
+    const lit = fr ? safe(() => W().litOf(fr), 0) || 0 : 0;
+    roomBoost = U.damp(roomBoost, night * (inside ? 0.35 + 0.65 * lit : lit * 0.5), 3, wdt);
+    hemi.color.lerp(PAL.warmFill, 0.45 * roomBoost);
+    hemi.intensity = U.lerp(0.85, 0.16, night) + 0.5 * roomBoost;
     sun.color.copy(PAL.sunD).lerp(PAL.sunL, U.smooth(12, 3, dAlt)).convertSRGBToLinear();
     sun.intensity = 2.2 * (1 - night);
     moon.intensity = 0.25 * night;
-    renderer.toneMappingExposure = U.lerp(1.05, 0.82, night);
+    renderer.toneMappingExposure = U.lerp(1.05, 0.82, night) + 0.28 * roomBoost;
     starMat.uniforms.uA.value = U.smooth(0.5, 0.9, night);
     env.children[1].visible = starMat.uniforms.uA.value > 0.001;
     if (!reduce) starMat.uniforms.uT.value = clockT;
     // the sun light: no lower than 7° so that the shadows stay readable at dawn and dusk
     sunVec(Math.max(7, dAlt), dAz, tmp.ldir);
-    // nothing to update in the shadow map once the sun is down
-    renderer.shadowMap.autoUpdate = night < 0.995;
+    // the shadow map is redrawn every SHADOW_EVERY frames by day (the world is still, the sun slow), at
+    // once when the shadow box moves; nothing to update once the sun is down
+    renderer.shadowMap.autoUpdate = false;
+    shadowN = (shadowN + 1) % SHADOW_EVERY;
+    if (night < 0.995 && shadowN === 0) renderer.shadowMap.needsUpdate = true;
   }
 
   // ---- quality presets and the adaptive fps logic ------------------------------------------------------
@@ -380,6 +390,22 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     }
   }
 
+  // ---- line of sight: monitors, lamps, columns, trees and the other people stand in the way ----------------
+  let sightRay = null, _s = null, _f = null;
+  const keyOfObj = (o) => { while (o && !(o.userData && o.userData.agentKey)) o = o.parent; return o ? o.userData.agentKey : null; };
+  // is the segment cam→pt clear up to `upTo` of its length? (keys: the people of the shot, never in the way)
+  function sightOk(cam, pt, keys, outdoor, upTo = 1) {
+    _s.copy(pt).sub(cam);
+    const d = _s.length();
+    if (d < 0.3) return true;
+    sightRay.set(cam, _s.multiplyScalar(1 / d)); sightRay.near = 0; sightRay.far = d * upTo - 0.2;
+    const occ = safe(() => W().occluders(!!outdoor), []);
+    if (occ.length && safe(() => sightRay.intersectObjects(occ, false).length > 0, false)) return false;
+    if (outdoor) return true;
+    const pp = safe(() => P().pickables(), []);
+    return !safe(() => sightRay.intersectObjects(pp, false).some((h) => !U.arr(keys).includes(keyOfObj(h.object))), false);
+  }
+
   // ---- the camera rig ------------------------------------------------------------------------------------------
   const rig = { P: null, T: null, vP: null, vT: null, gP: null, gT: null, hlP: 0.45, hlT: 0.45 };
   let shot = null, pending = null, lastReq = 0, lastCut = -9, lastVary = 0, idleAt = 0, angleN = 0, p3n = 0, nightDorm = 0;
@@ -422,9 +448,14 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     // portrait screens get a steeper view, so the campus fills the tall frame
     const A = aspect() < 1 ? (night ? [[0.3, 50], [-0.3, 52]] : [[0.32, 56], [0, 60], [-0.32, 56]])
       : night ? [[0.45, 23], [-0.5, 25], [0.12, 21]] : [[0.62, 40], [0, 46], [-0.62, 40]];
-    const [yaw, el] = A[s.angle % A.length];
     const tgt = V().set(0, 0, night ? -1 : 0.5);
-    const p = place(tgt, yaw, el, rectPts(BOUNDS[0], BOUNDS[1], BOUNDS[2], BOUNDS[3], tgt, yaw, true), aspect() < 1 ? 0.98 : 0.9, 20, 3.6);
+    let p = null;
+    for (let i = 0; i < A.length; i++) {
+      const [yaw, el] = A[(s.angle + i) % A.length];
+      const cam = place(tgt, yaw, el, rectPts(BOUNDS[0], BOUNDS[1], BOUNDS[2], BOUNDS[3], tgt, yaw, true), aspect() < 1 ? 0.98 : 0.9, 20, 3.6);
+      if (!p) p = cam;
+      if (sightOk(cam, tgt, [], true, 0.4)) { p = cam; break; }
+    }
     return { kind: "campus", P: p, T: tgt, room: null, track: false };
   }
   function roomShot(s) {
@@ -432,10 +463,17 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     if (!r) return campusShot(s);
     let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9;
     for (const q of r.rects) { x0 = Math.min(x0, q[0]); z0 = Math.min(z0, q[1]); x1 = Math.max(x1, q[2]); z1 = Math.max(z1, q[3]); }
-    const [yaw, el] = WIDE[s.angle % 3];
     const tgt = V().set((x0 + x1) / 2, 0.6, (z0 + z1) / 2);
     const walled = r.kind === "interno" || r.kind === "dormitorio";
-    return { kind: "wide", P: place(tgt, yaw, el, rectPts(x0, z0, x1, z1, tgt, yaw, walled), 0.85, 7, 3.6), T: tgt, room: r.id, track: false };
+    // the first angle whose view is not inside a tree crown (the first 40% of the sightline is clear)
+    let first = null;
+    for (let i = 0; i < 3; i++) {
+      const [yaw, el] = WIDE[(s.angle + i) % 3];
+      const cam = place(tgt, yaw, el, rectPts(x0, z0, x1, z1, tgt, yaw, walled), 0.85, 7, 3.6);
+      if (!first) first = cam;
+      if (sightOk(cam, tgt, [], true, 0.4)) return { kind: "wide", P: cam, T: tgt, room: r.id, track: false };
+    }
+    return { kind: "wide", P: first, T: tgt, room: r.id, track: false };
   }
   // feet and heads of the subjects; "motore" is its terminal in the meeting room
   function subjectPts(keys) {
@@ -462,7 +500,14 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     let pts = subjectPts(keys);
     if (!pts.length && s.point) pts = [V().set(s.point.x - 2, 0, s.point.z - 2), V().set(s.point.x + 2, 1.8, s.point.z + 2)];
     if (!pts.length) return s.room ? roomShot(s) : campusShot(s);
+    // portrait screens: room above the heads for the speech bubbles
+    if (aspect() < 1) { const top = pts.reduce((m, q) => (q.y > m.y ? q : m), pts[0]); pts.push(V().set(top.x, top.y + 0.7, top.z)); }
     const tgt = center(pts), room = s.room || roomAt(pts[0].x, pts[0].z), yaws = [];
+    // the speaker's face, never the back: its own facing first (the engine's terminal faces west)
+    const k0 = keys[0], face0 = k0 === "motore" ? -Math.PI / 2 : validKey(k0) ? safe(() => P().yawOf(k0), null) : null;
+    const facing = (yaw) => face0 === null || Math.cos(yaw - face0) >= 0.2;
+    const head0 = k0 === "motore" ? pts[1] : pts.length > 1 ? pts[1] : null;
+    if (face0 !== null) { const sd = s.angle % 2 ? 0.5 : -0.5; yaws.push(face0 + sd, face0 - sd, face0, face0 + (k0 === "motore" ? 0.4 : 0.9), face0 - (k0 === "motore" ? 0.4 : 0.9)); }
     if (pts.length >= 4 && keys[0] !== "motore") {
       // two people: over the listener's shoulder, either side
       const dx = pts[2].x - pts[0].x, dz = pts[2].z - pts[0].z, side = s.angle % 2 ? 0.42 : -0.42;
@@ -473,19 +518,20 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     // at eye level inside the room when it fits (the cutaway is on there)
     if (pts.length <= 4 && room) {
       for (const yaw of yaws) {
+        if (!facing(yaw)) continue;
         const dir = dirOf(yaw, 14), d = Math.max(2.8, fit(pts, tgt, dir, 0.7)) * (aspect() < 1 ? 1.15 : 1);
         const cam = tgt.clone().addScaledVector(dir, d);
         cam.y = U.clamp(cam.y, 1.5, 2.6);
-        if (inRoom(room, cam.x, cam.z, 0.45)) return { kind: "medium", P: cam, T: tgt, room, track: true, keys, low: true };
+        if (inRoom(room, cam.x, cam.z, 0.45) && (!head0 || sightOk(cam, head0, keys))) return { kind: "medium", P: cam, T: tgt, room, track: true, keys, low: true };
       }
     }
     // else above the walls: inside the room, or south of it (the dollhouse side), or the first angle
     let best = null;
     for (const yaw of yaws) {
       const cam = place(tgt, yaw, 30, pts, 0.7, 3.2, 3.6), r = roomOf(room);
-      const score = inRoom(room, cam.x, cam.z, 0.3) ? 2 : r && cam.z > Math.max(...r.rects.map((q) => q[3])) ? 1 : 0;
+      const score = (facing(yaw) ? 4 : 0) + (inRoom(room, cam.x, cam.z, 0.3) ? 2 : r && cam.z > Math.max(...r.rects.map((q) => q[3])) ? 1 : 0);
       if (!best || score > best.score) best = { cam, score };
-      if (score === 2) break;
+      if (score === 6) break;
     }
     return { kind: "medium", P: best.cam, T: tgt, room, track: true, keys };
   }
@@ -514,17 +560,21 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
         for (const side of s.angle % 2 ? [1, -1] : [-1, 1]) {
           // over the listener's shoulder: behind and beside them, a little above their head
           const cam = V().set(lh.x + ux * 1.3 - uz * 0.72 * side, U.clamp(lh.y + 0.22, 1.4, 2.4), lh.z + uz * 1.3 + ux * 0.72 * side);
-          if (inRoom(room, cam.x, cam.z, 0.4)) return { kind: "close", P: cam, T: V().set(h.x - uz * 0.18 * side, h.y - 0.32, h.z + ux * 0.18 * side), room, track: true, keys: [k, other] };
+          if (inRoom(room, cam.x, cam.z, 0.4) && sightOk(cam, _f.set(h.x, h.y - 0.1, h.z), [k, other])) return { kind: "close", P: cam, T: V().set(h.x - uz * 0.18 * side, h.y - 0.32, h.z + ux * 0.18 * side), room, track: true, keys: [k, other] };
         }
       }
     }
-    const tgt = V().set(h.x, h.y - 0.37, h.z);
-    // at a keyboard: over the shoulder, towards the screens; otherwise a 3/4 view of the face
-    const O = state === "type" ? [2.55, -2.55, 2.1, -2.1, 1.5, -1.5] : [0.5, -0.5, 0.85, -0.85, 0, 1.3, -1.3];
-    const flip = s.angle % 2 ? -1 : 1;
+    // portrait: the head at about 57% from the top, so a bubble fits above it
+    const tgt = V().set(h.x, portrait ? h.y - 0.1 + 0.14 * d * TAN : h.y - 0.37, h.z), camY = U.clamp(portrait ? tgt.y + 0.04 : h.y - 0.02, 1.4, 2.6);
+    // at a desk (monitors, lamps) or a keyboard: over the shoulder, towards the screens; otherwise a 3/4
+    // view of the face; a view blocked by a monitor, a lamp or another person is skipped
+    const an = safe(() => p.anchorOf(k), null), desk = post === "sit" && an && an.kind === "desk";
+    const SH = [2.55, -2.55, 2.1, -2.1, 1.5, -1.5], FR = [0.5, -0.5, 0.85, -0.85, 0, 1.3, -1.3];
+    const O = state === "type" || desk ? SH : FR.concat(SH);
+    const flip = s.angle % 2 ? -1 : 1, eye = _f.set(h.x, h.y - 0.1, h.z);
     for (const o of O) {
-      const y = face + o * flip, cam = V().set(tgt.x + Math.sin(y) * d, U.clamp(h.y - 0.02, 1.4, 2.4), tgt.z + Math.cos(y) * d);
-      if (inRoom(room, cam.x, cam.z, 0.4)) return { kind: "close", P: cam, T: tgt, room, track: true, keys: [k] };
+      const y = face + o * flip, cam = V().set(tgt.x + Math.sin(y) * d, camY, tgt.z + Math.cos(y) * d);
+      if (inRoom(room, cam.x, cam.z, 0.4) && sightOk(cam, eye, [k])) return { kind: "close", P: cam, T: tgt, room, track: true, keys: [k] };
     }
     return null;
   }
@@ -540,7 +590,7 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     if (!kind) {
       const pr = U.isNum(req.priority) ? req.priority : 1;
       if (!keys.length) kind = req.room ? "wide" : req.point ? "medium" : "campus";
-      else if (pr >= 3) kind = ["close", "medium", "close", "wide"][p3n++ % 4];
+      else if (pr >= 3) kind = (aspect() < 1 ? ["close", "medium"] : ["close", "medium", "close", "wide"])[p3n++ % (aspect() < 1 ? 2 : 4)];
       else if (pr === 2) kind = "medium";
       else if (pr === 1) kind = /pens|thought|riflett/i.test(String(req.reason || "")) ? "close" : "medium";
       else kind = "wide";
@@ -616,7 +666,9 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
   function idleStep() {
     const room = busiestRoom();
     if (room) take({ room, shot: "wide", priority: 0, idle: true });
-    else { const k = C.KEYS[nightDorm++ % C.KEYS.length]; take({ room: "dorm_" + k, keys: [k], shot: nightDorm % 2 ? "wide" : "close", priority: 0, idle: true }); }
+    // all asleep: a sleeper seen from inside the dim dorm, then the campus under its street lamps
+    else if (nightDorm++ % 2) take({ shot: "campus", priority: 0, idle: true });
+    else { const k = C.KEYS[(nightDorm >> 1) % C.KEYS.length]; take({ room: "dorm_" + k, keys: [k], shot: "close", priority: 0, idle: true }); }
   }
   // the same subject again keeps its framing and renews the hold; anything else is a new shot
   function takePending() {
@@ -673,7 +725,17 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
   }
 
   // segui: behind and above the agent, a spring of 0.35 s; the look-at stays on the head
-  let fYaw = null, fCut = false;
+  let fYaw = null, fCut = false, fOff = null;
+  const FOLLOW_OFFS = [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, Math.PI];
+  const walledRoom = (id) => { const r = roomOf(id); return !!r && (r.kind === "interno" || r.kind === "dormitorio"); };
+  // the height that clears the wall between a camera outside the room and the head: at the distance d
+  // where the sightline enters the room, the line must be over 3.2 m
+  function clearWallY(room, cam, h) {
+    const D = Math.hypot(h.x - cam.x, h.z - cam.z);
+    let d = 0;
+    for (let i = 1; i <= 24; i++) { const t = i / 24; if (inRoom(room, cam.x + (h.x - cam.x) * t, cam.z + (h.z - cam.z) * t, 0)) { d = t * D; break; } }
+    return d > 0 && D - d > 0.3 ? 3.2 + (3.2 - h.y) * (d / (D - d)) + 0.2 : 3.6;
+  }
   function follow(dt) {
     const k = R.followKey, p = P();
     const f = validKey(k) ? safe(() => p.positionOf(k), null) : null;
@@ -687,12 +749,23 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
       rig.gT.set(f.x + Math.sin(fYaw) * 0.3, 0.6, f.z + Math.cos(fYaw) * 0.3);
       rig.gP.set(rig.gT.x + Math.sin(fYaw + 2.3) * 2.6, 3.0, rig.gT.z + Math.cos(fYaw + 2.3) * 2.6);
     } else {
-      const back = aspect() < 1 ? 6.5 : 5.5;
+      const back = aspect() < 1 ? 6.5 : 5.5, hy = (f.y || 0) + (post === "sit" ? 2.0 : 2.6);
+      const at = (o, d) => rig.gP.set(f.x - Math.sin(fYaw + o) * d, hy, f.z - Math.cos(fYaw + o) * d);
+      const fits = () => inRoom(room, rig.gP.x, rig.gP.z, 0.35);
       rig.gT.set(h.x, h.y - 0.15, h.z);
-      rig.gP.set(f.x - Math.sin(fYaw) * back, (f.y || 0) + (post === "sit" ? 2.0 : 2.6), f.z - Math.cos(fYaw) * back);
+      at(0, back);
+      // behind the agent falls outside a walled room (a front-row desk, a small dorm): another side of
+      // the agent, nearer, inside the room; the last good one is kept while it still fits
+      if (room && walledRoom(room) && !fits()) {
+        if (!(fOff && (at(fOff[0], fOff[1]), fits()))) {
+          fOff = null;
+          for (const d of [back, back * 0.7, back * 0.5]) { for (const o of FOLLOW_OFFS) { at(o, d); if (fits()) { fOff = [o, d]; break; } } if (fOff) break; }
+          if (!fOff) { at(0, back); rig.gP.y = Math.max(rig.gP.y, Math.min(12, clearWallY(room, rig.gP, h))); }
+        }
+      } else fOff = null;
     }
     // outside the agent's room, or on its walls: rise above the walls
-    if (room && !inRoom(room, rig.gP.x, rig.gP.z, 0.35)) rig.gP.y = Math.max(rig.gP.y, 3.6);
+    if (room && !inRoom(room, rig.gP.x, rig.gP.z, 0.35)) rig.gP.y = Math.max(rig.gP.y, walledRoom(room) ? Math.min(12, clearWallY(room, rig.gP, h)) : 3.6);
     rig.gP.x = U.clamp(rig.gP.x, -40, 40); rig.gP.z = U.clamp(rig.gP.z, -34, 34);
     if (fCut) { fCut = false; snap(); return; }
     if (reduce) {
@@ -710,16 +783,19 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
   function freeStart() {
     if (orbit) { orbit.target.copy(rig.T); orbit.enabled = true; orbit.enableDamping = !reduce; orbit.update(); return; }
     if (mini) { miniFrom(); return; }
-    if (orbitTry) return;
+    // the built-in orbit works at once; OrbitControls takes over when (and if) it arrives
+    mini = { yaw: 0, el: 0.6, dist: 30, ptr: new Map(), pinch: 0 }; miniFrom();
     orbitTry = loadAll(FILES.orbit).then(() => {
       if (disposed) return;
       orbit = new T.OrbitControls(camera, canvas);
       Object.assign(orbit, { minDistance: 2.5, maxDistance: 90, maxPolarAngle: 1.45, enableDamping: !reduce, dampingFactor: 0.09, screenSpacePanning: false, rotateSpeed: 0.8, zoomSpeed: 0.9 });
+      mini = null;
+      camera.position.copy(rig.P);
       orbit.target.copy(rig.T);
       orbit.enabled = R.cameraMode === "libera";
       canvas.style.touchAction = R.cameraMode === "libera" ? "none" : "pan-y";
       if (orbit.enabled) orbit.update();
-    }).catch(() => { mini = { yaw: 0, el: 0.6, dist: 30, ptr: new Map(), pinch: 0 }; miniFrom(); });
+    }).catch(() => { /* no OrbitControls: the built-in orbit stays */ });
   }
   function miniFrom() {
     const o = _a.copy(rig.P).sub(rig.T);
@@ -830,6 +906,8 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
       sun.shadow.camera.updateProjectionMatrix();
     }
     const fx = Math.round(rig.T.x / 2) * 2, fz = Math.round(rig.T.z / 2) * 2, l = tmp.ldir;
+    const at = fx + "," + fz + "," + shadowHalf;
+    if (at !== shadowAt) { shadowAt = at; if (R.sky.night < 0.995) renderer.shadowMap.needsUpdate = true; }
     sun.position.set(fx + l.x * 60, l.y * 60, fz + l.z * 60);
     sun.target.position.set(fx, 0, fz); sun.target.updateMatrixWorld();
     moon.target.position.set(fx, 0, fz); moon.position.set(fx - 42, 37, fz + 21); moon.target.updateMatrixWorld();
@@ -857,13 +935,14 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     Object.assign(renderer, { outputEncoding: T.sRGBEncoding, toneMapping: T.ACESFilmicToneMapping, physicallyCorrectLights: false });
     renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.shadowMap.enabled = q0 !== "low";
     renderer.info.autoReset = false;
-    UP = V().set(0, 1, 0); [_a, _b, _c, _d, _e] = [V(), V(), V(), V(), V()];
+    UP = V().set(0, 1, 0); [_a, _b, _c, _d, _e, _s, _f] = [V(), V(), V(), V(), V(), V(), V()]; sightRay = new T.Raycaster();
     Object.assign(rig, { P: V().set(30, 40, 50), T: V(), vP: V(), vT: V(), gP: V().set(30, 40, 50), gT: V() });
     tmp.hor = new T.Color(); tmp.hill = new T.Color(); tmp.c = new T.Color(); tmp.ldir = V().set(0, 1, 0);
     const HEX = { dayZ: 0x5d9bd5, dayH: 0xdbe8f3, goldZ: 0x5779b0, goldH: 0xf2a65a, band: 0xe48aa0, nightZ: 0x060a18, nightH: 0x1a2440,
       glowD: 0xfff3d6, glowG: 0xff9a4a, cloudD: 0xf3f6fa, cloudG: 0xf2b08a, cloudN: 0x262f4c, hillD: 0x80938a, hillG: 0x8d6f6c, hillN: 0x0b1122,
       hemiD: 0xdfeaf5, hemiG: 0xf1d9bf, hemiN: 0x3a4878, grD: 0x5e5240, grN: 0x1f1c26, sunD: 0xfff1dc, sunL: 0xffb36b };
     for (const k in HEX) PAL[k] = new T.Color(HEX[k]);
+    PAL.warmFill = new T.Color(0xffb878).convertSRGBToLinear();
     scene = new T.Scene();
     scene.fog = new T.Fog(0xdbe8f3, 70, 190);
     camera = new T.PerspectiveCamera(FOV, 16 / 9, 0.1, 400);
@@ -904,6 +983,7 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
 
   R.update = (dt) => {
     if (!inited || disposed) return;
+    reduce = !!(ctx && ctx.reduceMotion);
     dt = U.isNum(dt) ? Math.min(0.1, Math.max(0, dt)) : 0;
     // the director's holds run on the wall clock, even when slow frames cap dt
     const w = performance.now() / 1000;
