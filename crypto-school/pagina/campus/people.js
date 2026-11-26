@@ -723,7 +723,7 @@
         glasses(add, J, s, F, 0x9a8456, "round", lvl);
         // the green eyeshade visor
         add(Cyl(J.ha * 1.12, J.ha * 1.1, 0.03, lvl ? 16 : 10, 1, true).applyMatrix4(TR(0, J.hc + J.hb * 0.42, J.hz + 0.004, -0.12, 0, 0, 1, 1, J.hd / J.ha)), 0x2f8a4a, B.hat, [0.4, 0.05]);
-        add(Cyl(J.ha * 1.12, J.ha * 1.5, 0.026, lvl ? 16 : 10, 1, true, -1.15, 2.3).applyMatrix4(TR(0, J.hc + J.hb * 0.3, J.hz + 0.006, -0.12, 0, 0, 1, 1, J.hd / J.ha)), 0x36a356, B.hat, [0.35, 0.15]);
+        add(Cyl(J.ha * 1.12, J.ha * 1.42, 0.008, lvl ? 16 : 10, 1, true, -1.15, 2.3).applyMatrix4(TR(0, J.hc + J.hb * 0.4, J.hz + 0.006, -0.12, 0, 0, 1, 1, J.hd / J.ha)), 0x36a356, B.hat, [0.35, 0.15]);
       },
       arm: (o) => {
         sleeve(0xf2f1ec, null, { r: 0.7 })(o);
@@ -853,7 +853,13 @@
   const blank = () => { const o = {}; for (const c of CH) o[c] = 0; return o; };
   const ARM = ["ce", "cp", "af", "aa", "at", "ef", "et", "wf", "wd", "fc", "ic", "tc"];
   // arm(o, side, [ce, cp, af, aa, at, ef, et, wf, wd, fc, ic, tc]) with undefined = keep
-  const arm = (o, S, v) => { for (let i = 0; i < v.length; i++) if (v[i] !== undefined) o[ARM[i] + S] = v[i]; };
+  // the hot path builds no strings: the keys of each side are made once
+  const ARMK = { L: ARM.map((n) => n + "L"), R: ARM.map((n) => n + "R") };
+  const arm = (o, S, v) => { const K = ARMK[S]; for (let i = 0; i < v.length; i++) if (v[i] !== undefined) o[K[i]] = v[i]; };
+  const SIDEK = ["L", "R"].map((S, i) => ({ sd: i ? -1 : 1, K: Object.fromEntries(["cp", "ce", "af", "at", "aa", "ef", "et", "wd", "wf", "fc", "ic", "tc", "lf", "lt", "la", "kn", "an"].map((n) => [n, n + S])),
+    bn: ["clav", "arm", "fore", "hand", "fing", "idx", "thumb", "thigh", "shin", "foot", "eye", "lid"].map((n) => B[n + S]) }));
+  const HEAD_PITCH_MAX = 0.5; // rad, about 29° of spine, neck and head together: lower and the face hides
+  const TYPE_PH = [["L", 0], ["R", 2.1]], TR_KEYS = ["py", "hx", "lfL", "lfR", "knL", "knR", "anL", "anR", "laL", "laR"];
   const REST = [0, 0, 0.03, 0.1, 0.12, 0.2, 0.55, 0.06, 0, 0.42, 0.32, 0.3];
 
   // ---- the people
@@ -1169,8 +1175,8 @@
   // fills p.T for the current posture, state and time; legs come later (IK)
   function poseTargets(p, t, dt) {
     const o = p.T, J = p.J, k = p.key, st = p.state, post = postureNow(p), rm = ctx && ctx.reduceMotion;
-    for (const c of CH) o[c] = 0;
-    for (const S of "LR") arm(o, S, REST);
+    for (let i = 0; i < CH.length; i++) o[CH[i]] = 0;
+    arm(o, "L", REST); arm(o, "R", REST);
     const breath = sin(t * (post === "lie" ? 1.25 : 1.75) + p.ph0);
     // the posture base
     if (post === "sit") {
@@ -1183,7 +1189,7 @@
       if (st === "sleep") {
         o.hy = p.sleepRoll * 1.15;
         if (p.sleepRoll) { o.lfL = o.lfR = 0.45; o.knL = o.knR = 0.85; o.cy = -p.sleepRoll * 0.2; arm(o, p.sleepRoll > 0 ? "R" : "L", [0, 0, 0.9, 0.1, 0.4, 1.1, 0.8]); arm(o, p.sleepRoll > 0 ? "L" : "R", [0, 0, 0.55, 0.05, 0.3, 1.3, 0.8]); }
-        else { o.lfL = 0.04; o.lfR = 0.08; o.knL = 0.06; o.knR = 0.12; o.anL = o.anR = -0.35; }
+        else { o.lfL = 0.04; o.lfR = 0.1; o.knL = 0.06; o.knR = 0.22; o.anL = o.anR = -0.35; o.ky = 0.3; arm(o, "R", [0, 0.06, 0.35, 0.05, 0.6, 1.75, 0.9]); }
       } else { o.lfL = o.lfR = 0.05; o.knL = o.knR = 0.08; o.anL = o.anR = -0.3; o.nx = 0.45; }
     } else {
       o.py = J.hip - 0.012;
@@ -1211,11 +1217,11 @@
       case "sit": break;
       case "type":
         o.sx += 0.05; o.cx += 0.06; o.kx += 0.1;
-        for (const [S, ph] of [["L", 0], ["R", 2.1]]) arm(o, S, [0, 0.02, 0.52, 0.2, 0.42, 1.25, 1.42, -0.12, 0, 0.45 + 0.2 * w(17, ph), 0.35 + 0.25 * w(23, ph + 1), 0.3]);
+        for (const [S, ph] of TYPE_PH) arm(o, S, [0, 0.02, 0.52, 0.2, 0.42, 1.25, 1.42, -0.12, 0, 0.45 + 0.2 * w(17, ph), 0.35 + 0.25 * w(23, ph + 1), 0.3]);
         o.afL += 0.015 * w(5.3); o.afR += 0.015 * w(4.7, 1);
         break;
       case "read":
-        o.kx += 0.32; o.nx += 0.12;
+        o.kx += 0.2; o.nx += 0.06; o.sx += 0.05; o.cx += 0.07;
         for (const S of "LR") arm(o, S, [0, 0.03, 0.26, 0.04, 0.34, 1.62, 0.05, -0.2, 0.05, 0.55, 0.45, 0.25]);
         if (ITEMS[k].mag) arm(o, "R", [0.02, 0.05, 0.42, 0.1, 0.45, 1.75, 0.1, 0.1, 0.1, 0.8, 0.75, 0.6]);
         break;
@@ -1259,9 +1265,9 @@
           arm(o, "R", [0.06, 0.04, 1.45 + 0.04 * w(7), 0.08 + 0.05 * w(5.3) + 0.06 * w(0.7), 0.3, 0.75, 1.0, -0.25, 0, 0.75, 0.6, 0.6]);
           o.kx -= 0.04; o.ky += 0.08 * w(0.7);
         } else {
-          o.sx += 0.06; o.cx += 0.07; o.kx += 0.38;
-          arm(o, "R", [0, 0.03, 0.48, 0.14, 0.4, 1.3, 1.3, 0.3 + 0.05 * w(9), 0.04 * w(6), 0.65, 0.55, 0.55]);
-          arm(o, "L", [0, 0.03, 0.48, 0.22, 0.55, 1.2, 1.45, -0.05, 0, 0.2, 0.15, 0.2]);
+          o.sx += 0.1; o.cx += 0.1; o.kx += 0.22;
+          arm(o, "R", [0, 0.03, 0.62, 0.14, 0.4, 1.12, 1.3, 0.3 + 0.05 * w(9), 0.04 * w(6), 0.65, 0.55, 0.55]);
+          arm(o, "L", [0, 0.03, 0.6, 0.22, 0.55, 1.05, 1.45, -0.05, 0, 0.2, 0.15, 0.2]);
         }
         break;
     }
@@ -1269,6 +1275,8 @@
     o.cx += 0.008 * breath; o.ceL += 0.006 * breath; o.ceR += 0.006 * breath;
     // look-at
     lookAtPose(p, o, t, dt, post);
+    // reading or writing, the torso leans and the head stays up enough to show the face
+    if ((st === "read" || st === "write") && o.sx + o.cx + o.nx + o.kx > HEAD_PITCH_MAX) o.kx = HEAD_PITCH_MAX - o.sx - o.cx - o.nx;
     // the face
     faceTargets(p, o, t, dt);
   }
@@ -1514,26 +1522,27 @@
     b[B.head].rotation.set(o.kx, o.ky, o.kz);
     const br = 1 + 0.012 * sin(clk * (p.state === "sleep" ? 1.25 : 1.75) + p.J.h * 10);
     b[B.breath].scale.set(br, 1 + (br - 1) * 0.4, br * 1.1);
-    for (const [S, sd] of [["L", 1], ["R", -1]]) {
-      b[B["clav" + S]].rotation.set(0, -sd * o["cp" + S], sd * o["ce" + S]);
-      b[B["arm" + S]].rotation.set(-o["af" + S], -sd * o["at" + S], sd * o["aa" + S]);
-      b[B["fore" + S]].rotation.set(-o["ef" + S], -sd * o["et" + S], 0);
-      b[B["hand" + S]].rotation.set(-o["wd" + S], 0, -sd * o["wf" + S]);
-      b[B["fing" + S]].rotation.set(0, 0, -sd * o["fc" + S] * 1.4);
-      b[B["idx" + S]].rotation.set(0, 0, -sd * o["ic" + S] * 1.4);
-      b[B["thumb" + S]].rotation.set(0.2 * o["tc" + S], sd * 0.5 * o["tc" + S], -sd * 0.5 * o["tc" + S]);
-      b[B["thigh" + S]].rotation.set(-o["lf" + S], sd * o["lt" + S], sd * o["la" + S]);
-      b[B["shin" + S]].rotation.set(o["kn" + S], 0, 0);
-      b[B["foot" + S]].rotation.set(-o["an" + S], 0, 0);
+    for (let i = 0; i < 2; i++) {
+      const { sd, K, bn } = SIDEK[i];
+      b[bn[0]].rotation.set(0, -sd * o[K.cp], sd * o[K.ce]);
+      b[bn[1]].rotation.set(-o[K.af], -sd * o[K.at], sd * o[K.aa]);
+      b[bn[2]].rotation.set(-o[K.ef], -sd * o[K.et], 0);
+      b[bn[3]].rotation.set(-o[K.wd], 0, -sd * o[K.wf]);
+      b[bn[4]].rotation.set(0, 0, -sd * o[K.fc] * 1.4);
+      b[bn[5]].rotation.set(0, 0, -sd * o[K.ic] * 1.4);
+      b[bn[6]].rotation.set(0.2 * o[K.tc], sd * 0.5 * o[K.tc], -sd * 0.5 * o[K.tc]);
+      b[bn[7]].rotation.set(-o[K.lf], sd * o[K.lt], sd * o[K.la]);
+      b[bn[8]].rotation.set(o[K.kn], 0, 0);
+      b[bn[9]].rotation.set(-o[K.an], 0, 0);
     }
     // face
     const lvl = LV[detail], s = J.s;
     const eyes = clamp(o.ex, -0.4, 0.4), eyp = clamp(o.ey, -0.35, 0.35);
-    for (const S of "LR") {
-      const e = b[B["eye" + S]];
+    for (let i = 0; i < 2; i++) {
+      const e = b[SIDEK[i].bn[10]];
       e.rotation.set(-eyp, eyes, 0);
       if (lvl === 0) e.scale.set(1, 1 - 0.9 * p.lidv, 1); else e.scale.set(1, 1, 1);
-      b[B["lid" + S]].rotation.set(lerp(0, 0.98, p.lidv) - eyp * 0.4, 0, 0);
+      b[SIDEK[i].bn[11]].rotation.set(lerp(0, 0.98, p.lidv) - eyp * 0.4, 0, 0);
     }
     b[B.browL].position.set(L0(p, "browL", 0), L0(p, "browL", 1) + o.bL, L0(p, "browL", 2));
     b[B.browR].position.set(L0(p, "browR", 0), L0(p, "browR", 1) + o.bR, L0(p, "browR", 2));
@@ -1566,6 +1575,21 @@
   }
 
   // ---- one frame of one person
+  // a blanket in the owner's colour from the waist past the feet (the body lies along +z of its root)
+  function blanketFor(p, on) {
+    if (!on) { if (p.blanket) p.blanket.visible = false; return; }
+    if (!p.blanket) {
+      const J = p.J, len = J.hip + 0.32, g = Box(0.6, 0.05, len).translate(0, 0, len / 2 - 0.12);
+      const col = new T.Color(C.COLORS[p.key] || 0x777777).lerp(new T.Color(0xf1ece2), 0.35).convertSRGBToLinear();
+      const m = new T.Mesh(g, new T.MeshStandardMaterial({ color: col, roughness: 0.95 }));
+      const side = new T.Mesh(Box(0.02, 0.24, len), m.material);
+      for (const sd of [-1, 1]) { const s = side.clone(); s.position.set(sd * 0.3, -0.12, len / 2 - 0.12); m.add(s); }
+      m.receiveShadow = true; m.name = "blanket." + p.key;
+      p.root.add(m); p.blanket = m;
+    }
+    p.blanket.visible = true;
+    p.blanket.position.set(0, p.seat + 0.15, 0);
+  }
   function animate(p, t, dt) {
     p.adt = dt;
     itemsFor(p);
@@ -1576,18 +1600,19 @@
     legsFor(p, Tg, t, dt, post);
     // damp towards the targets (snap after a placement)
     const lam = p.snap ? 1e3 : 10;
-    for (const c of CH) S[c] = U.damp(S[c], Tg[c], c === "py" || c === "px" ? lam * 1.6 : lam, dt);
-    if (p.tr && p.tr.to !== "turn") for (const c of ["py", "hx", "lfL", "lfR", "knL", "knR", "anL", "anR", "laL", "laR"]) S[c] = Tg[c];
+    const kd = 1 - Math.exp(-lam * dt), kp = 1 - Math.exp(-lam * 1.6 * dt);
+    for (let i = 0; i < CH.length; i++) { const c = CH[i]; S[c] += (Tg[c] - S[c]) * (i < 2 ? kp : kd); }
+    if (p.tr && p.tr.to !== "turn") for (let i = 0; i < TR_KEYS.length; i++) S[TR_KEYS[i]] = Tg[TR_KEYS[i]];
     // the walk: blended in by weight
     const walking = p.phase === 2;
     p.walk.w = U.damp(p.walk.w, walking ? 1 : 0, walking ? 9 : 7, dt);
     const O = p.O;
     if (p.walk.w > 0.01) {
-      for (const c of CH) O[c] = S[c];
+      for (let i = 0; i < CH.length; i++) O[CH[i]] = S[CH[i]];
       walkPose(p, O, dt);
       const w = p.walk.w;
-      for (const c of CH) O[c] = lerp(S[c], O[c], w);
-    } else for (const c of CH) O[c] = S[c];
+      for (let i = 0; i < CH.length; i++) { const c = CH[i]; O[c] = lerp(S[c], O[c], w); }
+    } else for (let i = 0; i < CH.length; i++) O[CH[i]] = S[CH[i]];
     // face and eyes always from the damped state, mouth fast
     O.lid = p.lidv;
     applyBones(p, O);
@@ -1598,6 +1623,7 @@
       if (p.page > 0) { p.page += dt / 0.7; if (p.page >= 1) p.page = 0; }
     } else p.page = 0;
     // sleeping: turn over now and then
+    blanketFor(p, post === "lie" && p.state === "sleep");
     if (p.state === "sleep") { p.rollT -= dt; if (p.rollT <= 0) { p.rollT = 40 + p.rnd() * 50; const r = p.rnd(); p.sleepRoll = r < 0.4 ? 0 : r < 0.7 ? 1 : -1; } }
     else p.sleepRoll = 0;
     p.snap = false;

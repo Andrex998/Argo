@@ -393,6 +393,8 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
   // ---- line of sight: monitors, lamps, columns, trees and the other people stand in the way ----------------
   let sightRay = null, _s = null, _f = null;
   const keyOfObj = (o) => { while (o && !(o.userData && o.userData.agentKey)) o = o.parent; return o ? o.userData.agentKey : null; };
+  // the face is clear when both the eyes and the chin are (headOf is the top of the head)
+  const faceOk = (cam, h, keys) => sightOk(cam, _f.set(h.x, h.y - 0.13, h.z), keys) && sightOk(cam, _f.set(h.x, h.y - 0.25, h.z), keys);
   // is the segment cam→pt clear up to `upTo` of its length? (keys: the people of the shot, never in the way)
   function sightOk(cam, pt, keys, outdoor, upTo = 1) {
     _s.copy(pt).sub(cam);
@@ -505,9 +507,9 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     const tgt = center(pts), room = s.room || roomAt(pts[0].x, pts[0].z), yaws = [];
     // the speaker's face, never the back: its own facing first (the engine's terminal faces west)
     const k0 = keys[0], face0 = k0 === "motore" ? -Math.PI / 2 : validKey(k0) ? safe(() => P().yawOf(k0), null) : null;
-    const facing = (yaw) => face0 === null || Math.cos(yaw - face0) >= 0.2;
+    const facing = (yaw, min = 0.2) => face0 === null || Math.cos(yaw - face0) >= min;
     const head0 = k0 === "motore" ? pts[1] : pts.length > 1 ? pts[1] : null;
-    if (face0 !== null) { const sd = s.angle % 2 ? 0.5 : -0.5; yaws.push(face0 + sd, face0 - sd, face0, face0 + (k0 === "motore" ? 0.4 : 0.9), face0 - (k0 === "motore" ? 0.4 : 0.9)); }
+    if (face0 !== null) { const sd = s.angle % 2 ? 0.5 : -0.5; yaws.push(face0 + sd, face0 - sd, face0, face0 + (k0 === "motore" ? 0.4 : 0.9), face0 - (k0 === "motore" ? 0.4 : 0.9)); if (k0 !== "motore") yaws.push(face0 + 1.45, face0 - 1.45); }
     if (pts.length >= 4 && keys[0] !== "motore") {
       // two people: over the listener's shoulder, either side
       const dx = pts[2].x - pts[0].x, dz = pts[2].z - pts[0].z, side = s.angle % 2 ? 0.42 : -0.42;
@@ -518,11 +520,11 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     // at eye level inside the room when it fits (the cutaway is on there)
     if (pts.length <= 4 && room) {
       for (const yaw of yaws) {
-        if (!facing(yaw)) continue;
+        if (!facing(yaw, 0.1)) continue;   // at eye level the profile will do
         const dir = dirOf(yaw, 14), d = Math.max(2.8, fit(pts, tgt, dir, 0.7)) * (aspect() < 1 ? 1.15 : 1);
         const cam = tgt.clone().addScaledVector(dir, d);
         cam.y = U.clamp(cam.y, 1.5, 2.6);
-        if (inRoom(room, cam.x, cam.z, 0.45) && (!head0 || sightOk(cam, head0, keys))) return { kind: "medium", P: cam, T: tgt, room, track: true, keys, low: true };
+        if (inRoom(room, cam.x, cam.z, 0.45) && (!head0 || sightOk(cam, _f.set(head0.x, head0.y - 0.15, head0.z), keys))) return { kind: "medium", P: cam, T: tgt, room, track: true, keys, low: true };
       }
     }
     // else above the walls: inside the room, or south of it (the dollhouse side), or the first angle
@@ -560,21 +562,24 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
         for (const side of s.angle % 2 ? [1, -1] : [-1, 1]) {
           // over the listener's shoulder: behind and beside them, a little above their head
           const cam = V().set(lh.x + ux * 1.3 - uz * 0.72 * side, U.clamp(lh.y + 0.22, 1.4, 2.4), lh.z + uz * 1.3 + ux * 0.72 * side);
-          if (inRoom(room, cam.x, cam.z, 0.4) && sightOk(cam, _f.set(h.x, h.y - 0.1, h.z), [k, other])) return { kind: "close", P: cam, T: V().set(h.x - uz * 0.18 * side, h.y - 0.32, h.z + ux * 0.18 * side), room, track: true, keys: [k, other] };
+          if (inRoom(room, cam.x, cam.z, 0.4) && faceOk(cam, h, [k, other])) return { kind: "close", P: cam, T: V().set(h.x - uz * 0.18 * side, h.y - 0.32, h.z + ux * 0.18 * side), room, track: true, keys: [k, other] };
         }
       }
     }
     // portrait: the head at about 57% from the top, so a bubble fits above it
-    const tgt = V().set(h.x, portrait ? h.y - 0.1 + 0.14 * d * TAN : h.y - 0.37, h.z), camY = U.clamp(portrait ? tgt.y + 0.04 : h.y - 0.02, 1.4, 2.6);
-    // at a desk (monitors, lamps) or a keyboard: over the shoulder, towards the screens; otherwise a 3/4
-    // view of the face; a view blocked by a monitor, a lamp or another person is skipped
-    const an = safe(() => p.anchorOf(k), null), desk = post === "sit" && an && an.kind === "desk";
-    const SH = [2.55, -2.55, 2.1, -2.1, 1.5, -1.5], FR = [0.5, -0.5, 0.85, -0.85, 0, 1.3, -1.3];
-    const O = state === "type" || desk ? SH : FR.concat(SH);
-    const flip = s.angle % 2 ? -1 : 1, eye = _f.set(h.x, h.y - 0.1, h.z);
-    for (const o of O) {
-      const y = face + o * flip, cam = V().set(tgt.x + Math.sin(y) * d, camY, tgt.z + Math.cos(y) * d);
-      if (inRoom(room, cam.x, cam.z, 0.4) && sightOk(cam, eye, [k])) return { kind: "close", P: cam, T: tgt, room, track: true, keys: [k] };
+    // (seated: the camera may come down to the face, under a brim or a bowed head)
+    const yMin = post === "sit" ? 1.05 : 1.4;
+    const tgt = V().set(h.x, portrait ? h.y - 0.1 + 0.14 * d * TAN : h.y - 0.37, h.z), camY = U.clamp(portrait ? tgt.y + 0.04 : h.y - 0.08, yMin, 2.6);
+    // at a keyboard: over the shoulder, towards the screens; otherwise a 3/4 view of the face; a view
+    // blocked by a monitor, a lamp or another person is skipped (at a trading desk that leaves the side
+    // and the shoulder)
+    // (facing a wall, at a board: the profile, nearer, before the back)
+    const SH = [2.55, -2.55, 2.1, -2.1, 1.5, -1.5], FR = [0.5, -0.5, 0.85, -0.85, 0, 1.3, -1.3, 1.57, -1.57];
+    const O = state === "type" ? SH.map((o) => [o, 1]) : FR.map((o) => [o, 1]).concat([1.3, -1.3, 1.57, -1.57].map((o) => [o, 0.7]), SH.map((o) => [o, 1]));
+    const flip = s.angle % 2 ? -1 : 1;
+    for (const [o, k2] of O) {
+      const y = face + o * flip, cam = V().set(tgt.x + Math.sin(y) * d * k2, camY, tgt.z + Math.cos(y) * d * k2);
+      if (inRoom(room, cam.x, cam.z, 0.4) && faceOk(cam, h, [k])) return { kind: "close", P: cam, T: tgt, room, track: true, keys: [k] };
     }
     return null;
   }
@@ -705,7 +710,7 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
       const c = trackRef(s);
       if (c) { rig.gT.copy(c).add(s.tOff); rig.gP.copy(rig.gT).add(s.off); }
       if (s.kind === "close") {
-        rig.gP.y = U.clamp(rig.gP.y, 1.4, 2.4);
+        rig.gP.y = U.clamp(rig.gP.y, s.P.y < 1.4 ? 1.05 : 1.4, 2.6);
         if (!inRoom(s.room, rig.gP.x, rig.gP.z, 0.3) && clockT - lastCut > 1) take({ keys: s.spec.keys, shot: "medium", priority: s.priority, holdS: s.hold });
       } else if (s.low && !inRoom(s.room, rig.gP.x, rig.gP.z, 0.3) && clockT - lastCut > 1) take({ keys: s.spec.keys, shot: "medium", priority: s.priority, holdS: s.hold, room: s.room });
     } else { rig.gP.copy(s.P); rig.gT.copy(s.T); }

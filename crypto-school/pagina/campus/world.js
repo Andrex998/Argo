@@ -2003,7 +2003,7 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
     AO.forEach(([x, y, z, sx, sz, ry, k, f], i) => { LOC.makeRotationY(ry).scale(VA.set(sx, 1, sz)).setPosition(x, y, z); MESH.ao.setMatrixAt(i, LOC); MESH.ao.setColorAt(i, colr.setRGB(k, f, 0)); });
     root.add(MESH.ao);
     // a soft warm spill over each interior room, lit with its lamps, so the rooms read at night from afar
-    const spill = (room, x, z, r) => LAMPS.push({ x, y: 1.5, z, room, wall: 0, kind: "room", glow: null, pool: [x, 0.008, z, r, 0.32], level: 0, target: 0, warm: 0xffc98a, power: 1 });
+    const spill = (room, x, z, r) => LAMPS.push({ x, y: 1.5, z, room, wall: 0, kind: "room", glow: null, pool: [x, 0.008, z, r, 0.5], level: 0, target: 0, warm: 0xffc98a, power: 1 });
     for (const r of rooms) {
       const q = r.rects[0], w = q[2] - q[0], d = q[3] - q[1], n = d > 12 ? 2 : 1;
       if (r.kind === "dormitorio") spill(r.id, q[0] + 3, 16.2, 3.3);
