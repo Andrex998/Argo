@@ -37,9 +37,21 @@ AGENTS = ("falco", "tartaruga", "spazzino", "ragioniere")
 HOUR_MS = 3_600_000
 
 
-def new_state() -> dict:
-    return {"scadenza_utc": DEADLINE, "leva": LEVERAGE,
+def new_state(deadline: str = DEADLINE, leverage: int = LEVERAGE) -> dict:
+    """A contest's wallets. A contest proposed by the owner may set its own deadline (UTC)
+    and leverage (1-10); the night contest of 26/11 used the defaults."""
+    if not 1 <= leverage <= 10:
+        raise ValueError("la leva va da 1 a 10")
+    return {"scadenza_utc": deadline, "leva": leverage,
             "wallets": {a: {"cash": CAPITAL, "positions": [], "closed": []} for a in AGENTS}}  # fmt: skip
+
+
+def _deadline(state: dict) -> str:
+    return state.get("scadenza_utc", DEADLINE)
+
+
+def _liquidation(state: dict) -> float:
+    return 1 / state.get("leva", LEVERAGE) - 0.005
 
 
 def _reject(name: str, order: dict, why: str) -> dict:
@@ -64,16 +76,16 @@ def open_trade(state: dict, name: str, order: dict, prices: dict[str, float], wh
     if not 1 <= pct <= 100:
         return _reject(name, order, "il margine va dall'1% al 100% del portafoglio")
     entry, sign = prices[symbol], 1 if side == "long" else -1
-    liq = entry * (1 - sign * LIQUIDATION)
+    liq = entry * (1 - sign * _liquidation(state))
     if stop is not None and not (sign * (entry - stop) > 0 and sign * (stop - liq) > 0):
         return _reject(name, order, f"lo stop deve stare tra il prezzo e la liquidazione ({liq:.6g})")
     if target is not None and sign * (target - entry) <= 0:
         return _reject(name, order, "il target è dalla parte sbagliata del prezzo")
     close_at = str(order.get("chiudi_alle_utc") or "")[:19] or None
-    if close_at and not when < close_at <= DEADLINE:
-        return _reject(name, order, f"l'ora di chiusura deve stare tra adesso e {DEADLINE} UTC")
+    if close_at and not when < close_at <= _deadline(state):
+        return _reject(name, order, f"l'ora di chiusura deve stare tra adesso e {_deadline(state)} UTC")
     margin = wallet["cash"] * pct / 100
-    units = margin * LEVERAGE / entry
+    units = margin * state.get("leva", LEVERAGE) / entry
     cost = units * entry * COST
     wallet["cash"] -= cost
     position = {"id": f"gara-{name}", "symbol": symbol, "side": side, "units": units, "entry": entry,
@@ -122,7 +134,7 @@ def _hit(p: dict, c: Candle) -> tuple[str, float] | None:
 def mark(state: dict, candles: dict[str, list[Candle]], rates: dict[str, dict[int, float]]) -> list[dict]:
     """Funding, liquidations, stops, targets, the chosen hours and the end of the contest, on
     every complete hourly candle after the opening."""
-    events, deadline = [], ms(DEADLINE)
+    events, deadline = [], ms(_deadline(state))
     for name, wallet in state["wallets"].items():
         for p in list(wallet["positions"]):
             sign = 1 if p["side"] == "long" else -1
@@ -144,7 +156,9 @@ def mark(state: dict, candles: dict[str, list[Candle]], rates: dict[str, dict[in
                     break
                 p["checked"] = text(c.ts)
                 if c.ts + HOUR_MS >= deadline:
-                    events.append({"wallet": name, **close_trade(wallet, p, c.close, DEADLINE, "fine della gara")})
+                    events.append(
+                        {"wallet": name, **close_trade(wallet, p, c.close, _deadline(state), "fine della gara")}
+                    )
                     break
     return events
 

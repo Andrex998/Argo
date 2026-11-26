@@ -17,7 +17,9 @@ trading-desk/, after `uv sync --frozen`:
                             wallet agent and the Guardiano: DIR/contesto-<agent>.json
   execute STATE ORDERS      the agents' orders for their judgment wallets, at the last prices
   verify NOTEBOOK           score the notebook's predictions now due
-  gara-nuova STATE          the night contest of 26/11/2026: four separate wallets, leverage 10
+  gara-nuova STATE [DEADLINE_UTC] [LEVERAGE]
+                            a contest on four separate wallets (by default the night contest of
+                            26/11/2026: until 14:00 UTC, leverage 10)
   gara-ordini STATE ORDERS  each agent's one trade, at the last prices
   gara-conti STATE          liquidations, stops, targets and the end at 15:00 Italian time
   sigilla MINUTES REGISTER [mattina|sera]
@@ -280,7 +282,7 @@ def contest_accounts(state_path: str, now: datetime) -> dict:
     events = gara.mark(state, candles, rates)
     prices = data.tickers()
     _save(state_path, state)
-    over = end >= judgment.ms(gara.DEADLINE)
+    over = end >= judgment.ms(state.get("scadenza_utc", gara.DEADLINE))
     return {"now": judgment.text(end), "events": events, "situazione": gara.standings(state, prices, over)}
 
 
@@ -505,9 +507,11 @@ def main(argv: list[str]) -> None:
         _print(day(args[0], args[1], args[2], now))
     elif command == "execute" and len(args) == 2:
         _print(execute(args[0], args[1], now))
-    elif command == "gara-nuova" and len(args) == 1:
-        _save(args[0], gara.new_state())
-        _print({"creata": args[0], "scadenza_utc": gara.DEADLINE})
+    elif command == "gara-nuova" and len(args) in (1, 2, 3):
+        deadline = args[1][:19] if len(args) > 1 else gara.DEADLINE
+        state = gara.new_state(deadline, int(args[2]) if len(args) > 2 else gara.LEVERAGE)
+        _save(args[0], state)
+        _print({"creata": args[0], "scadenza_utc": state["scadenza_utc"], "leva": state["leva"]})
     elif command == "gara-ordini" and len(args) == 2:
         _print(contest_orders(args[0], args[1], now))
     elif command == "gara-conti" and len(args) == 1:

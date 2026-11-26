@@ -654,3 +654,15 @@ def test_the_contest_liquidates_stops_and_ends_at_three_pm():
     s, _ = contest_with({"chiudi_alle_utc": "2026-11-26 05:00:00", "target": 120}, "ragioniere")
     events = gara.mark(s, {"SOL": [hour(3, 100, 102, 99, 101), hour(5, 102, 103, 101, 102)]}, {})
     assert events[0]["exit_reason"] == "all'ora scelta" and events[0]["exit"] == 102
+
+
+def test_a_proposed_contest_has_its_own_deadline_and_leverage():
+    s = gara.new_state("2026-11-28 05:00:00", 3)
+    e = gara.open_trade(s, "tartaruga", {"symbol": "SOL", "side": "short", "margine_pct": 50}, {"SOL": 100.0},
+                        "2026-11-27 06:00:00")  # fmt: skip
+    assert e["liquidazione"] == pytest.approx(100 * (1 + 1 / 3 - 0.005)) and e["units"] == pytest.approx(150)
+    late = candle("2026-11-28 04:00:00", 100, 101, 99, 99)
+    events = gara.mark(s, {"SOL": [late]}, {})
+    assert events[0]["exit_reason"] == "fine della gara" and events[0]["closed"] == "2026-11-28 05:00:00"
+    with pytest.raises(ValueError):
+        gara.new_state("2026-11-28 05:00:00", 20)

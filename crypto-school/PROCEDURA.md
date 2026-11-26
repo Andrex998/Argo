@@ -193,6 +193,44 @@ Le regole del quaderno:
 
    Le previsioni verificate oggi vanno nel verbale come `previsioni_verificate`.
 
+## 3 bis. Le proposte del proprietario e le gare aperte
+
+**Le proposte.** Il proprietario gioca con la scuola: dalla pagina può proporre una sfida.
+Leggi la collezione `proposte` e prendi i documenti con `stato: "nuova"`. Ognuno ha la
+forma `{"testo", "tipo", "creata", "stato"}`, dove `tipo` è uno tra `studio`, `previsioni`,
+`gara` e `altro`. Le gare hanno in più `scadenza_utc` e `leva`. Il Preside, cioè tu,
+decide prima di lanciare gli agenti:
+- **Accettata.** La organizzi oggi stesso:
+  - `studio`: il tema entra nel messaggio di ogni agente come compito in più;
+  - `previsioni`: ogni agente aggiunge una previsione sul tema;
+  - `gara`: una gara a parte con i portafogli della gara (`gara.py` e `GARA.md`). Lancia
+    `MOTORE gara-nuova LAVORO/gara-<id>.json <scadenza_utc> <leva>`. Nel messaggio dei
+    quattro agenti con un portafoglio metti le regole della gara; aggiungono alla risposta
+    `"gara": {ordine nella forma di GARA.md}`. Dopo gli ordini ufficiali lancia
+    `MOTORE gara-ordini LAVORO/gara-<id>.json LAVORO/gara-<id>-ordini.json`, e salva
+    `gara/<id>` nella forma di GARA.md.
+- **Rifiutata.** Rifiuti la proposta se chiede di uscire dalle regole della scuola:
+  - soldi veri o chiavi di exchange;
+  - toccare i portafogli ufficiali o i loro limiti;
+  - una leva sopra 10;
+  - tutto quello che la scuola non fa.
+
+  Spieghi perché in 2-3 frasi, con rispetto: il proprietario è il giocatore più importante.
+
+Rispondi a ogni proposta nel batch del punto 10, con un `update` di `proposte/<id>`:
+`{"stato": "accettata"|"rifiutata", "risposta": "2-4 frasi del Preside", "data_risposta"}`.
+Mettile anche nel verbale, nel campo `proposte`:
+`[{"id", "testo", "decisione", "risposta"}]`.
+
+**Le gare aperte.** Cerca nella collezione `gara` i documenti con `finita: false` e la
+`scadenza_utc` già passata. Per ognuno:
+1. salva il suo `stato` in `LAVORO/gara-<id>.json`;
+2. lancia `MOTORE gara-conti LAVORO/gara-<id>.json`;
+3. aggiornalo come nella parte 2 di GARA.md;
+4. se c'è una proposta collegata, mettila a `stato: "fatta"`.
+
+Il risultato, con il vincitore, entra nella chiusura del Preside.
+
 ## 4. Il briefing del Cronista
 
 Prima i fatti, poi le opinioni. **Diretta**, fase `briefing`, attore `cronista`: "Il
