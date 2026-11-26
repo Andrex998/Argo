@@ -52,7 +52,7 @@
       h, s, k: L.h / 1.75, hip: 0.53 * h, waist: 0.6 * h, chest: 0.705 * h, neck: 0.832 * h, head: 0.884 * h, hc: 0.929 * h, hz: 0.014,
       shX: 0.104 * h * L.sw, shY: 0.815 * h, clX: 0.02 * h, clY: 0.8 * h, elY: 0.629 * h, wrY: 0.483 * h,
       hipX: 0.051 * h * L.hw, knee: 0.285 * h, ank: 0.045 * h, thigh: 0.245 * h, shin: 0.24 * h,
-      ha: 0.0446 * h, hb: 0.0672 * h, hd: 0.0565 * h,
+      ha: 0.0458 * h, hb: 0.0668 * h, hd: 0.0565 * h,
     };
   }
 
@@ -121,7 +121,9 @@
     return [bs[i], 1];
   };
 
-  function merge(parts) {
+  // occ: occluder capsules [ax, ay, az, bx, by, bz, r] of the bind pose; each vertex gets a baked ambient
+  // occlusion from them (armpits, inner thighs, under the chin and the brims), warmer on the skin
+  function merge(parts, occ) {
     let nv = 0, ni = 0;
     for (const p of parts) { nv += p.g.attributes.position.count; ni += p.g.index ? p.g.index.count : p.g.attributes.position.count; }
     const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), col = new Float32Array(nv * 3), mat = new Float32Array(nv * 2);
@@ -130,14 +132,23 @@
     for (const p of parts) {
       if (!p.g.attributes.normal) p.g.computeVertexNormals();
       const P = p.g.attributes.position.array, N = p.g.attributes.normal.array, n = P.length / 3, I = p.g.index ? p.g.index.array : Array.from({ length: n }, (_, i) => i);
+      const kind = p.m[2] != null ? p.m[2] : p.m[0] >= 0.6 && !p.m[1] ? 3 : 0;
       for (let i = 0; i < n; i++) {
-        const k = o + i, x = P[3 * i], y = P[3 * i + 1], z = P[3 * i + 2];
+        const k = o + i, x = P[3 * i], y = P[3 * i + 1], z = P[3 * i + 2], nx = N[3 * i], ny = N[3 * i + 1], nz = N[3 * i + 2];
         if (!(x === x && y === y && z === z)) throw new Error("people: NaN in part " + parts.indexOf(p) + " " + (p.dbg || ""));
         pos[3 * k] = x; pos[3 * k + 1] = y; pos[3 * k + 2] = z;
-        nor[3 * k] = N[3 * i]; nor[3 * k + 1] = N[3 * i + 1]; nor[3 * k + 2] = N[3 * i + 2];
+        nor[3 * k] = nx; nor[3 * k + 1] = ny; nor[3 * k + 2] = nz;
         const c = p.cf ? p.cf(x, y, z) : p.c;
-        col[3 * k] = c[0]; col[3 * k + 1] = c[1]; col[3 * k + 2] = c[2];
-        mat[2 * k] = p.m[0]; mat[2 * k + 1] = p.m[1];
+        let s = 0;
+        if (occ) for (const q of occ) {
+          const ex = q[3] - q[0], ey = q[4] - q[1], ez = q[5] - q[2], l2 = ex * ex + ey * ey + ez * ez;
+          const u = l2 ? clamp(((x - q[0]) * ex + (y - q[1]) * ey + (z - q[2]) * ez) / l2, 0, 1) : 0;
+          const dx = q[0] + ex * u - x, dy = q[1] + ey * u - y, dz = q[2] + ez * u - z, d = hyp(dx, dy, dz) || 1e-4, cs = (dx * nx + dy * ny + dz * nz) / d;
+          if (cs > 0) s += cs * min(1, (q[6] / d) ** 2);
+        }
+        const ao = 1 - min(0.48, s * 0.42);
+        col[3 * k] = c[0] * (kind === 1 ? ao ** 0.75 : ao); col[3 * k + 1] = c[1] * ao * (kind === 1 ? 0.93 : 1); col[3 * k + 2] = c[2] * (kind === 1 ? 0.86 * ao ** 1.15 : ao);
+        mat[2 * k] = p.m[0]; mat[2 * k + 1] = p.m[1] + 10 * kind;
         let w = typeof p.w === "number" ? [p.w, 1] : p.w(x, y, z);
         if (typeof w === "number") w = [w, 1];
         let sum = 0;
@@ -160,28 +171,29 @@
   }
 
   // ---- the head: one analytic surface shared by the skin, the hair and the beard --------------------
-  function headFn(J, key) {
+  function headFn(J, key, noSocket) {
     const a = J.ha, b = J.hb, c = J.hd, L = LOOK[key];
-    const jaw = key === "guardiano" ? 0.1 : L.fem ? 0.26 : key === "ragioniere" || key === "scettico" ? 0.22 : 0.16;
-    const ex = 0.41 * a, ey = 0.0;
+    const jaw = key === "guardiano" ? 0.05 : L.fem ? 0.2 : key === "ragioniere" || key === "scettico" ? 0.17 : 0.11;
+    const ex = 0.42 * a;
     return (dx, dy, dz) => {
       let x = dx * a, y = dy * b, z = dz * c;
       if (dz < 0) z *= 1 + 0.12 * -dz * smooth(-0.75, -0.1, dy);
-      if (dy > 0.25) { y *= 1 - 0.05 * (dy - 0.25); if (dz > 0) z *= 1 - 0.14 * (dy - 0.25); }
+      if (dy > 0.25) { y *= 1 - 0.09 * (dy - 0.25); if (dz > 0) z *= 1 - 0.12 * (dy - 0.25); }
       if (dy < 0) {
         const k = -dy;
         x *= 1 - jaw * k ** 1.6 - 0.16 * k ** 5;
         z *= dz > 0 ? 1 - 0.06 * k * k : 1 - 0.5 * k ** 1.5;
         y *= 1 + 0.04 * k;
       }
-      // the face plane, cheekbones and eye sockets
+      // the face plane, then the brow ridge, cheekbones, the muzzle, the chin and the eye sockets
       const zf = c * 0.8;
       if (z > zf) z = zf + (z - zf) * 0.42;
       if (dz > 0.2) {
-        // brow ridge, cheekbones, a fuller chin
-        z += 0.0035 * Math.exp(-(((y - 0.03) ** 2) / 0.00012)) * smooth(0.065, 0.02, abs(x)) * smooth(0.3, 0.7, dz);
-        x *= 1 + 0.025 * Math.exp(-(((y + 0.012) ** 2) / 0.0006)) * smooth(0.2, 0.6, dz);
-        z += 0.004 * Math.exp(-(((y + 0.1) ** 2) / 0.0003)) * smooth(0.03, 0.0, abs(x));
+        const fr = smooth(0.3, 0.7, dz), ax = abs(x), g = (u, v, su, sv) => Math.exp(-((u * u) / su + (v * v) / sv));
+        z += 0.0046 * g(y - 0.029, 0, 0.00011, 1) * smooth(0.068, 0.03, ax) * fr;
+        x *= 1 + 0.03 * g(y + 0.014, 0, 0.0005, 1) * smooth(0.2, 0.6, dz);
+        z += 0.003 * g(y + 0.066, ax, 0.0005, 0.0005) * fr + 0.0045 * g(y + 0.1, ax, 0.0003, 0.0004) * fr;
+        if (!noSocket) z -= 0.0052 * g(ax - ex, y - 0.001, 0.00028, 0.0001) * fr;
       }
       return [x, y, z];
     };
@@ -189,10 +201,13 @@
 
   // the face layout (absolute bind coordinates), read off the head surface so features sit on it
   function faceGeom(J, key) {
-    const hf = headFn(J, key), s = J.s, at = (x, y) => { const dx = x, dy = y, dz = Math.sqrt(max(0.01, 1 - dx * dx - dy * dy)); return hf(dx, dy, dz); };
-    const re = 0.0134, e = at(0.41, 0.0), b = at(0.43, 0.22), m = at(0, -0.57), n = at(0, -0.2);
-    return { eX: e[0], eY: J.hc + 0.001, eZ: J.hz + e[2] + 0.0016 - re, re, bX: b[0], bY: J.hc + 0.026, bZ: J.hz + b[2] + 0.0025, mY: J.hc + m[1], mZ: J.hz + m[2] + 0.0045, nZ: J.hz + n[2] };
+    const hf = headFn(J, key, true), at = (x, y) => hf(x, y, Math.sqrt(max(0.01, 1 - x * x - y * y)));
+    const re = 0.0125, e = at(0.42, 0.01), b = at(0.43, 0.22), m = at(0, -0.57);
+    return { eX: e[0], eY: J.hc + 0.001, eZ: J.hz + e[2] + 0.0024 - re, re, bX: b[0], bY: J.hc + 0.026, bZ: J.hz + b[2] + 0.0025, mY: J.hc + m[1], mZ: J.hz + m[2] + 0.0045 };
   }
+  // the eyelids: shells round the eye centre with almond edges; the upper one rides the blinking lid bone
+  const lidEdge = (ph, up) => { const q = min(1.6, (ph / 1.08) ** 2); return up ? PI / 2 - 0.44 + 0.44 * q : PI / 2 + 0.47 - 0.47 * q; };
+  const lidGeo = (F, ep, up, n) => { const r = F.re * (up ? 1.1 : 1.07); return surf(n, 6, (c, k) => { const ph = -1.35 + (2.7 * c) / n, e = lidEdge(ph, up), th = up ? (e * k) / 5 : PI - ((PI - e) * k) / 5; return [ep[0] + r * sin(th) * sin(ph), ep[1] + r * cos(th), ep[2] + r * sin(th) * cos(ph)]; }, { p0: true, flip: up }); };
   // ---- building one person (bind pose: standing straight, arms hanging, facing +z) -------------------
   function bindPos(key, J) {
     const P = {}, s = J.s, it = ITEMS[key];
@@ -231,11 +246,11 @@
   // the parts of one person; lvl 0 low, 1 medium, 2 high
   function buildGeo(key, lvl) {
     const L = LOOK[key], J = L.J, s = J.s, g = L.g, it = ITEMS[key], P = L.P;
-    const seg = [8, 12, 16][lvl], hs = [[12, 8], [18, 12], [24, 16]][lvl];
+    const seg = [8, 12, 16][lvl], hs = [[12, 8], [20, 14], [28, 20]][lvl];
     const parts = [];
     const add = (geom, color, w, m = [0.8, 0], cf) => { parts.push({ g: geom, c: color == null ? null : lin(color), w, m, cf }); return geom; };
     const at = (geom, mtx) => geom.applyMatrix4(mtx);
-    const head = headFn(J, key), hc = [0, J.hc, J.hz];
+    const head = headFn(J, key, lvl === 0), hc = [0, J.hc, J.hz];
     const HB = B.head;
     const D = DRESS[key];
     const skin = L.skin;
@@ -248,7 +263,7 @@
       [0.468, 0.142 * hw, 0.1], [0.5, 0.16 * hw, 0.108], [0.53, 0.168 * hw, 0.112, 0, 0.002], [0.565, 0.16 * (fem ? hw : 1), 0.108, 0, 0.006],
       [0.6, (fem ? 0.138 : 0.148) * g, 0.1 * g, 0, 0.01], [0.64, (fem ? 0.14 : 0.15) * g, 0.104 * g, 0, 0.012], [0.68, 0.157 * g * (fem ? 0.98 : 1), 0.11 * g, 0, 0.016],
       [0.72, 0.163 * sw, 0.118 * g, 0, 0.017], [0.755, 0.168 * sw, 0.115 * g, 0, 0.012], [0.785, 0.17 * sw, 0.104, 0, 0.002],
-      [0.805, 0.165 * sw, 0.09, 0, -0.006], [0.82, 0.14 * sw, 0.074, 0, -0.01], [0.83, 0.095, 0.062, 0, -0.012], [0.838, 0.062, 0.054, 0, -0.012],
+      [0.805, 0.163 * sw, 0.092, 0, -0.006], [0.818, 0.151 * sw, 0.08, 0, -0.01], [0.83, 0.11, 0.068, 0, -0.012], [0.842, 0.074, 0.057, 0, -0.012], [0.85, 0.058, 0.052, 0, -0.012],
     ].map(([y, rx, rz, cx = 0, cz = 0]) => [ty(y), rx, rz, cx, cz]);
     const hy = { falco: J.hip - 0.035, tartaruga: J.hip - 0.045, spazzino: J.hip - 0.03, ragioniere: J.waist - 0.04, guardiano: J.waist - 0.06, scettico: J.hip }[key];
     if (hy) for (const y of [hy - 0.004, hy + 0.004]) { const i = TOR.findIndex((r) => r[0] > y); if (i > 0) { const a = TOR[i - 1], b = TOR[i], t = (y - a[0]) / (b[0] - a[0]); TOR.splice(i, 0, a.map((v, j) => (j ? lerp(v, b[j], t) : y))); } }
@@ -268,61 +283,70 @@
 
     // --- the neck
     const nk = D.collar ? D.collar[2] || 1 : 1, cY = D.collar ? J.neck + D.collar[1] : -1;
-    add(loft([[J.neck - 0.03, 0.062 * g * nk, 0.058 * nk, 0, -0.012], [J.neck + 0.02, 0.057 * g * nk, 0.054 * nk, 0, -0.008], [J.head + 0.01, 0.054 * g * (nk > 1 ? nk * 0.93 : 1), 0.051 * (nk > 1 ? nk * 0.93 : 1), 0, -0.002], [J.head + 0.045, 0.048, 0.047, 0, 0.004]], seg), null, neckW, [0.65, 0], (x, y) => lin(y < cY ? D.collar[0] : skin));
+    const NK = [[J.neck - 0.03, 0.062 * g, 0.058, -0.012], [J.neck + 0.02, 0.057 * g, 0.054, -0.008], [J.head + 0.01, 0.054 * g, 0.051, -0.002], [J.head + 0.045, 0.048, 0.047, 0.004]];
+    const nr = (y, j) => { let i = 0; while (i < 2 && y > NK[i + 1][0]) i++; const t = clamp((y - NK[i][0]) / (NK[i + 1][0] - NK[i][0]), 0, 1); return lerp(NK[i][j], NK[i + 1][j], t); };
+    const ny = NK.map((r) => r[0]).concat(cY > 0 ? [cY - 0.003, cY + 0.001] : []).sort((a, b) => a - b);
+    add(loft(ny.map((y) => { const k = y < cY ? nk : 1; return [y, nr(y, 1) * k, nr(y, 2) * k, 0, nr(y, 3)]; }), seg), null, neckW, [0.65, 0, D.collar ? 0 : 1], (x, y) => lin(y < cY ? D.collar[0] : skin));
 
-    // --- the head and its face; vertex colours add soft shading (sockets, nostrils, under the jaw)
-    const F = L.F, skinC = lin(skin), dark = lin(shade(skin, 0.78)), blush = lin(mix(skin, 0xd0605a, 0.16)), tmp = [0, 0, 0];
-    add(at(ell(1, 1, 1, hs[0], hs[1], (p) => { const q = head(p[0], p[1], p[2]); p[0] = q[0]; p[1] = q[1]; p[2] = q[2]; }), TR(...hc)), null, (x, y, z) => {
+    // --- the head and its face; the grid is denser on the face; vertex colours add soft shading
+    const F = L.F, skinC = lin(skin), dark = lin(shade(skin, 0.74)), blush = lin(mix(skin, 0xd0605a, 0.2)), tmp = [0, 0, 0];
+    const wa = lvl ? 0.42 : 0, wp = lvl ? 0.36 : 0;
+    add(surf(hs[0], hs[1] + 1, (c, r) => {
+      const v = (TAU * c) / hs[0], a = v - wa * sin(v), w = (PI * r) / hs[1], ph = w + (wp * sin(2 * w)) / 2, sn = sin(ph), q = head(sn * sin(a), -cos(ph), sn * cos(a));
+      return [q[0], q[1] + J.hc, q[2] + J.hz];
+    }, { wrap: true, p0: true, p1: true }), null, (x, y, z) => {
       // the chin and lower lip follow the jaw
       const fy = y - J.hc, fz = z - J.hz, j = smooth(-0.06, -0.085, fy) * smooth(0.0, 0.04, fz) * smooth(0.045, 0.02, abs(x));
       return j > 0.01 ? [HB, 1 - j, B.jaw, j] : [HB, 1];
-    }, [0.55, 0], (x, y, z) => {
-      const fy = y - J.hc, fz = z - J.hz, h = D.face ? D.face(x, fy, fz, J) : null, base = h == null ? skinC : lin(h);
-      const sock = Math.exp(-(((abs(x) - F.eX) ** 2) / (0.0004) + ((fy - 0.006) ** 2) / (0.00025))) * smooth(0, 0.05, fz);
-      const under = smooth(-0.09, -0.125, fy) * smooth(0.02, -0.02, fz);
-      const cheek = Math.exp(-(((abs(x) - 0.042) ** 2) / (0.0003) + ((fy + 0.035) ** 2) / (0.0004))) * smooth(0, 0.05, fz);
-      const k = 0.55 * sock + 0.6 * under;
-      for (let i = 0; i < 3; i++) tmp[i] = lerp(lerp(base[i], blush[i], cheek * 0.9), dark[i], k);
+    }, [0.55, 0, 1], (x, y, z) => {
+      const fy = y - J.hc, fz = z - J.hz, h = D.face ? D.face(x, fy, fz, J) : null, base = h == null ? skinC : lin(h), ax = abs(x);
+      const sock = Math.exp(-(((ax - F.eX) ** 2) / 0.0005 + ((fy - 0.009) ** 2) / 0.00018)) * smooth(0, 0.05, fz);
+      const under = smooth(-0.09, -0.125, fy) * smooth(0.02, -0.02, fz), side = Math.exp(-(((ax - 0.019) ** 2) / 0.00003 + ((fy + 0.035) ** 2) / 0.0003)) * smooth(0.03, 0.06, fz);
+      const cheek = Math.exp(-(((ax - 0.042) ** 2) / 0.0003 + ((fy + 0.032) ** 2) / 0.0004)) * smooth(0, 0.05, fz), lips = Math.exp(-((x * x) / 0.0004 + ((fy + 0.068) ** 2) / 0.0002));
+      const k = 0.4 * sock + 0.55 * under + 0.3 * side;
+      for (let i = 0; i < 3; i++) tmp[i] = lerp(lerp(base[i], blush[i], cheek * 0.85 + lips * 0.4), dark[i], k);
       return tmp.slice();
     });
-    // nose: bridge to tip, wider at the nostrils
-    add(at(ell(0.0112, 0.027, 0.0155, lvl ? 12 : 6, lvl ? 9 : 4, (p, a, ph) => { const t = ph / PI; p[0] *= 0.5 + 0.85 * (1 - t) ** 1.5; p[2] *= 0.55 + 0.7 * (1 - t); if (p[2] < 0) p[2] *= 0.25; if (t < 0.18) p[2] -= 0.004; }), TR(0, J.hc - 0.028, F.nZ - 0.003, -0.25)), null, HB, [0.5, 0], (x, y, z) => (y < J.hc - 0.05 && z < F.nZ + 0.006 ? lin(shade(skin, 0.7)) : skinC));
-    // ears, on the side of the head
+    // the nose: a loft on the midline from the base to the bridge, with nostril wings and dark nostrils
+    const zf = (y) => { const d = (y - J.hc) / J.hb; return head(0, d, Math.sqrt(max(0.01, 1 - d * d)))[2] + J.hz; }, zb = zf(J.hc - 0.043);
+    const NR = [[-0.047, 0.0001, 0.0001, 0.003], [-0.0445, 0.015, 0.009, 0.0125], [-0.039, 0.0156, 0.012, 0.0182], [-0.031, 0.0102, 0.011, 0.0178], [-0.019, 0.0074, 0.009, 0.0126], [-0.006, 0.0068, 0.0075, 0.0082], [0.005, 0.0066, 0.006, 0.0042], [0.013, 0.0001, 0.0001, 0.0006]];
+    add(loft(NR.map(([y, rx, rz, f]) => [J.hc + y, rx, rz, 0, zf(J.hc + y) + f - rz]), lvl ? 12 : 6, { n: 2.3 }), null, HB, [0.5, 0, 1], (x, y, z) => lin(y < J.hc - 0.0415 && abs(x) > 0.002 && abs(x) < 0.0105 && z < zb + 0.013 ? shade(skin, 0.42) : mix(skin, 0xd0605a, 0.1 * smooth(-0.028, -0.042, y - J.hc))));
+    // ears, on the side of the head; the hollow is darker
     const ear = head(1, -0.05, -0.12);
-    for (const sd of [1, -1]) add(at(ell(0.0075, 0.031, 0.018, lvl ? 10 : 6, lvl ? 6 : 4, (p) => { if (p[0] * sd < 0) p[0] *= 0.4; }), TR(sd * (ear[0] - 0.002), J.hc - 0.008, J.hz + ear[2], -0.12, sd * 0.3)), shade(skin, 0.93), HB, [0.6, 0]);
-    // eyes, lids, brows
+    for (const sd of [1, -1]) {
+      const ec = [sd * (ear[0] - 0.002), J.hc - 0.008, J.hz + ear[2]];
+      add(at(ell(0.0075, 0.031, 0.018, lvl ? 10 : 6, lvl ? 6 : 4, (p) => { if (p[0] * sd < 0) p[0] *= 0.4; }), TR(...ec, -0.12, sd * 0.3)), null, HB, [0.6, 0, 1], (x, y, z) => lin(abs(x) > abs(ec[0]) + 0.003 && abs(y - ec[1]) < 0.016 && abs(z - ec[2]) < 0.008 ? shade(skin, 0.72) : mix(skin, 0xd0605a, 0.12)));
+    }
+    // eyes in their sockets: eyeball, iris with a dark limbal ring, pupil, catch-light; almond eyelids
     for (const [S, sd] of [["L", 1], ["R", -1]]) {
-      const ep = [sd * F.eX, F.eY, F.eZ];
+      const ep = [sd * F.eX, F.eY, F.eZ], eb = B["eye" + S];
       if (lvl === 0) {
-        add(at(ell(F.re * 0.72, F.re * 0.82, F.re * 0.5, 6, 4), TR(ep[0], ep[1], ep[2] + F.re * 0.72)), shade(L.eye, 0.3), B["eye" + S], [0.3, 0]);
+        add(at(ell(F.re * 0.72, F.re * 0.62, F.re * 0.5, 6, 4), TR(ep[0], ep[1], ep[2] + F.re * 0.66)), shade(L.eye, 0.3), eb, [0.3, 0]);
       } else {
-        add(at(ell(F.re, F.re, F.re, lvl > 1 ? 14 : 10, lvl > 1 ? 10 : 8), TR(...ep)), 0xe2dcd3, B["eye" + S], [0.12, 0]);
-        // iris and pupil: caps on the eyeball, like a cornea; a catch-light
-        const cap = (r, th, n) => Sph(F.re * r, n, 3, 0, TAU, 0, th).applyMatrix4(TR(ep[0], ep[1], ep[2], PI / 2));
-        add(cap(1.012, 0.74, lvl > 1 ? 16 : 10), L.eye, B["eye" + S], [0.08, 0.05]);
-        add(cap(1.024, 0.33, lvl > 1 ? 12 : 8), 0x08080a, B["eye" + S], [0.05, 0]);
-        add(Circ(F.re * 0.11, 5).applyMatrix4(TR(ep[0] + F.re * 0.22, ep[1] + F.re * 0.24, ep[2] + F.re * 1.0)), 0xffffff, B["eye" + S], [0.05, 0.9]);
-        // upper lid: a shell that rotates down over the eye; its rim is darker (lashes)
-        add(at(Sph(F.re * 1.13, lvl > 1 ? 14 : 10, 6, PI / 2 - 1.75, 3.5, 0, 1.0), TR(...ep)), null, B["lid" + S], [0.6, 0], (x, y) => (y - ep[1] < F.re * 0.62 ? lin(shade(L.brow, 0.5)) : lin(shade(skin, 0.95))));
-        add(at(Sph(F.re * 1.1, lvl > 1 ? 14 : 10, 4, PI / 2 - 1.5, 3, 2.2, 0.95), TR(...ep)), shade(skin, 0.9), HB, [0.6, 0]);
+        const hi = lvl > 1, cap = (r, th, n) => Sph(F.re * r, n, 3, 0, TAU, 0, th).applyMatrix4(TR(ep[0], ep[1], ep[2], PI / 2));
+        add(at(ell(F.re, F.re, F.re, hi ? 16 : 12, hi ? 12 : 8), TR(...ep)), null, eb, [0.15, 0], (x, y, z) => lin(mix(0xebe5dc, 0xb59f98, smooth(0.5, 0.95, 1 - (z - ep[2]) / F.re))));
+        add(cap(1.008, 0.6, hi ? 18 : 12), null, eb, [0.12, 0.04], (x, y) => { const r = hyp(x - ep[0], y - ep[1]) / (F.re * 0.565); return lin(mix(mix(L.eye, 0xffffff, 0.15 * (1 - r)), 0x1a1412, smooth(0.72, 1, r))); });
+        add(cap(1.016, 0.25, hi ? 14 : 10), 0x060606, eb, [0.05, 0]);
+        add(Circ(F.re * 0.12, 6).applyMatrix4(TR(ep[0] + F.re * 0.2, ep[1] + F.re * 0.24, ep[2] + F.re * 1.03)), 0xffffff, eb, [0.05, 1.2]);
+        for (const up of [1, 0]) add(lidGeo(F, ep, up, hi ? 14 : 10), null, up ? B["lid" + S] : HB, [0.6, 0, 1], (x, y, z) => {
+          const r = F.re * (up ? 1.1 : 1.07), th = Math.acos(clamp((y - ep[1]) / r, -1, 1)), e = lidEdge(Math.atan2(x - ep[0], z - ep[2]), up);
+          return lin(up ? (th > e - 0.1 ? shade(L.brow, 0.3) : th > e - 0.3 ? shade(skin, 0.9) : skin) : th < e + 0.08 ? mix(skin, 0x9a5550, 0.35) : skin);
+        });
       }
-      // brow: a bent, tapering bar following the forehead
-      const bw = 0.036, bh = 0.0062 * (L.fem ? 0.75 : 1), bc = P["brow" + S];
-      const bg = Box(bw, bh, 0.007, 5, 1, 1), bp = bg.attributes.position;
-      for (let i = 0; i < bp.count; i++) {
-        const x = bp.getX(i), u = (x / (bw / 2)) * sd;
-        bp.setXYZ(i, x + bc[0], bp.getY(i) * (1 - 0.4 * u) - 0.0045 * u * u + 0.0012 * u + bc[1], bp.getZ(i) - 0.007 * (u + 1) * (u + 1) * 0.5 + 0.002 + bc[2]);
-      }
-      bg.computeVertexNormals();
-      add(bg, L.brow, B["brow" + S], [0.9, 0]);
+      // the brow: a tapered arch laid on the brow ridge
+      const bc = P["brow" + S];
+      add(surf(8, 2, (c, r) => {
+        const u = c / 8, x = sd * (F.eX - 0.017 + u * 0.037), th = lerp(0.0062, 0.0026, u) * (L.fem ? 0.8 : 1), y = bc[1] + 0.0042 * sin(PI * min(1, u * 1.2)) - 0.0035 * u + (r - 0.4) * th, d = (y - J.hc) / J.hb, q = head(x / J.ha, d, Math.sqrt(max(0.01, 1 - (x / J.ha) ** 2 - d * d)));
+        return [x, y, J.hz + q[2] + 0.0014];
+      }, { flip: sd < 0 }), L.brow, B["brow" + S], [0.9, 0, 2]);
     }
     // mouth: a dark opening scaled by the mouth bone, lips (the lower one follows the jaw), corners follow the smile bone
-    const mY = F.mY, mZ = F.mZ, mw = (L.fem ? 0.0225 : 0.0235);
+    const mY = F.mY, mZ = F.mZ, mw = (L.fem ? 0.0205 : 0.0215);
     add(at(ell(mw * 0.92, 0.0068, 0.005, lvl ? 12 : 6, 4), TR(0, mY, mZ - 0.0042)), 0x2a1410, B.mouth, [0.9, 0]);
     if (lvl) {
       const lipW = (jaw) => (x) => { const k = smooth(0.45, 1, abs(x) / mw); return [jaw ? B.jaw : HB, 1 - k, B.smile, k]; };
-      add(at(ell(mw, 0.0034, 0.0045, 12, 4, (q) => { q[1] -= 0.0012 * (q[0] / mw) ** 2; }), TR(0, mY + 0.0038, mZ - 0.0022)), mix(L.lip, skin, 0.3), lipW(false), [0.45, 0]);
-      add(at(ell(mw * 0.84, 0.0042, 0.0047, 12, 4), TR(0, mY - 0.0045, mZ - 0.0026)), shade(mix(L.lip, skin, 0.2), 1.05), lipW(true), [0.4, 0]);
+      add(at(ell(mw, 0.0041, 0.005, 12, 5, (q) => { q[1] -= 0.0016 * (q[0] / mw) ** 2 - 0.0007 * Math.exp(-((q[0] / 0.004) ** 2)) * (q[1] > 0); }), TR(0, mY + 0.0042, mZ - 0.0022)), mix(L.lip, skin, 0.12), lipW(false), [0.45, 0, 1]);
+      add(at(ell(mw * 0.86, 0.0052, 0.0054, 12, 5), TR(0, mY - 0.0052, mZ - 0.0026)), shade(mix(L.lip, skin, 0.05), 1.08), lipW(true), [0.38, 0, 1]);
     }
     D.head({ add, J, s, hs, lvl, L, at, head, hc, F, shade, mix, seg });
 
@@ -339,21 +363,31 @@
       shoe(add, B["foot" + S], x, J, s, lvl, D.shoe || [0x1e1c1b, 0.35], D.boot);
     }
     items(add, key, J, s, lvl, at, P);
-    return merge(parts);
+    return merge(parts, occluders(key, J));
   }
 
+  // the body as capsules [ax, ay, az, bx, by, bz, r] for the baked occlusion; a brim shades the brow
+  function occluders(key, J) {
+    const g = LOOK[key].g, o = [[0, J.hip + 0.05, 0, 0, J.shY - 0.07, 0, 0.1 * g], [0, J.hc, J.hz, 0, J.hc, J.hz, 0.07], [0, J.neck - 0.02, -0.01, 0, J.head, 0, 0.038]];
+    for (const sd of [1, -1]) {
+      const x = sd * J.shX, lx = sd * J.hipX;
+      o.push([x, J.shY - 0.03, -0.008, x, J.elY, -0.008, 0.034], [x, J.elY, -0.008, x, J.wrY + 0.02, -0.006, 0.027], [x, J.wrY - 0.05, 0.006, x, J.wrY - 0.05, 0.006, 0.026], [lx, J.hip - 0.06, 0, lx, J.knee, 0, 0.058], [lx, J.knee, 0, lx, J.ank + 0.05, 0, 0.04]);
+    }
+    if ("spazzino ragioniere guardiano cronista".includes(key)) o.push([0, J.hc + J.hb * 1.1, J.hz + 0.03, 0, J.hc + J.hb * 1.1, J.hz + 0.03, 0.075]);
+    return o;
+  }
   // a hand hanging along -y, palm towards the body (-x for the left hand), thumb forward (+z)
   function hand(add, S, sd, x, J, s, lvl, skin) {
     const wy = J.wrY, hb = B["hand" + S];
-    if (lvl === 0) { add(at0(ell(0.016, 0.05, 0.038, 6, 4), TR(x - sd * 0.004, wy - 0.055, 0.006)), skin, hb, [0.6, 0]); return; }
-    add(at0(ell(0.0155, 0.05, 0.04, 10, 6, (p) => { if (p[1] < 0) p[2] *= 1 + 0.1 * p[1] / 0.05; }), TR(x - sd * 0.003, wy - 0.045, 0.006)), skin, hb, [0.6, 0]);
+    if (lvl === 0) { add(at0(ell(0.016, 0.05, 0.038, 6, 4), TR(x - sd * 0.004, wy - 0.055, 0.006)), skin, hb, [0.6, 0, 1]); return; }
+    add(at0(ell(0.0155, 0.05, 0.04, 10, 6, (p) => { if (p[1] < 0) p[2] *= 1 + 0.1 * p[1] / 0.05; }), TR(x - sd * 0.003, wy - 0.045, 0.006)), skin, hb, [0.6, 0, 1]);
     const fr = 0.0085;
-    const finger = (bone, z, len, r) => add(at0(loft([[-len, 0.0001, 0.0001], [-len + r * 0.6, r * 0.8, r * 0.8], [-len * 0.5, r, r * 1.02], [0, r * 1.08, r * 1.12], [r * 1.5, r, r]], 6), TR(x - sd * 0.004, wy - 0.088, z)), skin, (xx, y) => [bone, smooth(wy - 0.085, wy - 0.1, y), hb, 1 - smooth(wy - 0.085, wy - 0.1, y)], [0.6, 0]);
+    const finger = (bone, z, len, r) => add(at0(loft([[-len, 0.0001, 0.0001], [-len + r * 0.6, r * 0.8, r * 0.8], [-len * 0.5, r, r * 1.02], [0, r * 1.08, r * 1.12], [r * 1.5, r, r]], 6), TR(x - sd * 0.004, wy - 0.088, z)), skin, (xx, y) => [bone, smooth(wy - 0.085, wy - 0.1, y), hb, 1 - smooth(wy - 0.085, wy - 0.1, y)], [0.6, 0, 1]);
     finger(B["idx" + S], 0.024, 0.072, fr);
-    if (lvl === 1) add(at0(loft([[-0.075, 0.0001, 0.0001], [-0.07, fr * 0.9, fr * 2.4], [-0.03, fr, fr * 3], [0.012, fr * 1.05, fr * 3.1]], 8, { n: 2.6 }), TR(x - sd * 0.004, wy - 0.088, -0.011)), skin, (xx, y) => { const t = smooth(wy - 0.085, wy - 0.1, y); return [B["fing" + S], t, hb, 1 - t]; }, [0.6, 0]);
+    if (lvl === 1) add(at0(loft([[-0.075, 0.0001, 0.0001], [-0.07, fr * 0.9, fr * 2.4], [-0.03, fr, fr * 3], [0.012, fr * 1.05, fr * 3.1]], 8, { n: 2.6 }), TR(x - sd * 0.004, wy - 0.088, -0.011)), skin, (xx, y) => { const t = smooth(wy - 0.085, wy - 0.1, y); return [B["fing" + S], t, hb, 1 - t]; }, [0.6, 0, 1]);
     else for (const [z, l] of [[0.004, 0.08], [-0.0155, 0.075], [-0.033, 0.06]]) finger(B["fing" + S], z, l, fr * (z < -0.03 ? 0.85 : 0.95));
     // the thumb, angled forward and inward
-    add(at0(loft([[-0.055, 0.0001, 0.0001], [-0.05, 0.008, 0.008], [-0.025, 0.0105, 0.0105], [0.008, 0.013, 0.014]], 6), TR(x - sd * 0.012, wy - 0.028, 0.03, 0.45, 0, sd * 0.25)), skin, (xx, y) => { const t = smooth(wy - 0.03, wy - 0.045, y); return [B["thumb" + S], t, hb, 1 - t]; }, [0.6, 0]);
+    add(at0(loft([[-0.055, 0.0001, 0.0001], [-0.05, 0.008, 0.008], [-0.025, 0.0105, 0.0105], [0.008, 0.013, 0.014]], 6), TR(x - sd * 0.012, wy - 0.028, 0.03, 0.45, 0, sd * 0.25)), skin, (xx, y) => { const t = smooth(wy - 0.03, wy - 0.045, y); return [B["thumb" + S], t, hb, 1 - t]; }, [0.6, 0, 1]);
   }
   const at0 = (g, m) => g.applyMatrix4(m);
   // a shoe (or boot) along +z from the heel; a darker sole
@@ -479,9 +513,9 @@
   // torso({TOR...}), neck colour, head({...}) for hair/hats/face extras, arm({...}), leg({...}), shoe, boot
   const sleeve = (c, cuff, o = {}) => ({ add, S, sd, x, armW, J, s, seg, lvl }) => {
     const sh = J.shY, el = J.elY, wr = J.wrY, b = o.bell || 0, k = o.k || 1;
-    const R = [[wr - 0.004, (0.032 + b) * k, (0.03 + b) * k], [wr + 0.04, (0.034 + b * 0.8) * k, (0.032 + b * 0.8) * k], [el - 0.06, 0.042 * k, 0.04 * k], [el, 0.044 * k, 0.043 * k], [el + 0.08, 0.048 * k, 0.048 * k], [sh - 0.1, 0.052 * k, 0.053 * k], [sh - 0.03, 0.056 * k, 0.058 * k], [sh, 0.053 * k, 0.056 * k], [sh + 0.013, 0.043 * k, 0.048 * k], [sh + 0.021, 0.024 * k, 0.03 * k], [sh + 0.025, 0.0001, 0.0001]];
+    const R = [[wr - 0.004, (0.032 + b) * k, (0.03 + b) * k], [wr + 0.04, (0.034 + b * 0.8) * k, (0.032 + b * 0.8) * k], [el - 0.06, 0.041 * k, 0.04 * k], [el, 0.043 * k, 0.043 * k], [el + 0.08, 0.047 * k, 0.048 * k], [sh - 0.1, 0.05 * k, 0.052 * k], [sh - 0.035, 0.053 * k, 0.056 * k], [sh - 0.008, 0.05 * k, 0.054 * k], [sh + 0.003, 0.04 * k, 0.046 * k], [sh + 0.008, 0.024 * k, 0.03 * k], [sh + 0.01, 0.0001, 0.0001]];
     // the sleeve leans in at the top so the shoulder rounds into the torso
-    add(loft(R.map(([y, rx, rz]) => [y, rx, rz, x - sd * 0.014 * smooth(sh - 0.06, sh + 0.025, y), -0.008]), seg), c, armW, [o.r || 0.8, 0]);
+    add(loft(R.map(([y, rx, rz]) => [y, rx, rz, x - sd * 0.026 * smooth(sh - 0.08, sh + 0.01, y), -0.008]), seg), c, armW, [o.r || 0.8, 0]);
     // the forearm skin from the cuff to the wrist when the sleeve is short
     if (cuff) add(loft([[wr - 0.012, 0.031, 0.028, x, -0.006], [wr + 0.012, 0.034, 0.031, x, -0.006]], seg), cuff, armW, [0.7, 0]);
   };
@@ -501,7 +535,7 @@
   const shell = (TOR, d, y0, y1, open) => TOR.filter(([y]) => y >= y0 - 1e-6 && y <= y1 + 1e-6).map(([y, rx, rz, cx, cz]) => [y, rx + d, rz + d, cx, cz]);
   function torsoSkin(o) { // the garment over the whole torso: a neckline colour above collarY, the trousers below the hem
     const { add, TOR, torsoW, seg, hem } = o;
-    return (c, collarY, collarC, r = 0.8, extra = 0, cf) => add(loft(TOR.map(([y, rx, rz, cx, cz]) => [y, rx + extra, rz + extra, cx, cz]), seg, { n: 2.3 }), null, torsoW, [r, 0], (x, y, z) => (hem && y < hem[0] ? lin(hem[1]) : cf ? cf(x, y, z) : lin(y > collarY ? collarC : c)));
+    return (c, collarY, collarC, r = 0.8, extra = 0, cf) => add(loft(TOR.map(([y, rx, rz, cx, cz]) => [y, rx + extra, rz + extra, cx, cz]), seg, { n: 2.3 }), null, torsoW, [r, 0], (x, y, z) => (hem && y < hem[0] ? lin(hem[1]) : cf ? cf(x, y, z) : lin(y > collarY && abs(x) < 0.078 ? collarC : c)));
   }
   // the torso surface: z at (x, y) on the front (superellipse n = 2.3), plus an offset
   const surfZ = (TOR) => (x, y, d = 0) => {
@@ -537,7 +571,7 @@
   function hairCap(o, color, spec) {
     const { add, head, hc, hs, lvl, s } = o;
     const g = capGeo(head, hc, hs[0], max(5, (hs[1] >> 1) + 2), spec.th, spec.thick, spec.f);
-    add(g, null, B.head, [spec.r || 0.7, 0], spec.cf || ((x, y, z) => lin(color)));
+    add(g, null, B.head, [spec.r || 0.7, 0, 2], spec.cf || ((x, y, z) => lin(color)));
   }
   const curls = (o, color, n, region, size) => {
     const { add, head, hc, s, lvl } = o;
@@ -547,7 +581,7 @@
       const a = rand() * TAU, th = Math.acos(1 - rand() * 1.4);
       if (!region(a, th)) continue;
       const dx = sin(th) * sin(a), dy = cos(th), dz = sin(th) * cos(a), q = head(dx, dy, dz), L = hyp(...q), k = 1 + (0.011 + rand() * 0.005) / L;
-      add(base.clone().applyMatrix4(TR(q[0] * k + hc[0], q[1] * k + hc[1], q[2] * k + hc[2], rand() * 3, rand() * 3, 0, 0.8 + rand() * 0.5)), new T.Color(color).multiplyScalar(0.85 + rand() * 0.3).getHex(), B.head, [0.8, 0]);
+      add(base.clone().applyMatrix4(TR(q[0] * k + hc[0], q[1] * k + hc[1], q[2] * k + hc[2], rand() * 3, rand() * 3, 0, 0.8 + rand() * 0.5)), new T.Color(color).multiplyScalar(0.85 + rand() * 0.3).getHex(), B.head, [0.8, 0, 2]);
     }
   };
 
@@ -599,7 +633,7 @@
       head(o) {
         const { add, J, s, L } = o;
         // undercut: shaved sides and back, a longer top swept back with a small quiff
-        hairCap(o, null, { th: hairline(0.92, 1.62, 1.9), thick: (a, t) => 0.002 + 0.024 * smooth(0.5, 0.7, t) * (0.6 + 0.4 * max(0, cos(a))), cf: (x, y) => lin(y > J.hc + J.hb * 0.5 ? L.hair : mix(L.hair, L.skin, 0.45)), r: 0.6, f: (p, a, t) => { if (t > 0.55) p[2] += 0.01 * max(0, cos(a)) * smooth(0.55, 0.9, t); } });
+        hairCap(o, null, { th: hairline(0.92, 1.62, 1.9), thick: (a, t) => 0.002 + 0.016 * smooth(0.42, 0.75, t) * (0.55 + 0.45 * max(0, cos(a))), cf: (x, y) => lin(y > J.hc + J.hb * 0.5 ? L.hair : mix(L.hair, L.skin, 0.45)), r: 0.6, f: (p, a, t) => { if (t > 0.55) p[2] += 0.007 * max(0, cos(a)) * smooth(0.55, 0.9, t); } });
         // aviator sunglasses pushed up on the head
         for (const sd of [1, -1]) {
           add(Circ(0.026, 12).applyMatrix4(TR(sd * 0.032, J.hc + J.hb * 1.02, J.hz + J.hd * 0.55, -1.0, sd * 0.15, 0, 1, 0.8)), 0x101318, B.hat, [0.06, 0]);
@@ -618,7 +652,7 @@
     tartaruga: {
       torso(o) {
         const { add, TOR, torsoW, J, s, seg } = o, sz = surfZ(TOR);
-        torsoSkin(o)(0x3f7a49, J.neck - 0.004, 0xefe6d2, 0.95, 0.008, (x, y) => lin(y > J.neck - 0.004 ? 0xefe6d2 : y < J.hip - 0.01 ? 0x346540 : 0x3f7a49));
+        torsoSkin(o)(0x3f7a49, J.neck - 0.004, 0xefe6d2, 0.95, 0.008, (x, y) => lin(y > J.neck - 0.004 && abs(x) < 0.078 ? 0xefe6d2 : y < J.hip - 0.01 ? 0x346540 : 0x3f7a49));
         add(plate(TOR, 0.008, J.neck + 0.004, J.neck - 0.17, 0.07, 0.004), 0xefe6d2, torsoW, [0.85, 0]);
         for (let i = 0; i < 4; i++) { const y = J.neck - 0.19 - i * 0.065; add(Sph(0.007, 6, 4).applyMatrix4(TR(0, y, sz(0, y, 0.008) + 0.002)), 0x8a6a45, torsoW, [0.5, 0]); }
         for (const sd of [1, -1]) add(Sph(0.058, seg, 8).applyMatrix4(TR(sd * 0.055, J.chest + 0.005, sz(sd * 0.055, J.chest) - 0.035, 0, 0, 0, 1, 0.9, 0.75)), 0x3f7a49, B.breath, [0.95, 0]);
@@ -628,7 +662,7 @@
       head(o) {
         const { add, J, s, lvl, F, L } = o;
         // a grey bob with a fringe, down to the jaw, flaring a little
-        hairCap(o, L.hair, { th: hairline(1.2, 2.1, 2.2), thick: (a, t) => 0.009 + 0.014 * smooth(0.3, 0, t) * (1 - 0.8 * max(0, cos(a))) + 0.007 * smooth(0.55, 0.9, t) + 0.006 * max(0, cos(a)) * smooth(0.0, 0.3, t), r: 0.7, cf: (x, y) => lin(mix(L.hair, 0xd8d4cc, smooth(J.hc, J.hc + J.hb, y) * 0.35)) });
+        hairCap(o, L.hair, { th: hairline(1.2, 2.1, 2.2), thick: (a, t) => 0.006 + 0.017 * smooth(0.35, 0, t) * (1 - 0.85 * max(0, cos(a))) + 0.003 * smooth(0.55, 0.9, t) + 0.005 * max(0, cos(a)) * smooth(0.0, 0.3, t), r: 0.7, cf: (x, y) => lin(mix(L.hair, 0xd8d4cc, smooth(J.hc, J.hc + J.hb, y) * 0.35)) });
         glasses(add, J, s, F, 0x6b4a2b, "half", lvl, -0.007, 0.002);
       },
       arm: sleeve(0x3f7a49, null, { k: 1.12, r: 0.95 }),
@@ -773,9 +807,9 @@
         hairCap(o, L.hair, { th: hairline(0.95, 1.55, 1.9), thick: (a, t) => 0.008 * smooth(0, 0.3, t) + 0.003, r: 0.55, cf: (x, y, z) => lin(abs(x + 0.03) < 0.0025 && z > J.hz - 0.02 && y > J.hc + J.hb * 0.55 ? 0x070707 : L.hair) });
         // the goatee and the moustache
         const mY = o.F.mY, mZ = o.F.mZ + 0.002;
-        add(Tor(0.022, 0.0042, 4, 10, PI).applyMatrix4(TR(0, mY + 0.001, mZ, 0, 0, 0, 1.15, 0.62, 1)), 0x1a1a1a, (x) => (abs(x) > 0.013 ? [B.smile, 0.6, B.head, 0.4] : B.head), [0.9, 0]);
-        add(at0(ell(0.017, 0.022, 0.012, 8, 6), TR(0, mY - 0.03, mZ - 0.007, 0.25)), 0x1a1a1a, B.jaw, [0.9, 0]);
-        add(at0(ell(0.007, 0.011, 0.006, 6, 4), TR(0, mY - 0.013, mZ + 0.001)), 0x1a1a1a, B.jaw, [0.9, 0]);
+        add(Tor(0.022, 0.0042, 4, 10, PI).applyMatrix4(TR(0, mY + 0.001, mZ, 0, 0, 0, 1.15, 0.62, 1)), 0x1a1a1a, (x) => (abs(x) > 0.013 ? [B.smile, 0.6, B.head, 0.4] : B.head), [0.9, 0, 2]);
+        add(at0(ell(0.017, 0.022, 0.012, 8, 6), TR(0, mY - 0.03, mZ - 0.007, 0.25)), 0x1a1a1a, B.jaw, [0.9, 0, 2]);
+        add(at0(ell(0.007, 0.011, 0.006, 6, 4), TR(0, mY - 0.013, mZ + 0.001)), 0x1a1a1a, B.jaw, [0.9, 0, 2]);
       },
       arm: sleeve(0x5a3e9a, null, { r: 0.95 }),
       leg: trousers(0x25262c, { w: 0.92 }),
@@ -784,20 +818,27 @@
   };
   const mixHex = (h1, h2, t) => new T.Color(h1).lerp(new T.Color(h2), t).getHex(), mix = mixHex;
 
-  // ---- the shared material: vertex colours, per-vertex roughness and glow, a soft rim light --------------
+  // ---- the shared material: vertex colours, per-vertex roughness, glow and surface kind, a soft rim -------
+  // matp = [roughness, glow + 10·kind]; kind 1 skin (a warm subsurface fill), 2 hair (strands), 3 cloth
+  // (weave and soft folds). The micro detail lives in the bind-pose position and fades out beyond ~8 m.
   let MAT = null, PROXY = null, BLOBS = null, RING = null;
-  const RIM = { value: null };
+  const RIM = { value: null }, SSS = { value: null };
+  const GLSL_N = "float ph3(vec3 p){p=fract(p*0.3183099+0.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}\nfloat vn3(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.0-2.0*f);vec2 e=vec2(1.0,0.0);return mix(mix(mix(ph3(i),ph3(i+e.xyy),f.x),mix(ph3(i+e.yxy),ph3(i+e.xxy),f.x),f.y),mix(mix(ph3(i+e.yyx),ph3(i+e.xyx),f.x),mix(ph3(i+e.yxx),ph3(i+e.xxx),f.x),f.y),f.z);}";
   function material() {
     const m = new T.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
     m.skinning = true;
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uRim = RIM;
-      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 matp;\nvarying vec2 vMatp;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvMatp = matp;");
-      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec2 vMatp;\nuniform vec3 uRim;")
+      sh.uniforms.uRim = RIM; sh.uniforms.uSss = SSS;
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 matp;\nvarying vec2 vMatp;\nvarying vec3 vLoc;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvMatp = matp; vLoc = position;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec2 vMatp;\nvarying vec3 vLoc;\nuniform vec3 uRim, uSss;\n" + GLSL_N)
+        .replace("#include <color_fragment>", "#include <color_fragment>\nfloat pKind = floor(vMatp.y * 0.1 + 0.01), pGlow = vMatp.y - pKind * 10.0, pFd = clamp(2.0 - length(vViewPosition) * 0.25, 0.0, 1.0);\n"
+          + "if (pKind == 2.0) diffuseColor.rgb *= 1.0 + pFd * (0.3 * vn3(vLoc * vec3(700.0, 45.0, 700.0)) + 0.2 * vn3(vLoc * vec3(1500.0, 90.0, 1500.0)) - 0.27);\n"
+          + "else if (pKind == 3.0) diffuseColor.rgb *= 1.0 + pFd * (0.12 * vn3(vLoc * 820.0) + 0.16 * vn3(vLoc * vec3(34.0, 7.0, 34.0)) - 0.14);\n"
+          + "else if (pKind == 1.0) diffuseColor.rgb *= 1.0 + pFd * (0.05 * vn3(vLoc * 1400.0) - 0.025);")
         .replace("#include <roughnessmap_fragment>", "float roughnessFactor = vMatp.x;")
-        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vMatp.y;\nfloat rimF = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);\ntotalEmissiveRadiance += uRim * rimF * rimF * rimF * (0.4 + diffuseColor.rgb);");
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * pGlow;\nif (pKind == 1.0) totalEmissiveRadiance += diffuseColor.rgb * uSss;\nfloat rimF = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);\ntotalEmissiveRadiance += uRim * rimF * rimF * rimF * (0.4 + diffuseColor.rgb);");
     };
-    m.customProgramCacheKey = () => "cp-people-1";
+    m.customProgramCacheKey = () => "cp-people-2";
     return m;
   }
 
@@ -1483,7 +1524,7 @@
       const e = b[B["eye" + S]];
       e.rotation.set(-eyp, eyes, 0);
       if (lvl === 0) e.scale.set(1, 1 - 0.9 * p.lidv, 1); else e.scale.set(1, 1, 1);
-      b[B["lid" + S]].rotation.set(lerp(-0.16, 1.2, p.lidv) - eyp * 0.45, 0, 0);
+      b[B["lid" + S]].rotation.set(lerp(0, 0.98, p.lidv) - eyp * 0.4, 0, 0);
     }
     b[B.browL].position.set(L0(p, "browL", 0), L0(p, "browL", 1) + o.bL, L0(p, "browL", 2));
     b[B.browR].position.set(L0(p, "browR", 0), L0(p, "browR", 1) + o.bR, L0(p, "browR", 2));
@@ -1784,7 +1825,7 @@
       ctx = c; T = c.THREE || window.THREE;
       if (!T || !c.scene) throw new Error("people: no THREE scene");
       V1 = _v(); V2 = _v(); V3 = _v(); Q1 = new T.Quaternion(); E1 = new T.Euler(); M1 = M4();
-      RIM.value = new T.Color(0.06, 0.06, 0.07);
+      RIM.value = new T.Color(0.06, 0.06, 0.07); SSS.value = new T.Color(0.05, 0.014, 0.008);
       detail = C.render && LV[C.render.quality] != null ? C.render.quality : "medium";
       MAT = material();
       PROXY = Cyl(0.3, 0.3, 1, 8).translate(0, 0.5, 0);
@@ -1853,6 +1894,7 @@
       // a soft rim light, cooler and stronger at night
       const night = C.render && C.render.sky ? U.toNum(C.render.sky.night) || 0 : 0;
       RIM.value.setRGB(lerp(0.05, 0.05, night), lerp(0.05, 0.075, night), lerp(0.055, 0.13, night));
+      SSS.value.setRGB(lerp(0.06, 0.012, night), lerp(0.016, 0.004, night), lerp(0.008, 0.003, night));
       tickBubbles();
     },
     updateOverlay(camera, w, h) { try { updateOverlay(camera, w, h); } catch (e) { console.warn("people overlay", e); } },
