@@ -219,11 +219,15 @@
 
   // ---- the feed (§5.4.8) -------------------------------------------------------------------------------
   const feedList = [];
-  function feed(e) {
+  // `ordered`: an older entry (the last meeting's closing lines, seeded when "ultimo" arrives) goes in
+  // its place by time, so it never lands below today's live or chat lines
+  function feed(e, ordered) {
     const entry = { id: "f" + ++fid, at: nowText(), who: "preside", to: null, kind: "chiacchiera", label: "", text: "", room: null, source: null, step: null, date: null, ...e };
     entry.text = U.plain(entry.text, 400);
     if (!entry.text) return null;
-    feedList.push(entry);
+    let i = feedList.length;
+    if (ordered) while (i > 0 && String(feedList[i - 1].at) > String(entry.at)) i--;
+    feedList.splice(i, 0, entry);
     while (feedList.length > 200) feedList.shift();
     bus.emit("life:feed", { entry });
     return entry;
@@ -1939,7 +1943,7 @@
     if (!u || !u.data || seeded.has(u.data)) return;
     seeded.add(u.data);
     const righe = arr(obj(u.chiusura) && u.chiusura.righe).filter((x) => typeof x === "string" && x.trim());
-    righe.forEach((t, i) => feed({ who: "preside", kind: "ufficiale", label: RIGHE[i] || `Riga ${i + 1}`, text: t, at: u.scritto || nowText(), room: "riunione", source: "verbale del " + U.dm(u.data) }));
+    righe.forEach((t, i) => feed({ who: "preside", kind: "ufficiale", label: RIGHE[i] || `Riga ${i + 1}`, text: t, at: u.scritto || nowText(), room: "riunione", source: "verbale del " + U.dm(u.data) }, true));
   }
   function onData(keys) {
     MODS = null;

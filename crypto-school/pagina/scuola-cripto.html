@@ -4,8 +4,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Titillium+Web:wght@400;600;700&display=swap">
 <style>
-/* Layout: lo stesso quaderno a quadretti della scuola forex. In alto l'aula in 3D con la
-   riunione del mattino, poi il registro degli 89 giorni, i quattro banchi con i due
+/* Layout: lo stesso quaderno a quadretti della scuola forex. In alto il campus in 3D, dove
+   gli otto agenti vivono la loro giornata, poi il registro degli 89 giorni, i quattro banchi con i due
    portafogli gemelli (regola contro giudizio), i numeri del Guardiano, i quaderni degli
    otto personaggi, il verbale del giorno, le 36 monete e le regole. Ogni personaggio ha il
    suo colore, sempre accanto al suo nome. Di notte il quaderno diventa una lavagna. */
@@ -164,49 +164,24 @@ td.hot, .hot { color: var(--loss); font-weight: 600; }
 .pen { font-family: var(--font-hand); color: var(--pen); font-size: 1.75rem; font-weight: 700; line-height: 1; }
 .thought { font-family: var(--font-read); font-style: italic; color: var(--ink-2); border: 1px dashed var(--rule); border-radius: 10px; padding: 8px 12px; }
 
-/* l'aula in 3D */
-.aula { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: stretch; }
-.stage { position: relative; height: clamp(380px, 64vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); background: var(--sheet); min-width: 0; }
-.stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
-.stage canvas:active { cursor: grabbing; }
-.aula-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.nametag, .bubble { position: absolute; left: 0; top: 0; will-change: transform; }
-.nametag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 6px; border-radius: 999px; background: var(--sheet); color: var(--ink); font-size: .74rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); white-space: nowrap; z-index: 1; border: 1px solid var(--who, var(--rule)); }
-.nametag .tag-act { color: var(--muted); font-weight: 400; }
-.nametag .tag-grades em { font-style: normal; font-family: var(--font-hand); font-weight: 700; color: var(--pen); font-size: 1.05rem; line-height: 1; margin-left: 4px; }
-.nametag.speaking { box-shadow: 0 0 0 2px var(--who), 0 2px 8px rgba(0, 0, 0, .18); }
-.aula-overlay.compact .nametag { font-size: .66rem; padding: 1px 6px 1px 5px; gap: 4px; }
-.aula-overlay.compact .tag-act { display: none; }
-.aula-overlay.compact .nametag .tag-grades em { font-size: .92rem; margin-left: 2px; }
-.bubble { max-width: min(310px, 76%); padding: 7px 11px 8px; border-radius: 12px; background: var(--sheet); color: var(--ink); border: 2px solid var(--who, var(--rule)); box-shadow: 0 6px 18px rgba(0, 0, 0, .2); font: 13px/1.42 var(--font-read); z-index: 2; }
-.bubble::after { content: ""; position: absolute; left: var(--tail, 50%); bottom: -8px; width: 12px; height: 12px; background: var(--sheet); border-right: 2px solid var(--who, var(--rule)); border-bottom: 2px solid var(--who, var(--rule)); transform: translateX(-50%) rotate(45deg); }
-.bubble b { display: block; font: 600 .66rem/1.2 var(--font-head); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
-.aula-overlay.compact .bubble { font-size: 12px; padding: 6px 9px 7px; }
-.stage-bar { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; pointer-events: none; z-index: 3; }
-.stage-bar > * { pointer-events: auto; }
-.ctl { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.ctl button { border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 999px; padding: 5px 11px; font-size: .8rem; cursor: pointer; }
-.ctl button:hover { border-color: var(--ink-2); }
-.ctl button:disabled { opacity: .45; cursor: default; }
-.aula-day { font-size: .8rem; color: var(--ink-2); background: var(--sheet); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 10px; }
-.feed { display: flex; flex-direction: column; min-width: 0; max-height: clamp(380px, 64vh, 620px); background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; }
-.feed h3 { padding: 12px 14px 8px; border-bottom: 1px solid var(--rule); }
-.feed ol { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; min-height: 0; }
-.msg button { display: grid; gap: 3px; width: 100%; text-align: left; padding: 8px 9px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; color: var(--ink); font: inherit; }
-.msg button:hover { background: var(--wash); }
-.msg[data-state="next"] { opacity: .45; }
-.msg[data-state="now"] button { background: var(--wash); box-shadow: inset 3px 0 0 var(--who, var(--rule)); }
-.msg-head { display: flex; align-items: center; gap: 6px; font-size: .78rem; flex-wrap: wrap; }
-.msg-head span { color: var(--muted); }
-.msg-text { font: .9rem/1.45 var(--font-read); overflow-wrap: anywhere; }
-.msg-empty { padding: 12px; color: var(--muted); }
-.aula-live { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; color: var(--ink-2); }
+/* il campus in 3D: la scena, il pannello e il gioco li disegnano i moduli campus/*.js */
+.cp { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: stretch; }
+.cp-stage { position: relative; height: clamp(420px, 68vh, 680px); border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); background: #0d1317; min-width: 0; isolation: isolate; }
+.cp-stage > canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+.cp-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+.cp-hud { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.cp-side { min-width: 0; max-height: clamp(420px, 68vh, 680px); display: flex; flex-direction: column; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.cp-player { margin-top: 16px; display: grid; gap: 16px; min-width: 0; }
+.cp-live { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; color: var(--ink-2); }
+.cp-stage.cp-no3d > canvas { display: none; }
+@media (max-width: 900px) {
+  .cp { grid-template-columns: minmax(0, 1fr); }
+  .cp-stage { height: clamp(360px, 62vh, 560px); }
+  .cp-side { max-height: none; }
+}
 .live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--loss); flex: none; display: inline-block; }
 @media (prefers-reduced-motion: no-preference) { .live-dot { animation: pulse 1.8s ease-out infinite; } }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(198, 47, 47, .5); } 100% { box-shadow: 0 0 0 10px rgba(198, 47, 47, 0); } }
-.stage.no3d { display: grid; place-items: center; height: auto; min-height: 220px; padding-bottom: 64px; }
-.no3d-note { max-width: 40ch; text-align: center; color: var(--ink-2); padding: 18px; display: grid; gap: 6px; }
-.no3d-note b { font-size: 1.05rem; color: var(--ink); }
 
 /* registro */
 .registro { display: grid; gap: 10px; }
@@ -461,10 +436,8 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   .week { grid-template-columns: minmax(0, 1fr); }
   .week-name { padding-top: 0; }
   .week-head > span:first-child { display: none; }
-  .aula, .wallets, .minds, .v-grid, .risk-grid, .rules-grid { grid-template-columns: minmax(0, 1fr); }
+  .wallets, .minds, .v-grid, .risk-grid, .rules-grid { grid-template-columns: minmax(0, 1fr); }
   .risk-top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stage { height: clamp(360px, 62vh, 560px); }
-  .feed { max-height: 380px; }
 }
 @media (max-width: 560px) {
   .day { padding: 4px 4px 5px; min-height: 46px; }
@@ -497,29 +470,18 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
 </header>
 
 <main>
-  <section aria-labelledby="t-aula">
+  <section class="cp-section" id="campus-section" aria-labelledby="t-campus">
     <div class="wrap">
-      <div class="section-head"><h2 id="t-aula">L'aula</h2><p class="aula-live" id="aula-live">Carico l'aula…</p></div>
-      <div class="aula">
-        <div class="stage" id="stage">
-          <canvas id="aula-canvas" role="img" aria-label="L'aula in 3D: gli otto personaggi intorno al tavolo della riunione, con la lavagna e il terminale del motore"></canvas>
-          <div class="aula-overlay" id="aula-overlay" aria-hidden="true"></div>
-          <div class="stage-bar">
-            <div class="ctl">
-              <button type="button" id="aula-prev" aria-label="Riunione precedente">‹</button>
-              <span class="aula-day" id="aula-day"></span>
-              <button type="button" id="aula-next" aria-label="Riunione successiva">›</button>
-            </div>
-            <div class="ctl">
-              <button type="button" id="aula-play" aria-pressed="false">Pausa</button>
-              <button type="button" id="aula-speed">Velocità 1×</button>
-              <button type="button" id="aula-restart">Da capo</button>
-              <button type="button" id="aula-view">Inquadra</button>
-            </div>
-          </div>
+      <div class="section-head"><h2 id="t-campus">Il campus</h2><p class="cp-live" id="campus-live" data-slot="live">Carico il campus…</p></div>
+      <div class="cp" id="campus">
+        <div class="cp-stage" id="campus-stage">
+          <canvas id="campus-canvas" role="img" aria-label="Il campus della Scuola Cripto in 3D: gli otto agenti nelle loro stanze"></canvas>
+          <div class="cp-overlay" id="campus-overlay" aria-hidden="true"></div>
+          <div class="cp-hud" id="campus-hud" data-slot="hud"></div>
         </div>
-        <div class="feed"><h3>Cosa si dicono</h3><ol id="aula-feed"></ol></div>
+        <aside class="cp-side" id="campus-side" data-slot="side" aria-label="Cosa succede nel campus"></aside>
       </div>
+      <div class="cp-player" id="campus-player" data-slot="player"></div>
     </div>
   </section>
 
@@ -646,6 +608,12 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="campus/core.js"></script>
+<script src="campus/render.js"></script>
+<script src="campus/world.js"></script>
+<script src="campus/people.js"></script>
+<script src="campus/life.js"></script>
+<script src="campus/ui.js"></script>
 <script>
 (() => {
   "use strict";
@@ -675,8 +643,16 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   const S = { programma: null, classe: null, giudizio: null, regole: null, live: null, sera: null, memoria: {}, verbali: {}, palestre: {}, gymSel: null, got: {}, errors: {},
               revisioni: {}, chain: { state: "loading" },
               selected: null, picked: false, slow: false, unavailable: false, coinSort: { key: "rank", dir: 1 } };
-  let db = null, vUnsub = null, vDate = null;
+  let db = null;
   const $ = (id) => document.getElementById(id);
+  // the campus kernel (campus/core.js); without it the rest of the page still works
+  const CP = window.Campus && window.Campus.core && typeof window.Campus.boot === "function" ? window.Campus : null;
+  const cp = (fn) => { if (CP) { try { fn(CP); } catch (e) { console.warn("Scuola Cripto: campus", e); } } };
+  function bootCampus() {
+    window.CampusGlue = { select: (date) => selectDay(date) };
+    if (!CP) { $("campus-live").textContent = "Il campus non si è caricato: il resto della scuola è qui sotto."; return; }
+    cp((C) => C.boot({ canvas: $("campus-canvas"), overlay: $("campus-overlay"), uiRoot: $("campus-section"), db: null, sample: null, reduceMotion: matchMedia("(prefers-reduced-motion: reduce)").matches }));
+  }
   const arr = (v) => Array.isArray(v) ? v : [];
   const obj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
   const full = (v) => obj(v) && Object.keys(v).length ? v : null;
@@ -904,7 +880,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
         const L = liveNow();
         out.push(chip(`<strong>Giorno ${esc(today.giorno)} di ${esc(last.giorno)}</strong>${today.tipo !== "riunione" ? " · " + esc(KIND[today.tipo] || today.tipo) : ""}`));
         out.push(chip(esc(cap(longDay(today.data)))));
-        if (L) out.push(chip(`<strong>${esc(liveTitle(L, true))}</strong>: guardala nell'aula`, "", true));
+        if (L) out.push(chip(`<strong>${esc(liveTitle(L, true))}</strong>: guardala nel campus`, "", true));
         if (done[today.data]) {
           const next = all.find((g) => g.data > today.data);
           out.push(chip(`Riunione di oggi fatta${next ? ` · la prossima è ${esc(longDay(next.data))} alle ${MEETING}` : ""}`));
@@ -975,6 +951,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     S.picked = true;
     watchVerbale(date);
     render();
+    cp((C) => C.life && C.life.replay && C.life.replay(date));
   }
 
   // ---- the wallets: the rule against the judgment ------------------------------------------------
@@ -1651,10 +1628,8 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     for (const d of sundays()) {
       if (gymWatched.has(d)) continue;
       gymWatched.add(d);
-      db.doc("palestra/" + d).onSnapshot(
-        (snap) => { S.palestre[d] = snap.exists ? snap.data() : null; soon(); },
-        () => { S.palestre[d] = null; soon(); }
-      );
+      const got = (v) => { S.palestre[d] = v; cp((C) => C.setDataIn("palestre", d, v)); soon(); };
+      db.doc("palestra/" + d).onSnapshot((snap) => got(snap.exists ? snap.data() : null), () => got(null));
     }
   }
   function brierBar(b) {
@@ -2104,1176 +2079,9 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     if (again) again.focus({ preventScroll: true });
   });
 
-  // ---- the classroom in 3D: the eight characters around the meeting table -----------------------------
-  const FASE = {
-    inizio: "si comincia", motore: "il motore fa i conti", briefing: "il briefing del Cronista",
-    posizioni: "le posizioni, in privato", domande: "le domande dello Scettico", risposte: "le risposte",
-    ordini: "gli ordini", chiusura: "la chiusura del Preside", fine: "riunione salvata", sera: "la sera",
-    palestra: "la palestra",
-  };
   const orderText = (o) => !obj(o) ? "" : o.action === "close" ? `chiudo ${o.id}`
     : `${o.side || ""} ${String(o.symbol || "").toUpperCase()}, stop ${level(o.stop)}${o.target != null && o.target !== "" ? ", target " + level(o.target) : ""}, rischio ${small(toNum(o.risk_pct) ?? 1)}%`;
   const predText = (p) => `${p.mercato} ${p.direzione} ${level(p.livello)}${p.scadenza ? " entro il " + dm(p.scadenza) : ""}, al ${prob(p.probabilita)}`;
-
-  function makeAula() {
-    const stage = $("stage"), canvas = $("aula-canvas"), overlay = $("aula-overlay"), feedEl = $("aula-feed"), liveEl = $("aula-live"), dayEl = $("aula-day");
-    const playBtn = $("aula-play"), speedBtn = $("aula-speed");
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const ui = { playing: true, speed: 1 };
-    let key = "", script = [], step = 0, items = [], liveMode = false, wasLive = false;
-    let scene3d = null; // set when the 3D room is built
-
-    // --- the feed: every line spoken, in order ---------------------------------------------------
-    function renderFeed() {
-      if (!items.length) {
-        feedEl.innerHTML = `<li class="msg-empty">${esc(liveMode ? "La riunione è appena cominciata." : "Qui compare la conversazione della riunione.")}</li>`;
-        return;
-      }
-      feedEl.innerHTML = items.map((it, i) => `<li class="msg k-${esc(it.who)}" data-state="next"><button type="button" data-i="${i}"><span class="msg-head"><i class="dot" aria-hidden="true"></i><b>${esc(NAMES[it.who] || it.who)}</b><span>${esc(it.label || "")}${it.at ? " · " + esc(it.at) : ""}</span></span><span class="msg-text">${esc(it.text)}</span></button></li>`).join("");
-      markFeed();
-    }
-    function markFeed() {
-      const now = script[step] && script[step].item != null ? script[step].item : -1;
-      let last = -1;
-      for (let i = 0; i < step && i < script.length; i++) if (script[i].item != null) last = script[i].item;
-      const current = now >= 0 ? now : last;
-      feedEl.querySelectorAll(".msg").forEach((li, i) => {
-        li.dataset.state = liveMode || !scene3d ? "past" : i < current ? "past" : i === current ? "now" : "next";
-      });
-      const el = feedEl.querySelector('.msg[data-state="now"]');
-      if (el) {
-        const top = el.offsetTop - feedEl.offsetTop, h = feedEl.clientHeight;
-        if (top < feedEl.scrollTop || top > feedEl.scrollTop + h - el.offsetHeight) feedEl.scrollTop = Math.max(0, top - h / 3);
-      }
-    }
-    feedEl.addEventListener("click", (e) => {
-      const b = e.target.closest("button[data-i]");
-      if (!b || liveMode) return;
-      const i = script.findIndex((s) => s.item === Number(b.dataset.i));
-      if (i >= 0) jump(i);
-    });
-
-    // --- the scripts: one replayed meeting, the live meeting, or the wait -------------------------
-    function dayScript(d, g) {
-      const B = [];
-      const say = (who, text, label, to) => {
-        if (!text) return;
-        items.push({ who, text, label });
-        B.push({ kind: "say", who, text, label, to, item: items.length - 1 });
-      };
-      const go = (...moves) => B.push({ kind: "go", moves });
-      const board = (...lines) => B.push({ kind: "board", lines });
-      const screen = (events, title) => B.push({ kind: "screen", events, title });
-      const P = obj(d.posizioni) || {};
-      const n = d.giorno ?? (g && g.giorno) ?? "";
-      const welcome = (d.tipo || (g && g.tipo)) === "accoglienza";
-      const theme = d.tema || (g && g.tema) || "";
-      B.push({ kind: "reset" });
-      board(`Riunione ${n} · ${longDay(d.data || (g && g.data))}`, plain(d.titolo || theme, 110));
-      screen(null, "");
-      // 1. the Preside opens
-      go(["preside", "board"]);
-      say("preside", `Riunione ${n}${d.titolo ? ": " + plain(d.titolo, 110) : ""}.${theme ? " Il tema è " + lowerFirst(plain(theme, 150)) + "." : ""}`, "Apre la riunione");
-      go(["preside", "stand"]);
-      // 2. the night, from the engine
-      const night = arr(d.eventi_notte).filter(obj);
-      screen(night, "DALLA NOTTE");
-      say("motore", night.length ? "Nella notte: " + night.map((e) => `${NAMES[e.wallet] || e.wallet || ""}, ${shortEvent(e)}`).join(" · ") : "Nella notte nessuna posizione è arrivata allo stop o al target.", "La notte");
-      const ver = arr(d.previsioni_verificate).filter(obj);
-      if (ver.length) say("motore", "Previsioni verificate: " + ver.map((x) => `${NAMES[whoOf(x.id)] || ""} ${x.mercato} ${x.direzione} ${level(x.livello)} al ${prob(x.probabilita)}, ${x.esito ? "giusta" : "sbagliata"}`).join(" · "), "Previsioni verificate");
-      // 3. the Cronista's briefing
-      const Bf = obj(d.briefing) || {};
-      const top = arr(Bf.notizie).filter(obj)[0];
-      board("Il briefing del Cronista", top ? plain(top.testo, 100) : plain(Bf.testo, 100));
-      go(["cronista", "board"], ["preside", "seat"]);
-      if (welcome && Bf.chi_sono) say("cronista", plain(Bf.chi_sono, 220), "Si presenta");
-      say("cronista", plain(Bf.testo, 230), "Il briefing");
-      if (top) say("cronista", `${cap(top.etichetta || "notizia")}: ${plain(top.testo, 170)}${top.fonte ? ` (${top.fonte}${top.ora ? ", " + whenTxt(top.ora) : ""})` : ""}`, "La notizia");
-      go(["cronista", "seat"]);
-      // 4. the four wallets
-      board("Le posizioni", "scritte in privato, senza vedersi");
-      for (const w of TRADERS) {
-        const a = obj(P[w]) || {};
-        if (!Object.keys(a).length) continue;
-        go([w, "stand"]);
-        if (welcome && a.chi_sono) say(w, plain(a.chi_sono, 220), "Si presenta");
-        say(w, plain(a.regola, 210), "La regola");
-        const p0 = arr(a.previsioni).filter(obj)[0];
-        if (p0) say(w, "Prevedo " + predText(p0) + ".", "La previsione principale");
-        say(w, plain(a.intervento, 230), "Intervento");
-        const orders = Array.isArray(a.ordini_iniziali) ? a.ordini_iniziali.filter(obj) : arr(a.ordini);
-        say(w, orders.length ? "I miei ordini: " + orders.map(orderText).join(" · ") : welcome ? "Oggi è l'accoglienza: niente ordini." : "Oggi nessun ordine: resto fermo.", "Ordini");
-        go([w, "seat"]);
-      }
-      // 5. the Guardiano
-      const G = obj(P.guardiano) || {};
-      if (Object.keys(G).length) {
-        go(["guardiano", "stand"]);
-        if (welcome && G.chi_sono) say("guardiano", plain(G.chi_sono, 220), "Si presenta");
-        say("guardiano", plain(G.bollettino, 240), "Il bollettino");
-        const al = arr(G.allarmi).length ? arr(G.allarmi) : arr(d.rischio && d.rischio.allarmi);
-        say("guardiano", al.length ? "Allarmi: " + al.map((x) => plain(human(x), 140)).join(" · ") : "Oggi nessun allarme.", "Gli allarmi");
-        go(["guardiano", "seat"]);
-      }
-      // 6. the Scettico asks
-      const Sc = obj(d.scettico) || {};
-      const qs = arr(Sc.domande).filter(obj);
-      if (qs.length || Sc.contrario) {
-        board("Le domande dello Scettico", qs.length ? `${qs.length} ${qs.length === 1 ? "domanda" : "domande"}, ognuna con un numero` : "");
-        go(["scettico", "stand"]);
-        if (welcome && Sc.chi_sono) say("scettico", plain(Sc.chi_sono, 220), "Si presenta");
-        qs.forEach((q, i) => say("scettico", NAMES[q.a] ? `${NAMES[q.a]}, ${lowerFirst(plain(q.testo, 210))}` : plain(q.testo, 210), `Domanda ${i + 1}`, q.a));
-        say("scettico", plain(Sc.contrario, 230), "Il contrario");
-        go(["scettico", "seat"]);
-      }
-      // 7. the answers, and the orders changed after them
-      const changedSaid = new Set();
-      for (const q of qs) {
-        if (!q.risposta || !NAMES[q.a] || q.a === "motore") continue;
-        go([q.a, "stand"]);
-        say(q.a, plain(q.risposta, 230), "Risponde allo Scettico", "scettico");
-        const qa = obj(P[q.a]);
-        if (qa && !changedSaid.has(q.a) && Array.isArray(qa.ordini_iniziali) && JSON.stringify(qa.ordini_iniziali) !== JSON.stringify(arr(qa.ordini))) {
-          changedSaid.add(q.a);
-          const now = arr(qa.ordini).filter(obj);
-          say(q.a, now.length ? "Cambio i miei ordini: " + now.map(orderText).join(" · ") : "Ritiro i miei ordini: oggi resto fermo.", "Cambia gli ordini");
-        }
-        go([q.a, "seat"]);
-      }
-      // 8. the orders, from the engine
-      const ev = arr(d.eventi_ordini).filter(obj);
-      board("Gli ordini a giudizio", ev.length ? "il motore li esegue, o li respinge se escono dalle regole" : "");
-      screen(ev, "ORDINI");
-      say("motore", ev.length ? ev.map((e) => `${NAMES[e.wallet] || e.wallet || ""}, ${shortEvent(e)}`).join(" · ") : welcome ? "All'accoglienza nessun ordine da eseguire." : "Oggi nessun ordine da eseguire.", "Gli ordini");
-      // 9. the Preside closes
-      const C = obj(d.chiusura) || {};
-      board("La chiusura del Preside", plain(d.titolo || theme, 100));
-      go(["preside", "stand"]);
-      arr(C.righe).filter(Boolean).forEach((r, i) => say("preside", plain(r, 220), RIGHE[i] || `Riga ${i + 1}`));
-      if (obj(C.voti)) {
-        B.push({ kind: "grade", voti: C.voti });
-        say("preside", "I voti: " + GRADED.filter((w) => obj(C.voti[w])).map((w) => `${NAMES[w]} ${C.voti[w].ragionamento ?? "?"} e ${C.voti[w].disciplina ?? "?"}`).join(", ") + ".", "I voti");
-      }
-      if (obj(d.consiglio) && d.consiglio.testo) say("preside", plain(d.consiglio.testo, 240), "Il consiglio");
-      if (obj(d.scrutinio) && d.scrutinio.testo) {
-        if (obj(d.scrutinio.pagella)) B.push({ kind: "grade", voti: d.scrutinio.pagella });
-        say("preside", plain(d.scrutinio.testo, 240), "Lo scrutinio");
-      }
-      if (obj(d.fine) && d.fine.testo) say("preside", plain(d.fine.testo, 240), "Il bilancio");
-      go(["preside", "seat"]);
-      // 10. the evening meeting, when the evening check raised an alarm
-      const E = full(d.sera);
-      if (E) {
-        const EP = obj(E.posizioni) || {};
-        const motivi = arr(E.motivi).filter(Boolean).map((x) => plain(human(x), 120));
-        board("La riunione della sera", motivi[0] || "");
-        screen(arr(E.eventi_notte).filter(obj), "LA SERA");
-        go(["guardiano", "stand"]);
-        say("guardiano", motivi.length ? "Allarme: " + motivi.join(" · ") : "Il controllo della sera ha suonato.", "La sera");
-        const EG = obj(EP.guardiano);
-        if (EG && EG.bollettino) say("guardiano", plain(EG.bollettino, 240), "Il bollettino della sera");
-        go(["guardiano", "seat"]);
-        for (const w of TRADERS) {
-          const a = obj(EP[w]);
-          if (!a) continue;
-          go([w, "stand"]);
-          say(w, plain(a.intervento, 220), "La sera");
-          const os = arr(a.ordini).filter(obj);
-          say(w, os.length ? "I miei ordini: " + os.map(orderText).join(" · ") : "Stasera nessun ordine.", "Gli ordini della sera");
-          go([w, "seat"]);
-        }
-        const eo = arr(E.eventi_ordini).filter(obj);
-        screen(eo, "LA SERA");
-        say("motore", eo.length ? eo.map((e) => `${NAMES[e.wallet] || e.wallet || ""}, ${shortEvent(e)}`).join(" · ") : "Stasera nessun ordine da eseguire.", "Gli ordini della sera");
-        go(["preside", "stand"]);
-        arr(E.chiusura).filter(Boolean).forEach((r, i) => say("preside", plain(r, 220), SERA_RIGHE[i] || `Riga ${i + 1}`));
-        go(["preside", "seat"]);
-      }
-      B.push({ kind: "idle", s: 30 });
-      return B;
-    }
-    function waitScript(g, d) {
-      const lines = [g ? `Giorno ${g.giorno} · ${longDay(g.data)}` : "Scuola Cripto", g ? plain(g.tema, 110) : "", g ? (d === undefined ? "Carico la riunione…" : g.tipo === "accoglienza" ? "Accoglienza, la sera" : `Riunione alle ${MEETING}`) : ""];
-      return [{ kind: "reset" }, { kind: "board", lines }, { kind: "screen", events: null, title: "" }, { kind: "idle", s: 3600 }];
-    }
-    function liveMoves(fase, who) {
-      const m = Object.fromEntries(CAST.map((w) => [w, "seat"]));
-      if (fase === "inizio") m.preside = "board";
-      if (["motore", "ordini", "chiusura", "posizioni", "palestra", "sera"].includes(fase)) m.preside = "stand";
-      if (fase === "briefing") m.cronista = "shelf";
-      if (fase === "domande") m.scettico = "stand";
-      if (["posizioni", "risposte", "palestra", "sera"].includes(fase) && GRADED.includes(who)) m[who] = "stand";
-      return Object.entries(m);
-    }
-    function liveScript(L) {
-      const who = NAMES[L.attore] ? L.attore : "preside";
-      const log = arr(L.log).filter(obj).length ? arr(L.log).filter(obj) : [L];
-      for (const e of log) items.push({ who: NAMES[e.attore] ? e.attore : "preside", text: String(e.testo || ""), label: FASE[e.fase] || "", at: romeTime(e.ora) });
-      return [
-        { kind: "board", lines: [liveTitle(L), L.fase === "palestra" ? "20 casi dal passato per ognuno" : L.fase === "sera" ? "il controllo della sera ha suonato" : cap(FASE[L.fase] || L.fase || "")] },
-        { kind: "screen", events: null, title: L.fase === "ordini" ? "ESEGUO GLI ORDINI" : L.fase === "motore" ? "FACCIO I CONTI" : L.fase === "palestra" ? "LA PALESTRA" : L.fase === "sera" ? "LA SERA" : "" },
-        { kind: "go", moves: liveMoves(L.fase, who) },
-        { kind: "say", who, text: plain(L.testo, 200) || "…", label: FASE[L.fase] || "in diretta", item: items.length - 1 },
-        { kind: "idle", s: 3600 },
-      ];
-    }
-
-    // --- outside the scene: the status line, the day picker, the controls -------------------------
-    function sync() {
-      const L = liveNow();
-      const sel = S.selected;
-      const d = sel ? S.verbali[sel] : undefined;
-      const g = dayOf(sel);
-      const next = L ? `live:${L.ora}:${L.fase}:${L.attore}:${arr(L.log).length}` : `day:${sel}:${d ? d.scritto || d.data || "x" : d === null ? "none" : "loading"}`;
-      const done = held().map((x) => x.data).sort();
-      const idx = done.indexOf(sel);
-      dayEl.textContent = L ? liveTitle(L) : g ? `Giorno ${g.giorno} · ${dm(g.data)}` : "";
-      dayEl.hidden = !dayEl.textContent;
-      $("aula-prev").disabled = !!L || (idx < 0 ? !done.some((x) => x < sel) : idx <= 0);
-      $("aula-next").disabled = !!L || (idx < 0 ? !done.some((x) => x > sel) : idx >= done.length - 1);
-      $("aula-restart").disabled = !!L;
-      liveEl.innerHTML = L
-        ? `<span class="live-dot" aria-hidden="true"></span><span><strong>In diretta</strong> · ${esc(FASE[L.fase] || L.fase || "")} · aggiornata alle ${esc(romeTime(L.ora))}</span>`
-        : d ? `Replica della riunione di ${esc(longDay(d.data || sel))}, con le loro parole.`
-          : S.unavailable ? "L'aula si anima quando apri la pagina da claude.ai."
-            : g ? `In attesa della riunione. La prossima è alle ${MEETING}.`
-              : S.got.programma ? "L'aula si anima con la riunione di accoglienza." : "Carico l'aula…";
-      if (next === key) return;
-      key = next;
-      items = [];
-      wasLive = liveMode;
-      liveMode = !!L;
-      script = L ? liveScript(L) : d ? dayScript(d, g) : waitScript(g, d);
-      step = 0;
-      for (const b of script) b.started = false;
-      renderFeed();
-      if (scene3d) scene3d.settle(0, liveMode && wasLive);
-    }
-    function moveDay(delta) {
-      const done = held().map((x) => x.data).sort();
-      const sel = S.selected;
-      let to = null;
-      const idx = done.indexOf(sel);
-      if (idx >= 0) to = done[idx + delta];
-      else to = delta < 0 ? done.filter((x) => x < sel).pop() : done.find((x) => x > sel);
-      if (to) selectDay(to);
-    }
-    $("aula-prev").addEventListener("click", () => moveDay(-1));
-    $("aula-next").addEventListener("click", () => moveDay(1));
-    playBtn.addEventListener("click", () => {
-      ui.playing = !ui.playing;
-      playBtn.textContent = ui.playing ? "Pausa" : "Riprendi";
-      playBtn.setAttribute("aria-pressed", String(!ui.playing));
-    });
-    speedBtn.addEventListener("click", () => {
-      ui.speed = ui.speed === 1 ? 2 : ui.speed === 2 ? 4 : 1;
-      speedBtn.textContent = `Velocità ${ui.speed}×`;
-    });
-    $("aula-restart").addEventListener("click", () => jump(0));
-    function jump(index) { if (scene3d) scene3d.jump(index); }
-    setInterval(() => { sync(); }, 20000); // a live meeting starts and ends on the clock too
-
-    const T = window.THREE;
-    const webgl = (() => {
-      try {
-        const c = document.createElement("canvas");
-        return !!(c.getContext("webgl2") || c.getContext("webgl"));
-      } catch (e) {
-        return false;
-      }
-    })();
-    if (T && webgl) {
-      try {
-        scene3d = buildRoom(T);
-      } catch (e) {
-        scene3d = null;
-      }
-    }
-    if (!scene3d) {
-      stage.classList.add("no3d");
-      canvas.hidden = true;
-      overlay.hidden = true;
-      $("aula-play").hidden = $("aula-speed").hidden = $("aula-restart").hidden = $("aula-view").hidden = true;
-      const note = document.createElement("div");
-      note.className = "no3d-note";
-      note.innerHTML = `<b>Qui non si vede l'aula in 3D</b><span>Questo dispositivo non mostra la grafica 3D. La riunione si legge parola per parola in «Cosa si dicono».</span>`;
-      stage.appendChild(note);
-    }
-    return { sync };
-
-    // --- the room ------------------------------------------------------------------------------------
-    function buildRoom(T) {
-      const renderer = new T.WebGLRenderer({ canvas, antialias: true });
-      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-      const scene = new T.Scene();
-      const camera = new T.PerspectiveCamera(40, 16 / 9, 0.1, 100);
-      const look = new T.Vector3(0, 0.95, -1.7);
-      const cam = { yaw: 0, pitch: 0.42, dist: 9.0, touched: -1e9, fx: 0, fz: -1.7 };
-      const PAL = {
-        light: { sky: 0xdfe6ee, floor: 0xb98d60, rug: 0x3d6a86, wall: 0xf0ebe1, trim: 0xcfc6b4, frame: 0x7a5a3a, wood: 0xa8764a, woodTop: 0xc49461, table: 0x8a5a36, tableTop: 0xb07c4f, metal: 0x6f7781, window: 0xcfe6ff, hemiSky: 0xffffff, hemiGround: 0xb59d7d, hemi: 0.95, sun: 0.62, lamp: 0.25, chalkboard: "#2c4a3a" },
-        dark: { sky: 0x0d1317, floor: 0x5c4431, rug: 0x22445a, wall: 0x2d3633, trim: 0x232a28, frame: 0x4e3a27, wood: 0x6b4c31, woodTop: 0x7d5a3a, table: 0x4f3420, tableTop: 0x6e4b30, metal: 0x4b525b, window: 0x1c2f4a, hemiSky: 0xa9bccf, hemiGround: 0x3a3026, hemi: 0.62, sun: 0.3, lamp: 0.95, chalkboard: "#1e3529" },
-      };
-      const mats = {};
-      const mat = (name) => mats[name] || (mats[name] = new T.MeshLambertMaterial({ color: 0xffffff }));
-      const LAM = {};
-      const lam = (c) => LAM[c] || (LAM[c] = new T.MeshLambertMaterial({ color: c }));
-      const hemi = new T.HemisphereLight(0xffffff, 0xb59d7d, 0.9);
-      scene.add(hemi);
-      const sun = new T.DirectionalLight(0xfff1dc, 0.62);
-      sun.position.set(5, 9, 6);
-      scene.add(sun);
-      const lamp = new T.PointLight(0xffd59a, 0.3, 14);
-      lamp.position.set(0, 3.0, -0.8);
-      scene.add(lamp);
-      const isDark = () => {
-        const t = document.documentElement.dataset.theme;
-        return t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-      };
-      let pal = PAL.light;
-      function paint() {
-        pal = PAL[isDark() ? "dark" : "light"];
-        for (const [name, m] of Object.entries(mats)) if (typeof pal[name] === "number") m.color.setHex(pal[name]);
-        scene.background = new T.Color(pal.sky);
-        hemi.color.setHex(pal.hemiSky);
-        hemi.groundColor.setHex(pal.hemiGround);
-        hemi.intensity = pal.hemi;
-        sun.intensity = pal.sun;
-        lamp.intensity = pal.lamp;
-        drawBoard(boardLines, 1);
-      }
-      const GEO = {};
-      const geoBox = (w, h, d) => GEO[`b${w}:${h}:${d}`] || (GEO[`b${w}:${h}:${d}`] = new T.BoxGeometry(w, h, d));
-      const box = (w, h, d, m, x, y, z, parent = scene) => {
-        const mesh = new T.Mesh(geoBox(w, h, d), typeof m === "string" ? mat(m) : m);
-        mesh.position.set(x, y, z);
-        parent.add(mesh);
-        return mesh;
-      };
-      const cyl = (rt, rb, h, m, seg = 12) => new T.Mesh(new T.CylinderGeometry(rt, rb, h, seg), m);
-      const floor = new T.Mesh(new T.PlaneGeometry(12, 9), mat("floor"));
-      floor.rotation.x = -Math.PI / 2;
-      scene.add(floor);
-      const rug = new T.Mesh(new T.CircleGeometry(1, 48), mat("rug"));
-      rug.rotation.x = -Math.PI / 2;
-      rug.scale.set(3.5, 2.7, 1);
-      rug.position.set(0, 0.004, -1.45);
-      scene.add(rug);
-      box(12, 3.4, 0.12, "wall", 0, 1.7, -4.56);
-      box(0.12, 3.4, 9, "wall", -6.06, 1.7, 0);
-      box(0.12, 3.4, 9, "wall", 6.06, 1.7, 0);
-      box(12, 0.14, 0.06, "trim", 0, 0.07, -4.48);
-      box(0.04, 1.3, 2.4, "window", 5.99, 1.95, 2.2);
-      box(0.04, 1.3, 0.06, "frame", 5.98, 1.95, 2.2);
-      // the board, written in chalk
-      box(5.5, 1.75, 0.08, "frame", 0, 1.95, -4.47);
-      const boardCanvas = document.createElement("canvas");
-      boardCanvas.width = 1024;
-      boardCanvas.height = 320;
-      const boardTex = new T.CanvasTexture(boardCanvas);
-      const board = new T.Mesh(new T.PlaneGeometry(5.2, 1.6), new T.MeshBasicMaterial({ map: boardTex }));
-      board.position.set(0, 1.95, -4.42);
-      scene.add(board);
-      let boardLines = ["Scuola Cripto"];
-      function drawBoard(lines, reveal) {
-        boardLines = lines;
-        const c = boardCanvas.getContext("2d");
-        c.fillStyle = pal.chalkboard;
-        c.fillRect(0, 0, 1024, 320);
-        c.fillStyle = "rgba(255,255,255,0.05)";
-        for (let i = 0; i < 6; i++) c.fillRect(60 + i * 160, 40 + (i % 3) * 70, 120, 18);
-        let left = Math.floor(lines.join("").length * reveal);
-        let y = 70;
-        lines.forEach((line, n) => {
-          if (!line) return;
-          c.font = n === 0 ? "600 40px Caveat, 'Segoe Print', cursive" : "600 52px Caveat, 'Segoe Print', cursive";
-          c.fillStyle = n === 0 ? "rgba(238,242,234,0.8)" : "#eef2ea";
-          const rows = [];
-          let row = "";
-          for (const w of String(line).split(" ")) {
-            const test = row ? row + " " + w : w;
-            if (c.measureText(test).width > 940 && row) { rows.push(row); row = w; } else row = test;
-          }
-          if (row) rows.push(row);
-          for (const r of rows.slice(0, n === 0 ? 1 : 2)) {
-            c.fillText(r.slice(0, Math.max(0, left)), 42, y);
-            left -= r.length;
-            y += n === 0 ? 62 : 58;
-          }
-        });
-        boardTex.needsUpdate = true;
-      }
-      // the prices running above the board
-      const tickCanvas = document.createElement("canvas");
-      tickCanvas.width = 2048;
-      tickCanvas.height = 64;
-      const tickTex = new T.CanvasTexture(tickCanvas);
-      tickTex.wrapS = T.RepeatWrapping;
-      const ticker = new T.Mesh(new T.PlaneGeometry(6.6, 0.22), new T.MeshBasicMaterial({ map: tickTex }));
-      ticker.position.set(0, 3.02, -4.48);
-      scene.add(ticker);
-      let tickKey = "";
-      function drawTicker() {
-        const p = (S.giudizio && S.giudizio.prices) || {};
-        const k = JSON.stringify(p);
-        if (k === tickKey) return;
-        tickKey = k;
-        const c = tickCanvas.getContext("2d");
-        c.fillStyle = "#101820";
-        c.fillRect(0, 0, 2048, 64);
-        c.font = "500 28px 'IBM Plex Mono', monospace";
-        c.fillStyle = "#e9f1f7";
-        let text = "";
-        for (const s of COINS.filter((x) => isNum(p[x]))) {
-          const next = (text ? text + "   ·   " : "") + `${s} ${price(p[s])}`;
-          if (c.measureText(next).width > 1960) break;
-          text = next;
-        }
-        c.fillText(text || "Prezzi di BingX in arrivo", 24, 42);
-        tickTex.needsUpdate = true;
-      }
-      // the meeting table: an oval, with the eight seats on an arc behind it, open toward the viewer.
-      // The Preside at the head, the four wallets on his right hand, the other three on his left.
-      const CX = 0, CZ = -1.3, LOOKZ = -1.7;
-      const tableTop = new T.Mesh(new T.CylinderGeometry(1, 1, 0.07, 48), mat("tableTop"));
-      tableTop.scale.set(1.75, 1, 1.05);
-      tableTop.position.set(CX, 0.76, CZ);
-      scene.add(tableTop);
-      const pillar = cyl(0.16, 0.2, 0.72, mat("table"), 16);
-      pillar.position.set(CX, 0.37, CZ);
-      scene.add(pillar);
-      const foot = new T.Mesh(new T.CylinderGeometry(1, 1, 0.04, 32), mat("table"));
-      foot.scale.set(0.7, 1, 0.45);
-      foot.position.set(CX, 0.02, CZ);
-      scene.add(foot);
-      const H = Math.PI / 2;
-      const ARC = { preside: 0, falco: -27, tartaruga: -54, spazzino: -81, ragioniere: -108, cronista: 32, guardiano: 66, scettico: 100 };
-      const SEATS = Object.fromEntries(Object.entries(ARC).map(([k, deg]) => {
-        const t = (deg * Math.PI) / 180, x = CX + 2.45 * Math.sin(t), z = CZ - 1.75 * Math.cos(t);
-        return [k, [x, z, Math.atan2(CX - x, CZ - z), t]];
-      }));
-      function chair(x, z, face) {
-        const c = new T.Group();
-        box(0.48, 0.05, 0.46, "wood", 0, 0.46, 0, c);
-        box(0.48, 0.52, 0.05, "wood", 0, 0.74, -0.24, c);
-        for (const dx of [-0.2, 0.2]) for (const dz of [-0.2, 0.2]) box(0.04, 0.45, 0.04, "metal", dx, 0.22, dz, c);
-        c.position.set(x, 0, z);
-        c.rotation.y = face;
-        scene.add(c);
-      }
-      for (const [, s] of Object.entries(SEATS)) {
-        chair(s[0], s[1], s[2]);
-        // a notepad on the table in front of each seat
-        box(0.24, 0.012, 0.3, lam(0xf4f1e8), CX + 1.75 * 0.8 * Math.sin(s[3]), 0.8, CZ - 1.05 * 0.8 * Math.cos(s[3])).rotation.y = s[2];
-      }
-      // the library on the left wall
-      box(0.5, 2.4, 2.8, "wood", -5.75, 1.2, -1.6);
-      const spines = [0x8c2f39, 0x2a78d6, 0xd9a441, 0x3c6e47, 0x6b4c9a, 0xeb6834, 0x1f4e5f, 0xb5523b];
-      let bi = 0;
-      for (const yy of [0.45, 1.05, 1.65, 2.22]) {
-        box(0.46, 0.04, 2.7, "woodTop", -5.72, yy - 0.24, -1.6);
-        for (let z = -2.85; z < -0.42; z += 0.17) {
-          const h = 0.32 + ((bi * 37) % 10) / 55;
-          box(0.3, h, 0.13, lam(spines[bi++ % spines.length]), -5.6, yy - 0.22 + h / 2, z);
-        }
-      }
-      // a plant in the corner
-      const pot = cyl(0.22, 0.17, 0.4, lam(0x9c5b3b));
-      pot.position.set(-5.4, 0.2, -3.9);
-      scene.add(pot);
-      for (const [dx, dy, r] of [[0, 0.72, 0.36], [0.16, 0.95, 0.24], [-0.14, 0.98, 0.22]]) {
-        const leaf = new T.Mesh(new T.IcosahedronGeometry(r, 0), lam(0x3f8a4f));
-        leaf.position.set(-5.4 + dx, dy, -3.9);
-        scene.add(leaf);
-      }
-      // the engine's terminal on the right
-      box(1.4, 0.06, 0.8, "woodTop", 5.3, 0.76, -1.4);
-      box(0.06, 0.74, 0.7, "metal", 4.66, 0.37, -1.4);
-      box(0.06, 0.74, 0.7, "metal", 5.94, 0.37, -1.4);
-      box(0.08, 0.72, 1.12, "metal", 5.6, 1.22, -1.4);
-      box(0.06, 0.38, 0.08, "metal", 5.6, 0.95, -1.4);
-      const screenCanvas = document.createElement("canvas");
-      screenCanvas.width = 512;
-      screenCanvas.height = 320;
-      const screenTex = new T.CanvasTexture(screenCanvas);
-      const screen = new T.Mesh(new T.PlaneGeometry(1.02, 0.64), new T.MeshBasicMaterial({ map: screenTex }));
-      screen.position.set(5.55, 1.22, -1.4);
-      screen.rotation.y = -Math.PI / 2;
-      scene.add(screen);
-      function drawScreen(events, title) {
-        const c = screenCanvas.getContext("2d");
-        c.fillStyle = "#0b1620";
-        c.fillRect(0, 0, 512, 320);
-        c.fillStyle = "#7fd1a8";
-        c.font = "600 22px 'IBM Plex Mono', monospace";
-        c.fillText(`MOTORE${title ? " · " + title : ""}`, 18, 34);
-        c.font = "400 18px 'IBM Plex Mono', monospace";
-        let y = 70;
-        if (events && events.length) {
-          for (const e of events.slice(0, 5)) {
-            c.fillStyle = e.event === "aperta" ? "#7fd1a8" : e.event === "chiusa" ? "#9fc3ff" : "#ff8f8f";
-            const t = `${(NAMES[e.wallet] || "").toUpperCase().slice(0, 4)} ${shortEvent(e)}`;
-            for (const part of [t.slice(0, 40), t.slice(40, 80)].filter(Boolean)) {
-              if (y > 310) break;
-              c.fillText(part, 18, y);
-              y += 26;
-            }
-          }
-        } else if (events && !events.length) {
-          c.fillStyle = "#c9d6e2";
-          c.fillText("niente da segnalare", 18, y);
-        } else {
-          const p = (S.giudizio && S.giudizio.prices) || {};
-          c.fillStyle = "#c9d6e2";
-          for (const s of COINS.slice(0, 9)) {
-            if (!isNum(p[s])) continue;
-            c.fillText(`${s.padEnd(6)} ${price(p[s])}`, 18, y);
-            y += 26;
-          }
-          if (y === 70) c.fillText("in attesa dei prezzi", 18, y);
-        }
-        screenTex.needsUpdate = true;
-      }
-      // a soft shadow under everyone
-      const shadowCanvas = document.createElement("canvas");
-      shadowCanvas.width = shadowCanvas.height = 64;
-      const sc = shadowCanvas.getContext("2d");
-      const grad = sc.createRadialGradient(32, 32, 4, 32, 32, 32);
-      grad.addColorStop(0, "rgba(0,0,0,0.35)");
-      grad.addColorStop(1, "rgba(0,0,0,0)");
-      sc.fillStyle = grad;
-      sc.fillRect(0, 0, 64, 64);
-      const shadowMat = new T.MeshBasicMaterial({ map: new T.CanvasTexture(shadowCanvas), transparent: true, depthWrite: false });
-      // the Cronista's newspaper
-      const paperCanvas = document.createElement("canvas");
-      paperCanvas.width = 128;
-      paperCanvas.height = 160;
-      const pc = paperCanvas.getContext("2d");
-      pc.fillStyle = "#f3f0e6";
-      pc.fillRect(0, 0, 128, 160);
-      pc.fillStyle = "#1b1b1b";
-      pc.font = "700 15px Georgia, serif";
-      pc.fillText("IL CRONISTA", 12, 22);
-      pc.fillRect(10, 28, 108, 2);
-      pc.fillStyle = "#8c8c8c";
-      for (let i = 0; i < 12; i++) { pc.fillRect(10, 40 + i * 9, 50, 3); pc.fillRect(68, 40 + i * 9, 50, 3); }
-      const paperMat = new T.MeshLambertMaterial({ map: new T.CanvasTexture(paperCanvas), side: T.DoubleSide });
-
-      // --- the characters ----------------------------------------------------------------------------
-      const LOOK = {
-        preside: { body: 0x2a2430, legs: 0x26262c, hair: 0xd0d0d0, skin: 0xedc7a4, h: 1.04, speed: 1.15, freq: 8, tw: 0.2, bw: 0.24, hat: 0.18 },
-        falco: { body: 0x2f78d0, legs: 0x26324a, hair: 0x5a3b22, skin: 0xe2b48e, h: 0.98, speed: 1.9, freq: 11, tw: 0.18, bw: 0.21, hat: 0.06 },
-        tartaruga: { body: 0x2f8a3e, legs: 0x4a4031, hair: 0x8a8a8a, skin: 0xd8a47f, h: 0.9, speed: 0.72, freq: 5, tw: 0.23, bw: 0.28, hat: 0 },
-        spazzino: { body: 0xef6a26, legs: 0x2b3a55, hair: 0x2a1c12, skin: 0xc68b5e, h: 0.97, speed: 1.3, freq: 9, tw: 0.2, bw: 0.24, hat: 0.08 },
-        ragioniere: { body: 0xd99a1a, legs: 0x3b3b44, hair: 0x1d1d1d, skin: 0xf0cfae, h: 0.95, speed: 1.2, freq: 9, tw: 0.2, bw: 0.24, hat: 0.06 },
-        guardiano: { body: 0x0f9e80, legs: 0x26323d, hair: 0x3b2a1e, skin: 0xa8714a, h: 1.06, speed: 1.25, freq: 8, tw: 0.24, bw: 0.27, hat: 0.08 },
-        cronista: { body: 0xd2588f, legs: 0x3a2f2a, hair: 0x6b4226, skin: 0xe8bf98, h: 0.98, speed: 1.4, freq: 9.5, tw: 0.2, bw: 0.24, hat: 0.16 },
-        scettico: { body: 0x6a4ce2, legs: 0x2a2a35, hair: 0x101010, skin: 0xdcb08c, h: 0.96, speed: 1.2, freq: 9, tw: 0.18, bw: 0.21, hat: 0 },
-      };
-      function makeAgent(key) {
-        const L = LOOK[key], g = new T.Group(), body = new T.Group();
-        g.add(body);
-        const legs = lam(L.legs), shirt = lam(L.body), skin = lam(L.skin), dark = lam(0x161616);
-        const hip = (x) => {
-          const p = new T.Group();
-          p.position.set(x, 0.74, 0);
-          const leg = cyl(0.075, 0.068, 0.72, legs);
-          leg.position.y = -0.36;
-          p.add(leg);
-          const shoe = new T.Mesh(geoBox(0.13, 0.06, 0.22), lam(0x222222));
-          shoe.position.set(0, -0.71, 0.04);
-          p.add(shoe);
-          body.add(p);
-          return p;
-        };
-        const hipL = hip(-0.11), hipR = hip(0.11);
-        const torso = cyl(L.tw, L.bw, 0.66, shirt);
-        torso.position.y = 1.07;
-        body.add(torso);
-        const neck = cyl(0.06, 0.06, 0.1, key === "scettico" ? shirt : skin);
-        neck.position.y = 1.44;
-        body.add(neck);
-        const head = new T.Group();
-        head.position.y = 1.63;
-        body.add(head);
-        head.add(new T.Mesh(new T.SphereGeometry(0.19, 18, 14), skin));
-        if (key !== "falco") {
-          const hair = new T.Mesh(new T.SphereGeometry(0.2, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2.2), lam(L.hair));
-          hair.position.y = 0.025;
-          hair.rotation.x = -0.25;
-          head.add(hair);
-          for (const x of [-0.065, 0.065]) {
-            const eye = new T.Mesh(new T.SphereGeometry(0.022, 8, 6), dark);
-            eye.position.set(x, 0.02, 0.172);
-            head.add(eye);
-          }
-        }
-        const arm = (x) => {
-          const p = new T.Group();
-          p.position.set(x, 1.36, 0);
-          const a = cyl(0.055, 0.05, 0.6, shirt);
-          a.position.y = -0.3;
-          p.add(a);
-          const hand = new T.Mesh(new T.SphereGeometry(0.06, 8, 6), skin);
-          hand.position.y = -0.62;
-          p.add(hand);
-          body.add(p);
-          return p;
-        };
-        const armL = arm(-(L.tw + 0.07)), armR = arm(L.tw + 0.07);
-        let broom = null;
-        if (key === "preside") {
-          // the gown, the stole and the mortarboard
-          const gown = cyl(0.23, 0.37, 0.98, lam(0x221d27), 14);
-          gown.position.y = 0.9;
-          body.add(gown);
-          for (const x of [-0.085, 0.085]) {
-            const stole = new T.Mesh(geoBox(0.065, 0.72, 0.02), lam(0xb8243a));
-            stole.position.set(x, 1.0, 0.29);
-            stole.rotation.x = -0.14;
-            body.add(stole);
-          }
-          const capBase = cyl(0.17, 0.19, 0.1, lam(0x151318));
-          capBase.position.y = 0.16;
-          head.add(capBase);
-          const top = new T.Mesh(geoBox(0.46, 0.025, 0.46), lam(0x151318));
-          top.position.y = 0.22;
-          head.add(top);
-          const tassel = cyl(0.01, 0.01, 0.17, lam(0xd9a441), 6);
-          tassel.position.set(0.21, 0.14, 0.18);
-          head.add(tassel);
-          const glasses = new T.Mesh(geoBox(0.22, 0.035, 0.02), lam(0x111111));
-          glasses.position.set(0, 0.03, 0.19);
-          head.add(glasses);
-        } else if (key === "falco") {
-          // the beak-like visor and a crest of feathers
-          const visor = new T.Mesh(geoBox(0.34, 0.075, 0.07), lam(0x10151d));
-          visor.position.set(0, 0.035, 0.165);
-          head.add(visor);
-          const beak = new T.Mesh(new T.ConeGeometry(0.075, 0.22, 4), lam(0xf2a600));
-          beak.rotation.x = Math.PI / 2;
-          beak.position.set(0, -0.025, 0.27);
-          head.add(beak);
-          const cap = new T.Mesh(new T.SphereGeometry(0.2, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2.4), lam(0x1d4f8f));
-          cap.position.y = 0.03;
-          head.add(cap);
-          for (const [x, r] of [[-0.05, -0.15], [0, 0], [0.05, 0.15]]) {
-            const f = new T.Mesh(geoBox(0.035, 0.2, 0.02), lam(0x1d4f8f));
-            f.position.set(x, 0.2, -0.1);
-            f.rotation.set(-0.7, 0, r);
-            head.add(f);
-          }
-        } else if (key === "tartaruga") {
-          // the shell on the back, with its plates
-          const shell = new T.Mesh(new T.SphereGeometry(0.34, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), lam(0x3c6e47));
-          shell.rotation.x = -Math.PI / 2;
-          shell.scale.set(1.3, 0.8, 1.25);
-          shell.position.set(0, 1.04, -0.13);
-          body.add(shell);
-          const rim = new T.Mesh(new T.TorusGeometry(0.34, 0.04, 6, 18), lam(0x8a6a3a));
-          rim.scale.set(1.3, 1.25, 1);
-          rim.position.set(0, 1.04, -0.13);
-          body.add(rim);
-          // the plastron in front, so the turtle shows from the front too
-          const plastron = new T.Mesh(new T.SphereGeometry(0.25, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), lam(0xd6c47a));
-          plastron.rotation.x = Math.PI / 2;
-          plastron.scale.set(0.95, 0.32, 1.15);
-          plastron.position.set(0, 1.02, 0.17);
-          body.add(plastron);
-          for (const yy of [0.9, 1.02, 1.14]) {
-            const seam = new T.Mesh(geoBox(0.3, 0.012, 0.01), lam(0x8a6a3a));
-            seam.position.set(0, yy, 0.255);
-            body.add(seam);
-          }
-          const plate = new T.CylinderGeometry(0.075, 0.075, 0.03, 6);
-          for (const [th, ph] of [[0, 0], [0.9, 0.6], [0.9, 2.2], [0.9, 3.8], [0.9, 5.4]]) {
-            const local = new T.Vector3(Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)).multiplyScalar(0.34);
-            const p = new T.Vector3(local.x * 1.3, local.z * 1.25, -local.y * 0.8);
-            const m = new T.Mesh(plate, lam(0x5d8f4c));
-            m.position.set(p.x, 1.04 + p.y, -0.13 + p.z);
-            m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), p.clone().normalize());
-            body.add(m);
-          }
-        } else if (key === "spazzino") {
-          // the broom, the cap and the reflective stripes
-          broom = new T.Group();
-          const handle = cyl(0.017, 0.017, 1.3, lam(0x9b6b3c), 6);
-          handle.position.y = 0.78;
-          broom.add(handle);
-          const bristles = new T.Mesh(new T.ConeGeometry(0.13, 0.26, 8), lam(0xd9b45a));
-          bristles.position.y = 0.13;
-          broom.add(bristles);
-          const band = cyl(0.045, 0.045, 0.05, lam(0x6b3d1f), 8);
-          band.position.y = 0.27;
-          broom.add(band);
-          broom.position.set(-0.42, 0, 0.12);
-          broom.rotation.z = 0.08;
-          g.add(broom);
-          for (const yy of [0.95, 1.15]) {
-            const stripe = new T.Mesh(new T.TorusGeometry(L.bw - (yy - 0.74) / 0.66 * (L.bw - L.tw) + 0.006, 0.018, 6, 20), lam(0xe8eef0));
-            stripe.rotation.x = Math.PI / 2;
-            stripe.position.y = yy;
-            body.add(stripe);
-          }
-          const capTop = cyl(0.19, 0.2, 0.09, lam(0xef6a26));
-          capTop.position.y = 0.14;
-          head.add(capTop);
-          const peak = new T.Mesh(geoBox(0.22, 0.02, 0.15), lam(0xef6a26));
-          peak.position.set(0, 0.1, 0.19);
-          head.add(peak);
-        } else if (key === "ragioniere") {
-          // round glasses, the green eyeshade, a bow tie and the ledger
-          for (const x of [-0.068, 0.068]) {
-            const ring = new T.Mesh(new T.TorusGeometry(0.048, 0.009, 6, 14), dark);
-            ring.position.set(x, 0.02, 0.185);
-            head.add(ring);
-          }
-          const bridge = new T.Mesh(geoBox(0.04, 0.01, 0.01), dark);
-          bridge.position.set(0, 0.03, 0.19);
-          head.add(bridge);
-          const shadeBand = new T.Mesh(new T.TorusGeometry(0.19, 0.016, 6, 20), lam(0x2a7a50));
-          shadeBand.rotation.x = Math.PI / 2;
-          shadeBand.position.y = 0.09;
-          head.add(shadeBand);
-          const shade = new T.Mesh(geoBox(0.3, 0.012, 0.14), new T.MeshLambertMaterial({ color: 0x2fa36b, transparent: true, opacity: 0.85 }));
-          shade.position.set(0, 0.1, 0.22);
-          shade.rotation.x = 0.35;
-          head.add(shade);
-          for (const s of [-1, 1]) {
-            const bow = new T.Mesh(new T.ConeGeometry(0.035, 0.07, 4), lam(0x8c1c2c));
-            bow.rotation.z = s * Math.PI / 2;
-            bow.position.set(s * 0.035, 1.39, 0.18);
-            body.add(bow);
-          }
-          const ledger = new T.Mesh(geoBox(0.05, 0.3, 0.24), lam(0x6b2d1f));
-          ledger.position.set(0, -0.66, 0.06);
-          armL.add(ledger);
-          const pages = new T.Mesh(geoBox(0.052, 0.28, 0.2), lam(0xf2efe6));
-          pages.position.set(0, -0.66, 0.075);
-          armL.add(pages);
-        } else if (key === "guardiano") {
-          // the shield on the left arm and a helmet
-          const shield = new T.Group();
-          const disc = cyl(0.24, 0.24, 0.045, lam(0x4f6d7a), 18);
-          disc.rotation.z = Math.PI / 2;
-          shield.add(disc);
-          const boss = cyl(0.1, 0.1, 0.05, lam(0xf2c94c), 14);
-          boss.rotation.z = Math.PI / 2;
-          boss.position.x = -0.02;
-          shield.add(boss);
-          const edge = new T.Mesh(new T.TorusGeometry(0.24, 0.018, 6, 24), lam(0x0f9e80));
-          edge.rotation.y = Math.PI / 2;
-          shield.add(edge);
-          shield.position.set(0.1, -0.38, 0.03);
-          armR.add(shield);
-          const helmet = new T.Mesh(new T.SphereGeometry(0.215, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2.1), lam(0x9aa5ad));
-          helmet.position.y = 0.03;
-          head.add(helmet);
-          const ridge = new T.Mesh(geoBox(0.035, 0.06, 0.4), lam(0x0f9e80));
-          ridge.position.set(0, 0.23, 0);
-          head.add(ridge);
-        } else if (key === "cronista") {
-          // the fedora with its press card, and the newspaper
-          const brim = cyl(0.29, 0.29, 0.018, lam(0x7a5a3c), 20);
-          brim.position.y = 0.1;
-          head.add(brim);
-          const crown = cyl(0.15, 0.175, 0.14, lam(0x7a5a3c), 16);
-          crown.position.y = 0.18;
-          head.add(crown);
-          const band = cyl(0.178, 0.178, 0.035, lam(0x2a1d14), 16);
-          band.position.y = 0.13;
-          head.add(band);
-          const card = new T.Mesh(geoBox(0.07, 0.045, 0.008), lam(0xffffff));
-          card.position.set(0.08, 0.17, 0.16);
-          card.rotation.y = 0.45;
-          head.add(card);
-          const paper = new T.Mesh(new T.PlaneGeometry(0.26, 0.33), paperMat);
-          paper.position.set(0, -0.72, 0.1);
-          paper.rotation.x = -0.25;
-          armR.add(paper);
-        } else if (key === "scettico") {
-          // the magnifying glass and one raised eyebrow
-          const glass = new T.Group();
-          const handle = cyl(0.014, 0.014, 0.16, lam(0x3a2a1a), 6);
-          handle.position.y = -0.7;
-          glass.add(handle);
-          const ring = new T.Mesh(new T.TorusGeometry(0.075, 0.013, 6, 20), lam(0x9a8a6a));
-          ring.rotation.x = Math.PI / 2;
-          ring.position.y = -0.86;
-          glass.add(ring);
-          const lens = new T.Mesh(new T.CircleGeometry(0.068, 18), new T.MeshLambertMaterial({ color: 0xbfe3ff, transparent: true, opacity: 0.5, side: T.DoubleSide }));
-          lens.rotation.x = Math.PI / 2;
-          lens.position.y = -0.86;
-          glass.add(lens);
-          armR.add(glass);
-          const browL = new T.Mesh(geoBox(0.075, 0.016, 0.02), dark);
-          browL.position.set(-0.065, 0.085, 0.17);
-          browL.rotation.z = 0.28;
-          head.add(browL);
-          const browR = new T.Mesh(geoBox(0.075, 0.016, 0.02), dark);
-          browR.position.set(0.065, 0.062, 0.175);
-          browR.rotation.z = -0.08;
-          head.add(browR);
-        }
-        const shadow = new T.Mesh(new T.CircleGeometry(0.42, 20), shadowMat);
-        shadow.rotation.x = -Math.PI / 2;
-        shadow.position.y = 0.012;
-        g.add(shadow);
-        g.scale.setScalar(L.h);
-        scene.add(g);
-        const tag = document.createElement("div");
-        tag.className = `nametag k-${key}`;
-        tag.innerHTML = `<i class="dot"></i><span>${NAMES[key]}</span><span class="tag-act"></span><span class="tag-grades"></span>`;
-        overlay.appendChild(tag);
-        const bubble = document.createElement("div");
-        bubble.className = `bubble k-${key}`;
-        bubble.hidden = true;
-        bubble.innerHTML = `<b></b><span></span>`;
-        overlay.appendChild(bubble);
-        return { key, g, body, head, hipL, hipR, armL, armR, broom, pos: g.position, path: [], face: 0, pose: "sit", restPose: "sit", restFace: 0, lookAt: null, t: Math.random() * 10, speaking: false, tag, bubble, act: "", speed: L.speed, freq: L.freq, hat: L.hat, tagW: 0, tagH: 0, tagY: 0 };
-      }
-      const agents = Object.fromEntries(CAST.map((k) => [k, makeAgent(k)]));
-      const list = Object.values(agents);
-      // the engine speaks from its screen
-      const motore = { key: "motore", pos: new T.Vector3(5.5, 1.62, -1.4), bubble: document.createElement("div") };
-      motore.bubble.className = "bubble k-motore";
-      motore.bubble.hidden = true;
-      motore.bubble.innerHTML = `<b></b><span></span>`;
-      overlay.appendChild(motore.bubble);
-
-      // where everyone can be: x, z, facing, pose, what the label says
-      function spotOf(who, name) {
-        const s = SEATS[who];
-        if (who === "preside" && name === "board") return [-1.0, -3.95, Math.PI, "write", "alla lavagna"];
-        if (name === "board") return [1.55, -3.8, Math.atan2(CX - 1.55, CZ + 3.8), "stand", "alla lavagna"];
-        if (name === "shelf") return [-4.95, -1.6, -H, "read", "in biblioteca"];
-        if (name === "stand") return [s[0] + 0.55 * Math.sin(s[3]), s[1] - 0.55 * Math.cos(s[3]), s[2], "stand", "in piedi"];
-        return [s[0], s[1], s[2], "sit", who === "preside" ? "a capotavola" : "al tavolo"];
-      }
-      // longer walks go round the table on a wider oval, the shorter way
-      const angOf = (x, z) => Math.atan2(x - CX, CZ - z);
-      const ringAt = (t) => [CX + 3.25 * Math.sin(t), CZ - 2.55 * Math.cos(t)];
-      function route(a, s) {
-        if (Math.hypot(s[0] - a.pos.x, s[1] - a.pos.z) < 0.8) return [[s[0], s[1]]];
-        const t0 = angOf(a.pos.x, a.pos.z), d = wrap(angOf(s[0], s[1]) - t0);
-        const n = Math.max(1, Math.ceil(Math.abs(d) / 0.3));
-        const pts = [];
-        for (let i = 0; i <= n; i++) pts.push(ringAt(t0 + (d * i) / n));
-        pts.push([s[0], s[1]]);
-        return pts;
-      }
-      function place(a, name) {
-        const s = spotOf(a.key, name);
-        a.pos.set(s[0], 0, s[1]);
-        a.path = [];
-        a.face = a.restFace = s[2];
-        a.g.rotation.y = s[2];
-        a.pose = a.restPose = s[3];
-        a.act = s[4];
-        a.lookAt = null;
-      }
-      function send(a, name) {
-        const s = spotOf(a.key, name);
-        if (reduce) { place(a, name); return; }
-        a.path = route(a, s);
-        a.restFace = s[2];
-        a.restPose = s[3];
-        a.act = s[4];
-        a.lookAt = null;
-      }
-      const wrap = (d) => ((((d + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
-      function stepAgent(a, dts, dt) {
-        a.t += dt;
-        if (a.path.length && dts > 0) {
-          const [tx, tz] = a.path[0];
-          const dx = tx - a.pos.x, dz = tz - a.pos.z, dist = Math.hypot(dx, dz), v = a.speed * dts;
-          if (dist <= v) {
-            a.pos.x = tx;
-            a.pos.z = tz;
-            a.path.shift();
-          } else {
-            a.pos.x += (dx / dist) * v;
-            a.pos.z += (dz / dist) * v;
-            a.face = Math.atan2(dx, dz);
-          }
-          a.pose = "walk";
-          if (!a.path.length) {
-            a.pose = a.restPose;
-            a.face = a.restFace;
-          }
-        }
-        const sit = a.pose === "sit", walk = a.pose === "walk", t = a.t;
-        let want = a.face;
-        let headTurn = 0;
-        if (!a.path.length && a.lookAt) {
-          const toward = Math.atan2(a.lookAt.pos.x - a.pos.x, a.lookAt.pos.z - a.pos.z);
-          if (sit || a.pose === "write") headTurn = Math.max(-1.1, Math.min(1.1, wrap(toward - a.g.rotation.y)));
-          else want = toward;
-        }
-        a.g.rotation.y += wrap(want - a.g.rotation.y) * Math.min(1, dt * 6);
-        a.head.rotation.y += (headTurn - a.head.rotation.y) * Math.min(1, dt * 5);
-        const swing = walk ? Math.sin(t * a.freq) * (a.key === "tartaruga" ? 0.35 : 0.55) : 0;
-        a.hipL.rotation.x = sit ? -Math.PI / 2 : swing;
-        a.hipR.rotation.x = sit ? -Math.PI / 2 : -swing;
-        a.body.position.y = sit ? -0.3 : walk ? Math.abs(Math.sin(t * a.freq)) * 0.03 : Math.sin(t * 2) * 0.006;
-        a.body.rotation.z = walk && a.key === "tartaruga" ? Math.sin(t * a.freq) * 0.06 : 0;
-        if (a.broom) a.broom.rotation.z = 0.08 + (walk ? Math.sin(t * a.freq) * 0.18 : 0);
-        let l = 0, r = 0;
-        if (walk) {
-          l = -swing * 0.8;
-          r = swing * 0.8;
-        } else if (a.speaking) {
-          if (a.key === "guardiano") { r = -1.3; l = -0.5 + Math.sin(t * 4) * 0.25; }
-          else if (a.key === "scettico") { l = -0.15; r = -1.7 + Math.sin(t * 3) * 0.08; }
-          else if (a.key === "cronista") { l = -0.6 + Math.sin(t * 4) * 0.25; r = -1.2; }
-          else if (a.key === "ragioniere") { l = -0.9; r = -0.7 + Math.sin(t * 4) * 0.3; }
-          else { l = -0.15; r = -0.7 + Math.sin(t * 4) * 0.3; }
-        } else if (a.pose === "write") {
-          r = -2.3 + Math.sin(t * 7) * 0.12;
-        } else if (a.pose === "read" || sit) {
-          l = r = -0.95 + Math.sin(t * 1.3) * 0.04;
-        }
-        a.armL.rotation.x += (l - a.armL.rotation.x) * Math.min(1, dt * 8);
-        a.armR.rotation.x += (r - a.armR.rotation.x) * Math.min(1, dt * 8);
-        a.head.rotation.x = a.speaking ? Math.sin(t * 5) * 0.06 : a.pose === "read" || (sit && !a.lookAt) ? 0.3 : 0;
-      }
-
-      // --- the beats -----------------------------------------------------------------------------------
-      const speaker = (who) => (who === "motore" ? motore : agents[who]);
-      const sayTime = (text) => Math.min(11, 2.4 + String(text).length / 26);
-      function showBubble(b) {
-        const s = speaker(b.who);
-        if (!s) return;
-        s.bubble.hidden = false;
-        s.bubble.querySelector("b").textContent = `${NAMES[b.who]}${b.label ? " · " + b.label : ""}`;
-        s.bubble.querySelector("span").textContent = reduce ? b.text : "";
-        b.shown = reduce ? b.text.length : 0;
-        if (agents[b.who]) {
-          agents[b.who].speaking = true;
-          agents[b.who].tag.classList.add("speaking");
-          if (b.to && agents[b.to] && b.to !== b.who) agents[b.who].lookAt = agents[b.to];
-        }
-        for (const a of list) if (a.key !== b.who && !a.path.length) a.lookAt = b.who === "motore" ? null : agents[b.who];
-      }
-      function hideBubble(b) {
-        const s = speaker(b.who);
-        if (!s) return;
-        s.bubble.hidden = true;
-        if (agents[b.who]) {
-          agents[b.who].speaking = false;
-          agents[b.who].tag.classList.remove("speaking");
-        }
-        for (const a of list) a.lookAt = null;
-      }
-      function setGrades(voti) {
-        const compact = overlay.classList.contains("compact");
-        for (const w of GRADED) {
-          const v = voti && obj(voti[w]);
-          const el = agents[w].tag.querySelector(".tag-grades");
-          el.innerHTML = v
-            ? compact ? `<em>${esc(v.ragionamento ?? "?")}·${esc(v.disciplina ?? "?")}</em>`
-              : ["ragionamento", "disciplina"].filter((k) => isNum(toNum(v[k]))).map((k) => `<em title="${k}">${k[0].toUpperCase()} ${esc(v[k])}</em>`).join("")
-            : "";
-          agents[w].tagW = 0;
-        }
-        lastGrades = voti;
-      }
-      let lastGrades = null;
-      function resetScene() {
-        for (const a of list) {
-          place(a, "seat");
-          a.speaking = false;
-          a.bubble.hidden = true;
-          a.tag.classList.remove("speaking");
-        }
-        motore.bubble.hidden = true;
-        setGrades(null);
-      }
-      function startBeat(b) {
-        b.t = 0;
-        if (b.kind === "reset") resetScene();
-        else if (b.kind === "go") for (const [who, spot] of b.moves) { if (agents[who]) send(agents[who], spot); }
-        else if (b.kind === "say") showBubble(b);
-        else if (b.kind === "board") drawBoard(b.lines, reduce ? 1 : 0);
-        else if (b.kind === "screen") drawScreen(b.events, b.title);
-        else if (b.kind === "grade") setGrades(b.voti);
-      }
-      function beatDone(b) {
-        if (b.kind === "go") return b.moves.every(([who]) => !agents[who] || !agents[who].path.length) || b.t > 16;
-        if (b.kind === "say") return b.t >= sayTime(b.text);
-        if (b.kind === "board") return b.t >= 1.6;
-        if (b.kind === "idle") return b.t >= b.s;
-        if (b.kind === "screen" || b.kind === "grade") return b.t >= 0.5;
-        return true;
-      }
-      function endBeat(b) {
-        if (b.kind === "say") hideBubble(b);
-        if (b.kind === "board") drawBoard(b.lines, 1);
-      }
-      function settle(index, keepPlaces) {
-        if (!keepPlaces) resetScene();
-        else for (const a of list) { a.bubble.hidden = true; a.speaking = false; a.tag.classList.remove("speaking"); }
-        motore.bubble.hidden = true;
-        for (const b of script) b.started = false;
-        for (let i = 0; i < index; i++) {
-          const b = script[i];
-          if (b.kind === "go") for (const [who, spot] of b.moves) { if (agents[who]) place(agents[who], spot); }
-          else if (b.kind === "board") drawBoard(b.lines, 1);
-          else if (b.kind === "screen") drawScreen(b.events, b.title);
-          else if (b.kind === "grade") setGrades(b.voti);
-        }
-        step = index;
-        markFeed();
-      }
-      function jumpTo(index) {
-        const b = script[step];
-        if (b && b.kind === "say" && b.started) hideBubble(b);
-        settle(index, false);
-      }
-      function advance(dts) {
-        const b = script[step];
-        if (!b) {
-          if (!liveMode) jumpTo(0);
-          return;
-        }
-        if (!b.started) {
-          b.started = true;
-          startBeat(b);
-          markFeed();
-        }
-        b.t += dts;
-        if (b.kind === "say" && b.shown < b.text.length) {
-          b.shown = Math.min(b.text.length, b.shown + dts * 42);
-          const s = speaker(b.who);
-          if (s) s.bubble.querySelector("span").textContent = b.text.slice(0, Math.ceil(b.shown));
-        }
-        if (b.kind === "board" && !reduce) drawBoard(b.lines, Math.min(1, b.t / 1.4));
-        if (beatDone(b)) {
-          endBeat(b);
-          step += 1;
-          if (script[step]) script[step].started = false;
-        }
-      }
-
-      // --- camera, labels and the loop ---------------------------------------------------------------
-      let drag = null;
-      canvas.addEventListener("pointerdown", (e) => {
-        drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch };
-        cam.touched = performance.now();
-      });
-      window.addEventListener("pointermove", (e) => {
-        if (!drag) return;
-        cam.yaw = Math.max(-1.05, Math.min(1.05, drag.yaw - (e.clientX - drag.x) * 0.006));
-        if (e.pointerType === "mouse") cam.pitch = Math.max(0.2, Math.min(1.05, drag.pitch + (e.clientY - drag.y) * 0.004));
-        cam.touched = performance.now();
-      });
-      window.addEventListener("pointerup", () => (drag = null));
-      window.addEventListener("pointercancel", () => (drag = null));
-      $("aula-view").addEventListener("click", () => {
-        cam.yaw = 0;
-        cam.pitch = 0.42;
-        cam.touched = -1e9;
-      });
-      function placeCamera(now, dt) {
-        const idle = now - cam.touched > 9000 && !reduce;
-        const yaw = cam.yaw + (idle ? Math.sin(now / 9000) * 0.2 : 0);
-        const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
-        // follow the action: whoever speaks, or whoever walks; the narrower the view, the more
-        const b = script[step];
-        const moving = list.filter((a) => a.path.length);
-        const who = b && b.kind === "say" ? speaker(b.who) : null;
-        let fx = 0, fz = LOOKZ;
-        if (who) { fx = who.pos.x; fz = who.pos.z; }
-        else if (moving.length) { fx = moving.reduce((s, a) => s + a.pos.x, 0) / moving.length; fz = moving.reduce((s, a) => s + a.pos.z, 0) / moving.length; }
-        const k = reduce ? 1 : Math.min(1, dt * 1.2);
-        cam.fx += (fx - cam.fx) * k;
-        cam.fz += (fz - cam.fz) * k;
-        const reach = reduce ? 0 : aspect < 1 ? 0.75 : aspect < 1.4 ? 0.45 : 0.25;
-        look.x = cam.fx * reach;
-        look.z = LOOKZ + (cam.fz - LOOKZ) * (reduce ? 0 : 0.2);
-        const dist = cam.dist * (aspect < 0.8 ? 1.42 : aspect < 1.2 ? 1.2 : 1);
-        camera.position.set(look.x + dist * Math.cos(cam.pitch) * Math.sin(yaw), look.y + dist * Math.sin(cam.pitch), look.z + dist * Math.cos(cam.pitch) * Math.cos(yaw));
-        camera.lookAt(look);
-      }
-      const v = new T.Vector3();
-      function placeLabels() {
-        const w = stage.clientWidth, h = stage.clientHeight;
-        const compact = w < 600;
-        if (overlay.classList.contains("compact") !== compact) {
-          overlay.classList.toggle("compact", compact);
-          setGrades(lastGrades);
-        }
-        const at = (pos, y) => {
-          v.set(pos.x, y, pos.z).project(camera);
-          return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, ok: v.z < 1 };
-        };
-        const order = list.map((a) => ({ a, p: at(a.pos, ((a.pose === "sit" ? 1.6 : 1.92) + a.hat) * a.g.scale.y) })).sort((m, n) => n.p.y - m.p.y);
-        const placed = [];
-        for (const { a, p } of order) {
-          const act = a.tag.querySelector(".tag-act");
-          const label = a.speaking ? "parla" : a.pose === "walk" ? "cammina" : a.act;
-          if (act.textContent !== label) { act.textContent = label; a.tagW = 0; }
-          if (!a.tagW) { a.tagW = a.tag.offsetWidth; a.tagH = a.tag.offsetHeight; }
-          let x = Math.max(2, Math.min(w - a.tagW - 2, p.x - a.tagW / 2)), y = p.y - a.tagH - 4;
-          for (let k = 0; k < 8; k++) {
-            const hit = placed.find((r) => x < r.x + r.w + 3 && x + a.tagW + 3 > r.x && y < r.y + r.h + 2 && y + a.tagH + 2 > r.y);
-            if (!hit) break;
-            y = hit.y - a.tagH - 3;
-          }
-          placed.push({ x, y, w: a.tagW, h: a.tagH });
-          a.tag.hidden = !p.ok;
-          a.tag.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-          a.tagX = p.x;
-          a.tagY = y;
-        }
-        for (const s of [...list, motore]) {
-          if (s.bubble.hidden) continue;
-          const anchor = s === motore ? (() => { const q = at(s.pos, s.pos.y + 0.32); return { x: q.x, y: q.y - 6 }; })() : { x: s.tagX, y: s.tagY - 4 };
-          const bw = s.bubble.offsetWidth, bh = s.bubble.offsetHeight;
-          const bx = Math.max(6, Math.min(w - bw - 6, anchor.x - bw / 2));
-          const by = Math.max(6, anchor.y - 10 - bh);
-          s.bubble.style.transform = `translate(${bx.toFixed(1)}px, ${by.toFixed(1)}px)`;
-          s.bubble.style.setProperty("--tail", `${Math.max(16, Math.min(bw - 16, anchor.x - bx))}px`);
-        }
-      }
-      function resize() {
-        const w = stage.clientWidth, h = stage.clientHeight;
-        if (!w || !h) return;
-        renderer.setSize(w, h, false);
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-      }
-      new ResizeObserver(resize).observe(stage);
-      let visible = true;
-      new IntersectionObserver((es) => (visible = es[0].isIntersecting)).observe(stage);
-      matchMedia("(prefers-color-scheme: dark)").addEventListener("change", paint);
-      new MutationObserver(paint).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawBoard(boardLines, 1); tickKey = ""; });
-      paint();
-      resize();
-      drawScreen(null, "");
-      for (const a of list) place(a, "seat");
-      let last = performance.now();
-      function frame(now) {
-        const dt = Math.min(0.05, (now - last) / 1000);
-        last = now;
-        if (visible && !document.hidden) {
-          const dts = ui.playing ? dt * ui.speed : 0;
-          if (dts) advance(dts);
-          for (const a of list) stepAgent(a, dts, dt);
-          drawTicker();
-          if (!reduce) tickTex.offset.x = (tickTex.offset.x + dt * 0.012) % 1;
-          placeCamera(now, dt);
-          renderer.render(scene, camera);
-          placeLabels();
-        }
-        requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-      return { settle, jump: jumpTo };
-    }
-  }
-
-  const aula = makeAula();
 
   // ---- data ------------------------------------------------------------------------------------------
   let pending = null;
@@ -3286,31 +2094,59 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     watchGyms();
     watchAudits();
     ensureChain();
-    for (const f of [renderStatus, renderTrust, renderRegister, renderWallets, renderSemaforo, renderRisk, renderMinds, renderGym, renderVerbale, renderCoins, aula.sync]) {
+    for (const f of [renderStatus, renderTrust, renderRegister, renderWallets, renderSemaforo, renderRisk, renderMinds, renderGym, renderVerbale, renderCoins]) {
       try { f(); } catch (e) { console.warn("Scuola Cripto:", f.name, e); }
     }
+    cp((C) => { C.setData("selected", S.selected); C.setData("picked", S.picked); });
   }
   const soon = () => { if (!pending) pending = setTimeout(render, 30); };
+  // one subscription per meeting day: the day picked in the register and the last meeting held,
+  // which the campus keeps as "ultimo" even after the selection moves on
+  const vSubs = new Map();
+  function gotVerbale(date, v) {
+    S.verbali[date] = v;
+    cp((C) => { C.setDataIn("verbali", date, v); if (date === C.data.ultimoData) C.setData("ultimo", v); });
+    soon();
+  }
   function watchVerbale(date) {
-    if (!db || !date || vDate === date) return;
-    if (vUnsub) { try { vUnsub(); } catch (e) { /* already closed */ } }
-    vDate = date;
-    vUnsub = db.doc("riunione/" + date).onSnapshot(
-      (snap) => { S.verbali[date] = snap.exists ? snap.data() : null; soon(); },
-      () => { S.verbali[date] = null; soon(); }
+    if (!db) return;
+    if (date && !vSubs.has(date)) vSubs.set(date, db.doc("riunione/" + date).onSnapshot((snap) => gotVerbale(date, snap.exists ? snap.data() : null), () => gotVerbale(date, null)));
+    const keep = new Set([S.selected, date, CP && CP.data.ultimoData]);
+    for (const [d, off] of vSubs) if (!keep.has(d)) { vSubs.delete(d); try { off(); } catch (e) { /* already closed */ } }
+  }
+  // the last meeting held, from classe/stato: the campus replays it and its agents quote it
+  function syncUltimo() {
+    if (!CP) return;
+    const last = CP.derive.held().pop();
+    const date = last ? last.data : null;
+    if (date === CP.data.ultimoData && (date || CP.data.ultimo !== undefined)) return;
+    CP.setData("ultimoData", date);
+    CP.setData("ultimo", date ? S.verbali[date] : null);
+    if (date) watchVerbale(date);
+  }
+  const CK = { programma: "programma", classe: "classe", giudizio: "giudizio", regole: "regole", live: "live", sera: "sera", registro: "registro", semaforo: "semaforo" };
+  function watch(path, key) {
+    const got = (v) => { cp((C) => { C.setData(CK[key], v); if (key === "classe") syncUltimo(); }); soon(); };
+    db.doc(path).onSnapshot(
+      (snap) => { S[key] = snap.exists ? snap.data() : null; S.got[key] = true; got(S[key]); },
+      (err) => { S.errors[key] = err && err.code; S.got[key] = true; got(null); }
     );
   }
-  function watch(path, key) {
-    db.doc(path).onSnapshot(
-      (snap) => { S[key] = snap.exists ? snap.data() : null; S.got[key] = true; soon(); },
-      (err) => { S.errors[key] = err && err.code; S.got[key] = true; soon(); }
-    );
+  // the collections only the campus reads: the owner's proposals and the contests
+  function watchCollection(path, key) {
+    const map = (qs) => Object.fromEntries(arr(qs && qs.docs).filter((d) => d && d.exists).map((d) => [d.id, d.data()]));
+    const none = () => cp((C) => C.setDataMap(key, {}));
+    try { db.collection(path).onSnapshot((qs) => cp((C) => C.setDataMap(key, map(qs))), none); } catch (e) { none(); }
   }
   async function start() {
     render();
     const use = window.claude && typeof window.claude.use === "function" ? window.claude.use.bind(window.claude) : null;
-    db = use ? await use("db").catch(() => null) : null;
-    if (!db) { S.unavailable = true; render(); return; }
+    const ask = (name) => { try { return use ? Promise.resolve(use(name)).catch(() => null) : Promise.resolve(null); } catch (e) { return Promise.resolve(null); } };
+    // «Fateli parlare» asks Claude through the sample capability; it may be missing (null)
+    ask("sample").then((sample) => cp((C) => C.attach({ sample: typeof sample === "function" ? sample : null })));
+    db = await ask("db");
+    cp((C) => C.attach({ db }));
+    if (!db) { S.unavailable = true; cp((C) => C.setData("unavailable", true)); render(); return; }
     setTimeout(() => { if (!S.got.programma || !S.got.giudizio) { S.slow = true; render(); } }, 10000);
     watch("classe/programma", "programma");
     watch("classe/stato", "classe");
@@ -3321,12 +2157,14 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     watch("classe/registro", "registro");
     watch("classe/semaforo", "semaforo");
     for (const who of CAST) {
-      db.doc("memoria/" + who).onSnapshot(
-        (snap) => { S.memoria[who] = snap.exists ? snap.data() : null; soon(); },
-        () => { S.memoria[who] = null; soon(); }
-      );
+      const got = (v) => { S.memoria[who] = v; cp((C) => C.setDataIn("memoria", who, v)); soon(); };
+      db.doc("memoria/" + who).onSnapshot((snap) => got(snap.exists ? snap.data() : null), () => got(null));
     }
+    if (typeof db.collection === "function") { watchCollection("proposte", "proposte"); watchCollection("gara", "gare"); }
+    else cp((C) => { C.setDataMap("proposte", {}); C.setDataMap("gare", {}); });
   }
+  // ---- the campus: the modules in campus/*.js boot at once and read the same snapshots --------------
+  bootCampus();
   start();
 })();
 </script>

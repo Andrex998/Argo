@@ -65,7 +65,7 @@
     g.computeVertexNormals();
     return g;
   }
-  // surf(cols, rows, fn(c, r) -> [x,y,z]); o.wrap closes the columns, o.p0/o.p1 make the first/last row a pole
+  // surf(cols, rows, fn(c, r) -> [x,y,z]); o.wrap closes the columns, o.p0/o.p1: poles
   function surf(cols, rows, fn, o = {}) {
     const pos = [], idx = [], st = [], n = o.wrap ? cols : cols + 1;
     const pole = (r) => (r === 0 && o.p0) || (r === rows - 1 && o.p1);
@@ -121,8 +121,7 @@
     return [bs[i], 1];
   };
 
-  // occ: occluder capsules [ax, ay, az, bx, by, bz, r] of the bind pose; each vertex gets a baked ambient
-  // occlusion from them (armpits, inner thighs, under the chin and the brims), warmer on the skin
+  // occ: capsules of the bind pose (see occluders); each vertex gets a baked, skin-warm ambient occlusion
   function merge(parts, occ) {
     let nv = 0, ni = 0;
     for (const p of parts) { nv += p.g.attributes.position.count; ni += p.g.index ? p.g.index.count : p.g.attributes.position.count; }
@@ -341,7 +340,7 @@
         return [x, y, J.hz + q[2] + 0.0014];
       }, { flip: sd < 0 }), L.brow, B["brow" + S], [0.9, 0, 2]);
     }
-    // mouth: a dark opening scaled by the mouth bone, lips (the lower one follows the jaw), corners follow the smile bone
+    // mouth: a dark opening (mouth bone), lips; the lower one follows the jaw, the corners the smile bone
     const mY = F.mY, mZ = F.mZ, mw = (L.fem ? 0.0205 : 0.0215);
     add(at(ell(mw * 0.92, 0.0068, 0.005, lvl ? 12 : 6, 4), TR(0, mY, mZ - 0.0042)), 0x2a1410, B.mouth, [0.9, 0]);
     if (lvl) {
@@ -401,7 +400,7 @@
       const hh = t < 0.35 ? hgt : lerp(hgt, (boot ? 0.06 : 0.042), smooth(0.35, 0.78, t)) * (1 - 0.35 * smooth(0.85, 1, t));
       rings.push([z, w, hh / 2, -x * 0.0, -hh / 2]);
     }
-    // loft along y then turn it so y -> +z and ring z -> -y; the sole is the same outline, flat and darker
+    // loft along y, turn it so y -> +z and ring z -> -y; the sole: the same outline, flat, darker
     rings[0] = [rings[0][0], 0.0001, 0.0001, 0, -0.035]; rings[n] = [rings[n][0], 0.0001, 0.0001, 0, -0.018];
     add(at0(loft(rings, lvl ? 12 : 6, { n: 2.6 }), TR(x, 0.008, 0, PI / 2)), c, fb, [r, 0]);
     const sole = rings.map(([z, w], i) => [z, i === 0 || i === n ? 0.0001 : w * 1.06, (boot ? 0.012 : 0.0075), 0, 0]);
@@ -439,7 +438,6 @@
   }
   function items(add, key, J, s, lvl, at, P) {
     const it = ITEMS[key], pr = P.read, pc = P.cup;
-    // a hand frame: F along the fingers (-y), Th towards the thumb (+z), Pa the palm normal (-x left, +x right)
     // read: an open book or the tablet in front of the chest, facing the eyes (BOOK frame)
     const readM = M4().makeBasis(new T.Vector3(...BOOK[0]), new T.Vector3(...BOOK[1]), new T.Vector3(...BOOK[2])).setPosition(pr[0], pr[1], pr[2]);
     if (it.read === "tablet") tabletParts(add, B.read, readM.clone().multiply(TR(0, 0, 0, 0, 0, PI / 2)), s, 0.8);
@@ -466,7 +464,7 @@
     }
     // pen: between thumb and index, the tip beyond the fingers
     add(Cyl(0.0045, 0.0025, 0.14, 5).applyMatrix4(TR(pc[0] + 0.014, pc[1] - 0.06, pc[2] + 0.034, -0.4, 0, 0)), key === "preside" ? 0xf2efe6 : 0x1d2b6b, B.pen, [0.4, 0]);
-    // the scettico's magnifying glass: handle in the grip along the thumb, the lens beyond, facing along the fingers
+    // the scettico's magnifying glass: the handle in the grip, the lens beyond
     if (it.mag) {
       const mm = TR(cx - 0.006, cy, cz, PI / 2, 0, 0);
       add(Cyl(0.011, 0.013, 0.11, 6).applyMatrix4(mm), 0x1b1715, B.mag, [0.4, 0]);
@@ -662,7 +660,7 @@
         torsoSkin(o)(0x3f7a49, J.neck - 0.004, 0xefe6d2, 0.95, 0.008, (x, y) => lin(y > J.neck - 0.004 && abs(x) < 0.078 ? 0xefe6d2 : y < J.hip - 0.01 ? 0x346540 : 0x3f7a49));
         add(plate(TOR, 0.008, J.neck + 0.004, J.neck - 0.17, 0.07, 0.004), 0xefe6d2, torsoW, [0.85, 0]);
         for (let i = 0; i < 4; i++) { const y = J.neck - 0.19 - i * 0.065; add(Sph(0.007, 6, 4).applyMatrix4(TR(0, y, sz(0, y, 0.008) + 0.002)), 0x8a6a45, torsoW, [0.5, 0]); }
-        for (const sd of [1, -1]) add(Sph(0.058, seg, 8).applyMatrix4(TR(sd * 0.055, J.chest + 0.005, sz(sd * 0.055, J.chest) - 0.035, 0, 0, 0, 1, 0.9, 0.75)), 0x3f7a49, B.breath, [0.95, 0]);
+        for (const sd of [1, -1]) add(Sph(0.058, seg, 8).applyMatrix4(TR(sd * 0.056, J.chest + 0.03, sz(sd * 0.056, J.chest + 0.03) - 0.04, 0, 0, 0, 1, 0.85, 0.72)), 0x3f7a49, B.breath, [0.95, 0]);
         // the backpack straps over the shoulders, on the backpack's bone
         for (const sd of [1, -1]) add(strip([0, 1, 2, 3, 4, 5].map((i) => { const y = J.shY + 0.005 - i * 0.05, x = sd * (0.088 + i * 0.004); return [x, y, sz(x, y, 0.008) + 0.004]; }), 0.028), 0x2d4f34, B.back, [0.8, 0]);
         // the cord of her reading glasses, round the neck
@@ -826,23 +824,22 @@
   };
   const mixHex = (h1, h2, t) => new T.Color(h1).lerp(new T.Color(h2), t).getHex(), mix = mixHex;
 
-  // ---- the shared material: vertex colours, per-vertex roughness, glow and surface kind, a soft rim
-  // matp = [roughness, glow + 10·kind]; kind 1 skin (a warm subsurface fill), 2 hair (strands), 3 cloth
-  // (weave and soft folds). The micro detail lives in the bind-pose position and fades out beyond ~8 m.
+  // ---- the shared material: vertex colours; matp = [roughness, glow + 10·kind], kind 1 skin (a warm
+  // subsurface fill), 2 hair (strands), 3 cloth (weave, soft folds); the detail fades out beyond ~8 m
   let MAT = null, PROXY = null, BLOBS = null, RING = null;
-  const RIM = { value: null }, SSS = { value: null };
+  const RIM = { value: null }, SSS = { value: null }, DET = { value: 1 };
   const GLSL_N = "float ph3(vec3 p){p=fract(p*0.3183099+0.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}\nfloat vn3(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.0-2.0*f);vec2 e=vec2(1.0,0.0);return mix(mix(mix(ph3(i),ph3(i+e.xyy),f.x),mix(ph3(i+e.yxy),ph3(i+e.xxy),f.x),f.y),mix(mix(ph3(i+e.yyx),ph3(i+e.xyx),f.x),mix(ph3(i+e.yxx),ph3(i+e.xxx),f.x),f.y),f.z);}";
   function material() {
     const m = new T.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
     m.skinning = true;
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uRim = RIM; sh.uniforms.uSss = SSS;
+      sh.uniforms.uRim = RIM; sh.uniforms.uSss = SSS; sh.uniforms.uDet = DET;
       sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 matp;\nvarying vec2 vMatp;\nvarying vec3 vLoc;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvMatp = matp; vLoc = position;");
-      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec2 vMatp;\nvarying vec3 vLoc;\nuniform vec3 uRim, uSss;\n" + GLSL_N)
-        .replace("#include <color_fragment>", "#include <color_fragment>\nfloat pKind = floor(vMatp.y * 0.1 + 0.01), pGlow = vMatp.y - pKind * 10.0, pFd = clamp(2.0 - length(vViewPosition) * 0.25, 0.0, 1.0);\n"
-          + "if (pKind == 2.0) diffuseColor.rgb *= 1.0 + pFd * (0.3 * vn3(vLoc * vec3(700.0, 45.0, 700.0)) + 0.2 * vn3(vLoc * vec3(1500.0, 90.0, 1500.0)) - 0.27);\n"
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec2 vMatp;\nvarying vec3 vLoc;\nuniform vec3 uRim, uSss;\nuniform float uDet;\n" + GLSL_N)
+        .replace("#include <color_fragment>", "#include <color_fragment>\nfloat pKind = floor(vMatp.y * 0.1 + 0.01), pGlow = vMatp.y - pKind * 10.0, pFd = uDet * clamp(2.0 - length(vViewPosition) * 0.25, 0.0, 1.0);\nif (pFd > 0.0) {\n"
+          + "if (pKind == 2.0) diffuseColor.rgb *= 1.0 + pFd * (1.0 - 0.9 * dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))) * (0.3 * vn3(vLoc * vec3(700.0, 45.0, 700.0)) + 0.2 * vn3(vLoc * vec3(1500.0, 90.0, 1500.0)) - 0.27);\n"
           + "else if (pKind == 3.0) diffuseColor.rgb *= 1.0 + pFd * (0.12 * vn3(vLoc * 820.0) + 0.16 * vn3(vLoc * vec3(34.0, 7.0, 34.0)) - 0.14);\n"
-          + "else if (pKind == 1.0) diffuseColor.rgb *= 1.0 + pFd * (0.05 * vn3(vLoc * 1400.0) - 0.025);")
+          + "else if (pKind == 1.0) diffuseColor.rgb *= 1.0 + pFd * (0.05 * vn3(vLoc * 1400.0) - 0.025);\n}")
         .replace("#include <roughnessmap_fragment>", "float roughnessFactor = vMatp.x;")
         .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * pGlow;\nif (pKind == 1.0) totalEmissiveRadiance += diffuseColor.rgb * uSss;\nfloat rimF = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);\ntotalEmissiveRadiance += uRim * rimF * rimF * rimF * (0.4 + diffuseColor.rgb);");
     };
@@ -940,6 +937,10 @@
     p.path = null; p.phase = 0; p.tr = null; p.walk.w = 0; p.walk.v = 0; p.bodyYaw = null;
     p.snap = true;
     syncRoot(p);
+    // headOf agrees with positionOf at once
+    const lie = g.posture === "lie";
+    p.top.x = p.x + (lie ? Math.sin(g.face) * 0.8 : 0); p.top.z = p.z + (lie ? Math.cos(g.face) * 0.8 : 0);
+    p.top.y = lie ? p.seat + 0.2 : g.posture === "sit" ? p.seat + p.J.h - p.J.hip : p.J.h;
   }
   function syncRoot(p) { p.root.position.set(p.x, 0, p.z); p.root.rotation.y = p.yaw; }
   // a goal from an anchor id or a point
@@ -1116,7 +1117,7 @@
       if (od < lim && od > 1e-4) { const push = (lim - od) * (o.phase === 2 ? 0.5 : 1); p.x += (ox / od) * push; p.z += (oz / od) * push; }
     }
     syncRoot(p);
-    // stuck: progress along the path under 0.05 m/s for 2 s -> sidestep 0.5 m; for 6 s -> jump to the next waypoint
+    // stuck: under 0.05 m/s of progress for 2 s -> sidestep 0.5 m; for 6 s -> jump to the next waypoint
     p.best = min(p.best, dEnd);
     if (clk - p.ref.t >= 1) {
       const el = clk - p.ref.t;
@@ -1586,7 +1587,6 @@
       walkPose(p, O, dt);
       const w = p.walk.w;
       for (const c of CH) O[c] = lerp(S[c], O[c], w);
-      // with the walk weight low the planted IK would slide: recompute legs from the blend
     } else for (const c of CH) O[c] = S[c];
     // face and eyes always from the damped state, mouth fast
     O.lid = p.lidv;
@@ -1708,8 +1708,11 @@
           const n = b.rm ? b.chars.length : min(b.chars.length, Math.ceil(el * b.cps));
           if (n !== b.n || b.dirty) { b.n = n; if (!b.rm) b.d.span.textContent = b.chars.slice(0, n).join(""); b.dirty = true; }
           // the virtual typing clock drives the mouth even with reduced motion
-          const vn = min(b.chars.length, Math.ceil(el * b.cps)), ch = b.chars[max(0, vn - 1)] || " ";
-          b.openness = vn >= b.chars.length ? 0 : VOW.test(ch) ? 1 : HALF.test(ch) ? 0.5 : LET.test(ch) ? 0.25 : 0;
+          // (the characters of the last 60 ms, so slow frames still catch the vowels)
+          const vn = min(b.chars.length, Math.ceil(el * b.cps));
+          let op = 0;
+          for (let i = max(0, Math.ceil((el - 0.06) * b.cps) - 1); i < vn; i++) { const ch = b.chars[i]; op = max(op, VOW.test(ch) ? 1 : HALF.test(ch) ? 0.5 : LET.test(ch) ? 0.25 : 0); }
+          b.openness = vn >= b.chars.length ? 0 : op;
           if (vn >= b.chars.length) b.typing = false;
         }
         if (el * 1000 >= b.ms) endBubble(p);
@@ -1796,7 +1799,9 @@
       if (!a || nc >= 2) { show(c, c.e, false); continue; }
       show(c, c.e, true); nc++;
       if (c.dirty || !c.w) { c.w = c.e.offsetWidth; c.h = c.e.offsetHeight; c.dirty = false; const is = c.e.querySelectorAll("i"); [[10, 0], [7, 1], [5, 2]].forEach(([sz, i]) => { Object.assign(is[i].style, { width: sz + "px", height: sz + "px" }); }); }
-      const [cx, cy] = freeSpot(boxes, a.ax + c.w * 0.2, a.ay - 26, c.w, c.h, w);
+      const sp = freeSpot(boxes, a.ax + c.w * 0.2, a.ay - 26, c.w, c.h, w, h);
+      if (!sp) { show(c, c.e, false); nc--; continue; } // no room left: the cloud waits, it never covers a bubble
+      const [cx, cy] = sp;
       boxes.push({ x: cx, y: cy, w: c.w, h: c.h });
       setT(c, c.e, cx, cy);
       // the tail: three small circles from the cloud towards the head, never longer than ~30 px
@@ -1804,14 +1809,15 @@
       [[0.25, 10], [0.6, 7], [0.95, 5]].forEach(([f, sz], i) => { is[i].style.left = (sx0 + dx * k * f - sz / 2).toFixed(1) + "px"; is[i].style.top = (c.h + 3 + max(0, dy) * k * f - sz / 2).toFixed(1) + "px"; is[i].style.display = dy < -4 ? "none" : ""; });
     }
   }
-  // the first free place for a box above an anchor: centred, then sideways, then higher
-  function freeSpot(boxes, ax, ay, bw, bh, w) {
-    const hit = (x, y) => boxes.some((r) => x < r.x + r.w + 4 && x + bw + 4 > r.x && y < r.y + r.h + 4 && y + bh + 4 > r.y);
-    for (const dy of [0, 1, 2]) for (const dx of [0, -0.6, 0.6, -1.2, 1.2]) {
-      const x = clamp(ax - bw / 2 + dx * bw, 6, max(6, w - bw - 6)), y = ay - bh - dy * (bh * 0.6 + 8);
-      if (y >= 6 && !hit(x, y)) return [x, y];
+  // the first free place for a box above an anchor: centred, then sideways, then higher; with h (clouds),
+  // also below the head, or null; never under the HUD's top row
+  function freeSpot(boxes, ax, ay, bw, bh, w, h) {
+    const hit = (x, y) => boxes.some((r) => x < r.x + r.w + 4 && x + bw + 4 > r.x && y < r.y + r.h + 4 && y + bh + 4 > r.y), T0 = w < 600 ? 140 : 60;
+    for (const dy of h ? [0, 1, 2, -1, -2] : [0, 1, 2]) for (const dx of [0, -0.6, 0.6, -1.2, 1.2]) {
+      const x = clamp(ax - bw / 2 + dx * bw, 6, max(6, w - bw - 6)), y = dy >= 0 ? ay - bh - dy * (bh * 0.6 + 8) : ay + 70 + (-dy - 1) * (bh + 8);
+      if (y >= T0 && (!h || y + bh <= h - 6) && !hit(x, y)) return [x, y];
     }
-    return [clamp(ax - bw / 2, 6, max(6, w - bw - 6)), max(6, ay - bh)];
+    return h ? null : [clamp(ax - bw / 2, 6, max(6, w - bw - 6)), max(T0, ay - bh)];
   }
   function renderGrades(p) {
     const gr = p.tagEl && p.tagEl.gr;
@@ -1951,6 +1957,7 @@
   function setDetail(level, force) {
     if (LV[level] == null || (!force && level === detail)) return;
     detail = level;
+    DET.value = level === "low" ? 0 : 1;
     if (!MAT) return;
     for (const k of KEYS) {
       const p = PP[k]; if (!p) continue;

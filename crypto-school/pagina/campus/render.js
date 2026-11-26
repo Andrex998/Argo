@@ -630,11 +630,14 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     }
     take(req);
   }
+  // a request takes the camera when it outranks the shot or the hold is over; a new speaker of a
+  // live, replayed or Claude dialog (priority 3) takes over from the previous one after the minimum hold
+  const preempts = (r, age) => r.priority > eff(shot) || age >= shot.hold || (r.priority >= 3 && r.priority >= eff(shot) && age >= minHold());
   function regia(dt) {
     if (!shot && !take({ shot: "campus", priority: 0, idle: true }, { instant: true })) return;
     if (pending && clockT - pending.t > 12) pending = null;
     const age = clockT - shot.start;
-    if (pending && (pending.priority > eff(shot) || age >= shot.hold) && clockT - lastCut >= (pending.priority >= 3 ? 0.8 : 1.5)) takePending();
+    if (pending && preempts(pending, age) && clockT - lastCut >= (pending.priority >= 3 ? 0.8 : 1.5)) takePending();
     else if (shot.idle && shot.kind === "campus" && age >= 6 && clockT - lastReq >= 6) idleStep();
     else if (clockT - lastReq >= 60 && clockT - idleAt >= 60 && !shot.manual) { idleAt = clockT; take({ shot: "campus", priority: 0, idle: true, holdS: 6 }); }
     else if (age >= Math.max(shot.hold, 14) && clockT - lastVary >= 14 && !shot.manual && shot.kind !== "campus") vary();
@@ -903,13 +906,18 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     dt = U.isNum(dt) ? Math.min(0.1, Math.max(0, dt)) : 0;
     // the director's holds run on the wall clock, even when slow frames cap dt
     const w = performance.now() / 1000;
-    const wdt = wallAt ? U.clamp(w - wallAt, dt, 1) : dt;
+    const gap = wallAt ? w - wallAt : 0, wdt = wallAt ? U.clamp(gap, dt, 1) : dt;
     clockT += wdt; wallAt = w; lastDt = dt || lastDt;
-    if (dt > 0) adapt(dt);
-    updateSky(dt, Math.min(wdt, 0.25));
-    if (R.cameraMode === "segui") follow(dt);
-    if (R.cameraMode === "libera") free(dt);
-    else if (R.cameraMode === "regia") regia(dt);
+    // the fps is measured on the wall clock: the kernel caps dt at 0.1 s, which would hide frames
+    // slower than 10 fps; a gap over 1.5 s is a resume after a hidden stage, not a slow frame
+    if (dt > 0 && gap <= 1.5) adapt(Math.max(dt, wdt));
+    // the camera springs also run on the wall clock (up to 0.25 s a frame), so a slow device still
+    // reaches the shot in the same time instead of crawling at the kernel's capped dt
+    const cdt = Math.min(wdt, 0.25);
+    updateSky(dt, cdt);
+    if (R.cameraMode === "segui") follow(cdt);
+    if (R.cameraMode === "libera") free(cdt);
+    else if (R.cameraMode === "regia") regia(cdt);
     applyCamera();
     postParams();
     checkSsao(dt);
@@ -978,7 +986,7 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     const r = Object.assign({}, req, { t: clockT, priority: U.isNum(req.priority) ? req.priority : 1 });
     if (!inited || disposed || R.cameraMode !== "regia" || !shot) { pending = r; return; }
     const age = clockT - shot.start;
-    if ((r.priority > eff(shot) || age >= shot.hold) && (clockT - lastCut >= 0.8 || r.priority > shot.priority)) { pending = r; takePending(); return; }
+    if (preempts(r, age) && (clockT - lastCut >= 0.8 || r.priority > shot.priority)) { pending = r; takePending(); return; }
     if (!pending || r.priority >= pending.priority) pending = r;
   };
 

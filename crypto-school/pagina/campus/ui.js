@@ -319,7 +319,8 @@ const CSS = `
 .cp-u-maptoggle:hover{color:var(--ink)}
 .cp-u-minimap{display:block;border-radius:10px;cursor:pointer;touch-action:manipulation}
 .cp-u-replay{margin-left:auto;border-radius:16px;padding:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end;max-width:100%}
-.cp-u-replay .cp-u-rinfo{display:grid;gap:3px;padding:0 8px;min-width:150px;flex:1 1 170px}
+.cp-u-rday{display:flex;align-items:center;gap:4px;flex:1 1 250px;min-width:0}
+.cp-u-replay .cp-u-rinfo{display:grid;gap:3px;padding:0 6px;min-width:0;flex:1}
 .cp-u-rinfo b{font-size:.8rem}
 .cp-u-rinfo span{font-size:.72rem;color:var(--ink-2)}
 .cp-u-prog{height:4px;border-radius:999px;background:var(--wash);overflow:hidden}
@@ -340,7 +341,7 @@ const CSS = `
 .cp-u-hud.cp-u-no3d{position:relative;inset:auto;display:grid;gap:0;pointer-events:auto}
 .cp-u-hud.cp-u-no3d .cp-u-top{position:static;padding:10px 10px 0}
 .cp-u-hud.cp-u-no3d .cp-u-bottom{position:static;padding:0 10px 10px}
-.cp-u-hud.cp-u-compact .cp-u-clock small,.cp-u-hud.cp-u-compact .cp-u-clock .cp-u-where{display:none}
+.cp-u-hud.cp-u-compact .cp-u-clock small:not(.rep),.cp-u-hud.cp-u-compact .cp-u-clock .cp-u-where{display:none}
 .cp-u-hud.cp-u-compact .cp-u-clock{padding:4px 10px 4px 7px;min-height:38px;gap:6px}
 .cp-u-hud.cp-u-compact .cp-u-qt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .cp-u-hud.cp-u-compact .cp-u-qual{padding:0;width:42px;justify-content:center}
@@ -507,7 +508,7 @@ button.cp-u-mb:hover{background:var(--wash)}
 .cp-u-two{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:600px){
-.cp-u-replay .cp-u-rinfo{flex-basis:100%;min-width:0}
+.cp-u-rday{flex-basis:100%}
 .cp-u-replay{justify-content:flex-start}
 .cp-u-row2{grid-template-columns:minmax(0,1fr)}
 .cp-u-cards{grid-template-columns:minmax(0,1fr)}
@@ -590,10 +591,11 @@ function renderClock() {
   if (el.clockB.dataset.k !== k) {
     el.clockB.dataset.k = k;
     el.clockB.textContent = "";
-    if (rep) el.clockB.append(h("span", { class: "cp-u-rep", text: "replica" }), "l'ora della riunione");
+    if (rep) el.clockB.append(h("span", { class: "cp-u-rep", text: "replica" }), h("span", { class: "cp-u-where", text: "l'ora della riunione" }));
     else if (bt) el.clockB.append(bt);
   }
   show(el.clockB, rep || !!bt);
+  el.clockB.classList.toggle("rep", rep);
   if (el.clock.dataset.phase !== phase || !el.clockIc.firstChild) {
     el.clock.dataset.phase = phase;
     const ic = icon(phase === "notte" ? "moon" : phase === "giorno" ? "sun" : "dusk");
@@ -864,16 +866,16 @@ function renderReplay() {
   } else {
     const tot = isNum(m.total) && m.total > 0 ? m.total : 0, st = isNum(m.step) ? Math.min(m.step + 1, tot) : 0;
     const pct = tot ? Math.round((st / tot) * 100) : 0;
-    box.append(
+    box.append(h("span", { class: "cp-u-rday" },
+      h("button", { class: "cp-u-btn", "data-act": "prev", "aria-label": "La riunione prima", title: "La riunione prima", disabled: !m.prev, onclick: () => m.prev && select(m.prev) }, "‹"),
       h("span", { class: "cp-u-rinfo" },
         h("b", { text: "Replica di " + U.longDay(m.date) }),
         h("span", { text: m.phase === "raduno" ? "Si siedono al tavolo" : m.phase === "fine" ? "La riunione è finita" : tot ? `Battuta ${st} di ${tot}` : "" }),
         h("span", { class: "cp-u-prog" }, h("i", { style: `width:${pct}%` }))),
-      h("button", { class: "cp-u-btn", "data-act": "prev", "aria-label": "La riunione prima", title: "La riunione prima", disabled: !m.prev, onclick: () => m.prev && select(m.prev) }, "‹"),
+      h("button", { class: "cp-u-btn", "data-act": "next", "aria-label": "La riunione dopo", title: "La riunione dopo", disabled: !m.next, onclick: () => m.next && select(m.next) }, "›")),
       h("button", { class: "cp-u-btn", "data-act": "play", "aria-pressed": String(!m.playing), onclick: () => ctl({ playing: !m.playing }) }, icon(m.playing ? "pause" : "play"), m.playing ? "Pausa" : "Riprendi"),
       h("button", { class: "cp-u-btn", "data-act": "speed", title: "Cambia la velocità", onclick: () => ctl({ speed: m.speed === 1 ? 2 : m.speed === 2 ? 4 : 1 }) }, `Velocità ${m.speed}×`),
       h("button", { class: "cp-u-btn", "data-act": "restart", onclick: () => ctl({ restart: true }) }, "Da capo"),
-      h("button", { class: "cp-u-btn", "data-act": "next", "aria-label": "La riunione dopo", title: "La riunione dopo", disabled: !m.next, onclick: () => m.next && select(m.next) }, "›"),
       h("button", { class: "cp-u-btn strong", "data-act": "stop", onclick: () => { const lf = L(); if (lf && lf.stopReplay) safe(() => lf.stopReplay()); renderReplay(); } }, "Torna al presente"));
   }
   if (keep) { const b = box.querySelector(`[data-act="${keep}"]`); if (b && !b.disabled) b.focus({ preventScroll: true }); }
@@ -1146,6 +1148,9 @@ function onFeed(entry) {
   if (!el.feed || noLife) return;
   if (repDate()) { if (!feedPending) { feedPending = true; requestAnimationFrame(() => { feedPending = false; renderFeed(true); }); } return; }
   if (feedMode !== "live") { renderFeed(true); return; }
+  // an older entry went in its place: redraw
+  const lf = arr(L() && L().feed);
+  if (lf.length && lf[lf.length - 1] !== entry) { renderFeed(true); return; }
   const li = feedItem(entry, false);
   if (!li) return;
   el.feed.append(li);
