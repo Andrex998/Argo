@@ -250,7 +250,7 @@
     const sec = section();
     if (!sec || S.bar) return;
     const head = sec.querySelector(".section-head");
-    const bar = el("div", "cp-g-bar", { role: "toolbar", "aria-label": "Il gioco" });
+    const bar = el("div", "cp-g-bar", { role: "toolbar", "aria-label": "Comandi del campus" });
     bar.append(
       iconButton("menu", "Menu", () => openTitle()),
       iconButton("people", "I personaggi", () => openCodex(0)),
@@ -334,7 +334,7 @@
       el("p", "cp-g-press", { text: "Premi Invio per entrare", "aria-hidden": "true" }),
     );
     t.append(bg, el("div", "cp-g-rays", { "aria-hidden": "true" }), dust, el("div", "cp-g-shade", { "aria-hidden": "true" }), lineup, main,
-      el("p", "cp-g-foot", { text: "Soldi finti: la scuola si allena senza rischiare un euro. I risultati sono veri, i soldi no." }));
+      el("p", "cp-g-foot", { text: "Fase di allenamento: soldi finti finché i numeri non dimostrano che il metodo funziona. Poi, sui soldi veri, decidi tu." }));
     t.addEventListener("keydown", titleKeys);
     document.body.appendChild(t);
     S.title = t;
