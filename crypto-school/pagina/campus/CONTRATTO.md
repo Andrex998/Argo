@@ -1657,7 +1657,8 @@ dall'inizio». Call `people.setMood`, and emit `life:mood` on change.
    - **the number check** (Appendix D.3): drop every line that holds a number not in
      `numbers`;
    - if fewer than 2 lines survive, return `{ok: false, code: "numeri"}` and emit
-     `life:talk {state: "error", code: "numeri"}`.
+     `life:talk {state: "error", code: "numeri"}` when the number check dropped at least
+     one line; otherwise (lines for other agents, or empty) use `code: "invalid_json"`.
 5. **Staging:**
    - emit `walking`;
    - the venue is the speakers' common room if they share one; else the nearest free

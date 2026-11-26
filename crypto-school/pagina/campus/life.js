@@ -1840,16 +1840,20 @@
     const raw = obj(res) && Array.isArray(res.battute) ? res.battute : null;
     if (!raw) return { code: "invalid_json", lines: [] };
     const lines = [];
+    let numDrop = 0;
     for (const b of raw) {
       if (!obj(b) || !has(keys, b.chi) || typeof b.testo !== "string" || !b.testo.trim()) continue;
       if (b.a !== undefined && b.a !== null && b.a !== "tutti" && !has(keys, b.a)) continue;
       const testo = U.plain(b.testo, 240);
-      if (!testo || !talkNumbersOk(testo, allowed)) continue;
+      if (!testo) continue;
+      if (!talkNumbersOk(testo, allowed)) { numDrop++; continue; }
       lines.push({ chi: b.chi, a: has(keys, b.a) && b.a !== b.chi ? b.a : b.a === "tutti" ? "tutti" : null, testo, gesto: has(GESTI, b.gesto) ? b.gesto : "talk" });
     }
     let titolo = typeof res.titolo === "string" ? U.plain(res.titolo, 60) : "";
     if (!titolo || !talkNumbersOk(titolo, allowed)) titolo = "Dialogo";
-    return { lines: lines.slice(0, 10), titolo, code: lines.length < 2 ? "numeri" : null };
+    // too few lines: blame the numbers only when the number check dropped some (else the lines were for
+    // other agents or empty, and the reply is just not usable)
+    return { lines: lines.slice(0, 10), titolo, code: lines.length < 2 ? (numDrop ? "numeri" : "invalid_json") : null };
   }
   // a standing circle round a point, every spot on a walkable floor; two people stand 1,1 m apart
   function circleAt(c, n) {
