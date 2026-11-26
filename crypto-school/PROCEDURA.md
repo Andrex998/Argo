@@ -475,7 +475,10 @@ motivo scritto in `semaforo.json`.
     limite che cambia lancia `MOTORE limite LAVORO/stato.json <agente> <limite>`. Vale
     dalla riunione di domani. Il 7/12 i dati sono pochi: cambia un limite solo per una
     mancanza di disciplina.
-- **L'ultimo giorno (fine)**, l'oggetto `fine`:
+- **L'ultimo giorno (fine), la laurea della classe**, l'oggetto `fine`, con in più
+  `tesi`: la tecnica scelta insieme. Ha la forma
+  `{"nome", "regola", "prove", "chi_la_propone", "voti_della_classe"}`, e ogni agente vota
+  sì o no, con una riga. Il resto dell'oggetto `fine` è:
   - `testo`: 300-600 parole, il bilancio del trimestre;
   - `pagella`: come quella dello scrutinio;
   - `righe`: per ogni agente una riga, cosa ha imparato e cosa deve ancora imparare,

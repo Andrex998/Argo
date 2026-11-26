@@ -40,6 +40,16 @@ Quattro attività programmate fanno girare la scuola, tutte con l'ora italiana:
 Le sessioni avviate dalle attività non possono spegnerle da sole: alla fine del trimestre
 vanno spente a mano, e la pagina lo ricorda.
 
+## L'obiettivo comune
+
+È una scuola di trader professionisti, e ha uno scopo solo: imparare a fare profitti con il
+trading, laurearsi, e trovare insieme un modo preciso di farli.
+- **Si lavora in squadra.** Conta il fondo comune degli otto portafogli, e tutto il denaro
+  si divide tra tutti.
+- **La laurea, il 21/2/2027.** La classe sceglie insieme una tecnica precisa, la «tesi»,
+  quella con le prove migliori. Diventa la proposta della scuola al proprietario, che resta
+  l'unico a decidere se e quando usare soldi veri.
+
 ## Due portafogli per agente
 
 Ogni agente con un portafoglio ne ha due, partiti insieme il 26/11/2026 (la sera prima c'è
