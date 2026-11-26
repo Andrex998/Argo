@@ -175,6 +175,26 @@
     return false;
   }
   const textNumbersOk = (text, allowed) => toks(text).every((t) => numberOk(t, allowed));
+  // Claude's lines are checked harder: the sign counts (−, + or a loss or gain word just before the
+  // number), only the DATI numbers count (no free constants), and promises or price calls are dropped
+  const STOK = /[−+-]?\d[\d.,]*/g;
+  const NEG_W = /(?:perd\w*|in rosso|indietro|sotto di)\s+(?:di\s+|circa\s+)?$/i, POS_W = /(?:guadagn\w*|in attivo|avanti|sopra di)\s+(?:di\s+|circa\s+)?$/i;
+  const PROMISE = /garantit|guadagner|sicuro guadagno|raddoppi|triplic|ricchi|croller|crolla\b|esploder|volerà|salirà|scenderà|arriverà a|andrà a/i;
+  function signedOf(text) {
+    const s = String(text || ""), out = [];
+    for (const m of s.matchAll(STOK)) {
+      let t = m[0];
+      // a hyphen right after a digit or a letter is a range or a date, not a minus
+      if (t[0] === "-" && m.index > 0 && /[\p{L}\d]/u.test(s[m.index - 1])) t = t.slice(1);
+      const plus = t[0] === "+", v = nrm(plus ? t.slice(1) : t);
+      if (!Number.isFinite(v)) continue;
+      const pre = s.slice(Math.max(0, m.index - 24), m.index);
+      out.push({ v, d: decOf(plus ? t.slice(1) : t), sg: /^[−-]/.test(t) ? -1 : plus ? 1 : NEG_W.test(pre) ? -1 : POS_W.test(pre) ? 1 : 0 });
+    }
+    return out;
+  }
+  const sameMag = (x, a) => Math.abs(x.v - a.v) < 1e-9 || [1, 2].some((k) => a.d - k >= 0 && Math.abs(x.v - roundTo(a.v, a.d - k)) < 1e-9);
+  const talkNumbersOk = (text, allowed) => !PROMISE.test(text) && signedOf(text).every((x) => allowed.some((a) => sameMag(x, a) && (x.sg === 0 || x.sg === (a.sg || 1))));
   const BAD = /undefined|NaN|null|\[object|—/;
   // page-built lines: every number token must have come out of a formatter in this very line
   let REG = new Set();
@@ -1757,6 +1777,7 @@
     const pl = (c) => (isNum(px[c]) ? `${c}: ${U.price(px[c])} USDT${at ? ` (${U.romeTime(at)})` : ""}.` : "");
     out.push(pl("BTC"));
     if (topic === "mercato") out.push(pl("ETH"), pl("SOL"));
+    out.push("Ognuno è partito con 10.000 USDT finti: 80.000 in tutto, per 88 giorni di scuola.");
     const F = D.fund(), g = D.graduation();
     if (F && isNum(F.capitale)) out.push(`Il fondo comune: ${U.fmt(F.capitale, 2)} USDT su 80.000 (${U.pct(F.pct)}). Mancano ${g.days} giorni alla laurea.`);
     else out.push(`Mancano ${g.days} giorni alla laurea.`);
@@ -1797,7 +1818,7 @@
     ].join("\n");
     const numbers = [];
     for (const t of toks(D5.join("\n"))) { const v = nrm(t); if (Number.isFinite(v)) numbers.push(String(v)); }
-    const allowed = [...allowedOf(D5.join("\n")), ...allowedOf(persone.join("\n")), ...allowedOf(label)];
+    const allowed = [...signedOf(D5.join("\n")), ...signedOf(persone.join("\n")), ...signedOf(label)];
     return { prompt, numbers, allowed };
   }
   function validateTalk(res, keys, allowed) {
@@ -1808,11 +1829,11 @@
       if (!obj(b) || !has(keys, b.chi) || typeof b.testo !== "string" || !b.testo.trim()) continue;
       if (b.a !== undefined && b.a !== null && b.a !== "tutti" && !has(keys, b.a)) continue;
       const testo = U.plain(b.testo, 240);
-      if (!testo || !textNumbersOk(testo, allowed)) continue;
+      if (!testo || !talkNumbersOk(testo, allowed)) continue;
       lines.push({ chi: b.chi, a: has(keys, b.a) && b.a !== b.chi ? b.a : b.a === "tutti" ? "tutti" : null, testo, gesto: has(GESTI, b.gesto) ? b.gesto : "talk" });
     }
     let titolo = typeof res.titolo === "string" ? U.plain(res.titolo, 60) : "";
-    if (!titolo || !textNumbersOk(titolo, allowed)) titolo = "Dialogo";
+    if (!titolo || !talkNumbersOk(titolo, allowed)) titolo = "Dialogo";
     return { lines: lines.slice(0, 10), titolo, code: lines.length < 2 ? "numeri" : null };
   }
   // a standing circle round a point, every spot on a walkable floor; two people stand 1,1 m apart
@@ -2088,7 +2109,7 @@
     replay, replayControl, replayJump, stopReplay, talk, cancelTalk,
     buildTalkPrompt: (keys, topic) => { const { prompt, numbers } = buildTalkPrompt(keys, topic); return { prompt, numbers }; },
     _advance: advance, _templates: templates,
-    _pure: { dayScript, nrm, numberOk, textNumbersOk, allowedOf, blockOf, times, schoolDay, validateTalk, chat, moodOf },
+    _pure: { dayScript, nrm, numberOk, textNumbersOk, talkNumbersOk, signedOf, allowedOf, blockOf, times, schoolDay, validateTalk, chat, moodOf },
   });
   Object.defineProperty(L, "talkTopics", {
     enumerable: true,
