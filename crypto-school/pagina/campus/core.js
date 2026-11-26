@@ -332,10 +332,14 @@
   D.openPrediction = (key) => U.arr(U.obj(C.data.memoria[key]) && C.data.memoria[key].previsioni).filter((p) => U.obj(p) && p.stato === "aperta").pop() || null;
   D.calibration = (key) => { const c = U.obj(C.data.memoria[key]) && U.obj(C.data.memoria[key].calibrazione); return c && U.isNum(c.n) && c.n > 0 ? c : null; };
   // the contests (gara/*), newest first, with open = not finished and before the deadline
+  // opening: the standing is still the one written when the trades opened (only the entry costs count)
   D.contests = () => Object.entries(C.data.gare || {}).filter(([, g]) => U.obj(g)).map(([id, g]) => {
     const st = U.obj(g.stato) || {};
-    const end = U.utc(st.scadenza_utc);
-    return { id, doc: g, open: g.finita === false && (!end || end.getTime() > C.clock.real().getTime()), scadenza: end, leva: st.leva ?? null, situazione: U.obj(g.situazione_finale) || U.obj(g.situazione) || null };
+    const end = U.utc(st.scadenza_utc), at0 = typeof g.aperta_alle === "string" ? g.aperta_alle : "";
+    const later = (x) => U.obj(x) && [x.checked, x.closed].some((v) => typeof v === "string" && v > at0);
+    const opening = !!at0 && g.finita !== true && !U.obj(g.situazione_finale)
+      && !U.arr(g.eventi).some(later) && !Object.values(U.obj(st.wallets) || {}).some((w) => U.arr(U.obj(w) && w.positions).some(later));
+    return { id, doc: g, open: g.finita === false && (!end || end.getTime() > C.clock.real().getTime()), scadenza: end, leva: st.leva ?? null, situazione: U.obj(g.situazione_finale) || U.obj(g.situazione) || null, opening };
   }).sort((a, b) => (String(a.doc.aperta_alle || a.id) < String(b.doc.aperta_alle || b.id) ? 1 : -1));
   D.latestGym = () => { const ks = Object.keys(C.data.palestre || {}).filter((k) => U.obj(C.data.palestre[k])).sort(); return ks.length ? { date: ks[ks.length - 1], doc: C.data.palestre[ks[ks.length - 1]] } : null; };
 
@@ -343,6 +347,7 @@
   const ORDER3D = ["people", "world", "render"];
   const fails = {}, off = {};
   let raf = 0, last = 0, t = 0, visible = true, hiddenSince = 0, slowTimer = 0;
+  let inView = true, tabVisible = !document.hidden;   // visible = inView && tabVisible
   function step(name, fn) {
     if (off[name]) return false;
     try { fn(); fails[name] = 0; return true; } catch (e) {
@@ -408,9 +413,9 @@
       }).observe(stage);
     }
     if (stage && "IntersectionObserver" in window) {
-      new IntersectionObserver((es) => setVisible(es[0].isIntersecting && !document.hidden), { rootMargin: "120px" }).observe(stage);
+      new IntersectionObserver((es) => { inView = es[0].isIntersecting; setVisible(inView && tabVisible); }, { rootMargin: "120px" }).observe(stage);
     }
-    document.addEventListener("visibilitychange", () => setVisible(!document.hidden));
+    document.addEventListener("visibilitychange", () => { tabVisible = !document.hidden; setVisible(inView && tabVisible); });
     if (C.ui) step("ui-init", () => C.ui.init(ctx));
     ctx.has3d = !!(ctx.THREE && ctx.canvas && webglOk() && C.render && C.world && C.people);
     if (ctx.has3d) {

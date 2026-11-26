@@ -1680,7 +1680,7 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
         return [k, C.NAMES[k], p.symbol ? `${p.symbol} ${p.side || ""}`.trim() : "", U.isNum(cl[k].risultato) ? U.usd(cl[k].risultato, true) : "", U.isNum(cl[k].risultato) ? Math.sign(cl[k].risultato) : 0, cl[k].aperta === true];
       });
       const win = g.situazione && KEYS.includes(g.situazione.vincitore) ? g.situazione.vincitore : null;
-      return { title, sub: (g.open ? (g.scadenza ? "Si chiude " + U.romeTime(g.scadenza) : "In corso") : g.doc.finita === true || !g.scadenza ? "Finita" : "Tempo scaduto: " + U.romeTime(g.scadenza)) + (U.isNum(g.leva) ? " · leva " + U.fmt(g.leva, 0) : ""), rows, win: win ? `Vince ${C.ARTICLE[win]} ${C.NAMES[win]}` : "" };
+      return { title, sub: (g.open ? (g.scadenza ? "Si chiude " + U.romeTime(g.scadenza) : "In corso") : g.doc.finita === true || !g.scadenza ? "Finita" : "Tempo scaduto: " + U.romeTime(g.scadenza)) + (U.isNum(g.leva) ? " · leva " + U.fmt(g.leva, 0) : "") + (g.opening ? " · all'apertura: contano solo i costi" : ""), rows, win: win ? `Vince ${C.ARTICLE[win]} ${C.NAMES[win]}` : "" };
     },
     goal: () => {
       const f = D.fund(), gr = D.graduation(), days = gr.days;
@@ -1852,7 +1852,7 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
       if (!pot) { tex.minFilter = T.LinearFilter; tex.generateMipmaps = false; }
       tex.anisotropy = min(4, ctx.renderer && ctx.renderer.capabilities ? ctx.renderer.capabilities.getMaxAnisotropy() : 1);
       if (name === "ticker") { tex.wrapS = T.ClampToEdgeWrapping; tex.offset.x = ctx.reduceMotion ? 0 : -1; }
-      SURF[name] = { name, W, H, cv, c: cv.getContext("2d"), tex, key: null, last: -1e9, dirty: true, texts: [], scale: 0 };
+      SURF[name] = { name, W, H, cv, c: cv.getContext("2d"), tex, key: null, last: -1e9, checked: -1e9, dirty: true, texts: [], scale: 0 };
     }
   }
   function paintSurf(name, force) {
@@ -1862,7 +1862,7 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
     let m;
     try { m = MODELS[name](); } catch (e) { warnOnce(name, e); return; }
     const key = JSON.stringify(m) + "|" + sc;
-    s.dirty = false;
+    s.dirty = false; s.checked = performance.now();
     if (!force && key === s.key) return;
     s.key = key; s.last = performance.now();
     if (s.scale !== sc) { s.cv.width = Math.round(s.W * sc); s.cv.height = Math.round(s.H * sc); s.scale = sc; }
@@ -2168,8 +2168,8 @@ gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(positio
     const now = performance.now();
     for (const name of ["motore", "ticker", "price", "mon", "gara", "goal", "palestra"]) {
       const s = SURF[name];
-      if (now - s.last > 30000) s.dirty = true;
-      if (s.dirty && now - s.last >= 2000) paintSurf(name);
+      if (now - s.checked > 30000) s.dirty = true;
+      if (s.dirty && now - s.checked >= 2000) paintSurf(name);
     }
     const sc = surfaceScale();
     if (sc !== lastScale) { lastScale = sc; for (const name of Object.keys(SURF)) paintSurf(name, true); }

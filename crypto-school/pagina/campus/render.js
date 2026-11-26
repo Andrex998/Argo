@@ -280,7 +280,8 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     if (lowT >= 3) {
       if (R.postActive) { setPost(false); resetMeasure(3); return; }
       const i = LEVELS.indexOf(R.quality);
-      if (i > 0) { if (everUp) noUps = true; applyQuality(LEVELS[i - 1], "fps-low"); } else resetMeasure(3);
+      // already at low: only lowT starts again, so that prLowT can still reach its 4 s
+      if (i > 0) { if (everUp) noUps = true; applyQuality(LEVELS[i - 1], "fps-low"); } else lowT = 0;
     } else if (highT >= 10 && !noUps && ups < 2 && R.quality !== "high") {
       ups += 1; everUp = true; applyQuality(LEVELS[LEVELS.indexOf(R.quality) + 1], "fps-high");
     }
@@ -910,7 +911,8 @@ void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb * uGain; vec2 q = (vUv - 0.5)
     clockT += wdt; wallAt = w; lastDt = dt || lastDt;
     // the fps is measured on the wall clock: the kernel caps dt at 0.1 s, which would hide frames
     // slower than 10 fps; a gap over 1.5 s is a resume after a hidden stage, not a slow frame
-    if (dt > 0 && gap <= 1.5) adapt(Math.max(dt, wdt));
+    // (not while the GPU context is lost: nothing is drawn, so the fps would read too high)
+    if (dt > 0 && gap <= 1.5 && !lost) adapt(Math.max(dt, wdt));
     // the camera springs also run on the wall clock (up to 0.25 s a frame), so a slow device still
     // reaches the shot in the same time instead of crawling at the kernel's capped dt
     const cdt = Math.min(wdt, 0.25);

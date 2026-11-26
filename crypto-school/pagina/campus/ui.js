@@ -224,8 +224,17 @@ const publicCareers = () => {
 };
 const presideMeetings = () => D.held().filter((g) => g.stato === "completo").length;
 const ledTxt = (n) => (n ? `ha guidato ${n} ${n === 1 ? "riunione" : "riunioni"}` : "la prima riunione completa deve ancora arrivare");
+// the season runs on the real date, also while a replay moves the campus clock to a past day
+function realGrad() {
+  const g = D.graduation(), today = U.rome(C.clock.real()).date;
+  const t = arr(obj(C.data.programma) && C.data.programma.giorni).find((x) => obj(x) && x.data === today) || null;
+  return { ...g, today, days: Math.max(0, U.daysBetween(today, C.GRADUATION)), giorno: t && isNum(t.giorno) ? t.giorno : null };
+}
+// the careers count meetings and notebooks: before those arrive, zeros would look like real numbers
+const careersReady = () => !!(C.data.got.classe && C.data.got.memoria);
+const careersWait = () => (C.data.unavailable ? "Le carriere compaiono quando apri la pagina da claude.ai." : "Carico le carriere dai dati della scuola…");
 function season() {
-  const f = D.fund(), g = D.graduation();
+  const f = D.fund(), g = realGrad();
   return { capitale: f ? f.capitale : null, pct: f ? f.pct : null, quota: f ? f.quota : null, giorno: g.giorno, totale: g.totale, days: g.days, tesi: g.tesi || null };
 }
 
@@ -492,9 +501,9 @@ button.cp-u-mb:hover{background:var(--wash)}
 .cp-u-gm{font-size:.84rem;color:var(--ink-2)}
 .cp-u-rank{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .cp-u-rk{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--sheet);border:1px solid var(--rule)}
-.cp-u-rk:first-child{border-color:var(--amber);box-shadow:inset 3px 0 0 var(--amber)}
+.cp-u-rank:not(.opening) .cp-u-rk:first-child{border-color:var(--amber);box-shadow:inset 3px 0 0 var(--amber)}
 .cp-u-pos{font:700 1rem/1 var(--font-num);color:var(--muted);text-align:center}
-.cp-u-rk:first-child .cp-u-pos{color:var(--amber)}
+.cp-u-rank:not(.opening) .cp-u-rk:first-child .cp-u-pos{color:var(--amber)}
 .cp-u-rm{display:grid;gap:2px;min-width:0}
 .cp-u-rm small{font-size:.76rem;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
 .cp-u-rr{display:grid;justify-items:end;gap:3px}
@@ -977,11 +986,12 @@ function mindModel(k) {
   }
   const v = obj(m.voti) ? m.voti : D.votes(k);
   if (v && (obj(v.preside) || obj(v.auto))) { out.push(["I voti", "votes", v]); data++; }
-  if (C.GRADED.includes(k)) {
+  if (!careersReady()) out.push(["Carriera", "t", careersWait()]);
+  else if (C.GRADED.includes(k)) {
     const c = careers()[k];
     if (c) out.push(["Carriera", "career", c]);
   } else out.push(["Carriera", "t", U.cap(ledTxt(presideMeetings()))]);
-  if (!data) out.push(["", "empty", "Il suo quaderno è ancora vuoto."]);
+  if (!data) out.push(["", "empty", C.data.got.memoria ? "Il suo quaderno è ancora vuoto." : C.data.unavailable ? "Il quaderno compare quando apri la pagina da claude.ai." : "Carico il quaderno…"]);
   return out;
 }
 function renderMind() {
@@ -1314,7 +1324,7 @@ function renderPlayer() {
   renderForm();
 }
 function renderSeason() {
-  const s = season(), f = D.fund(), g = D.graduation();
+  const s = season(), f = D.fund(), g = realGrad();
   const prog = obj(C.data.programma), days = arr(prog && prog.giorni).filter((x) => obj(x) && U.isoDay(x.data));
   const m = { s, src: f ? [f.source, f.at] : null, ms: days.filter((x) => x.tipo === "scrutinio" || x.tipo === "fine").map((x) => [x.data, x.tipo]), start: (prog && U.isoDay(prog.inizio) && prog.inizio) || C.SCHOOL_START, today: g.today };
   const sg = sig(m);
@@ -1368,12 +1378,13 @@ function renderSeason() {
 // the avatar of a career card: follows the agent and brings the campus into view
 const avaBtn = (k) => h("button", { class: "cp-u-ava", "aria-label": `Segui ${withArt(k)} nel campus`, title: `Segui ${withArt(k)} nel campus`, onclick: () => { follow(k); const st = C.ctx && C.ctx.stage; if (st && st.scrollIntoView) st.scrollIntoView({ behavior: ctx.reduceMotion ? "auto" : "smooth", block: "center" }); } }, NM[k].slice(0, 1));
 function renderCareers() {
-  const c = careers(), pres = presideMeetings();
-  const sg = sig([c, pres, C.TRADERS]);
+  const ready = careersReady(), c = ready ? careers() : null, pres = presideMeetings();
+  const sg = sig([c, pres, C.TRADERS, ready, !!C.data.unavailable]);
   if (sg === careersSig) return;
   careersSig = sg;
   const b = el.careers;
   b.textContent = "";
+  if (!ready) { b.append(h("p", { class: "cp-u-src", text: careersWait() })); return; }
   b.append(h("div", { class: "cp-u-pres k-preside" }, avaBtn("preside"),
     h("div", null, h("b", { text: `Il Preside · ${ledTxt(pres)}` }), h("p", { class: "cp-u-sub", text: "Non ha un livello: è lui che dà i voti." }))));
   const grid = h("div", { class: "cp-u-cards" });
@@ -1457,7 +1468,8 @@ function renderForm() {
   const gara = tipoOf() === "gara";
   show(f.gara, gara);
   const db = !!(C.ctx && C.ctx.db) && !C.data.unavailable;
-  propState = db ? "ok" : C.data.unavailable || capsSeen > 1 ? "nodb" : "wait";
+  // «no db» only when the page says so, or when the capabilities are still missing after 12 s
+  propState = db ? "ok" : C.data.unavailable || (capsSeen > 1 && performance.now() > CAPS_WAIT_MS) ? "nodb" : "wait";
   const off = propState !== "ok";
   f.ta.disabled = off; f.when.disabled = off; f.leva.disabled = off;
   for (const l of f.radios) l.querySelector("input").disabled = off;
@@ -1543,12 +1555,15 @@ function renderGare() {
     const doc = c.doc, fin = finished(c), sit = obj(c.situazione) || {}, rows = obj(sit.classifica) || {};
     const wallets = obj(obj(doc.stato) && doc.stato.wallets) || {};
     const status = fin ? ["finita", "fatta"] : c.open ? ["aperta", "aperta"] : ["tempo scaduto: il Preside fa i conti nella riunione del mattino", "nuova"];
-    const meta = [c.leva != null && isNum(U.toNum(c.leva)) ? "Leva " + U.toNum(c.leva) : "", c.scadenza ? "si chiude " + U.romeTime(c.scadenza) : "", status[0]].filter(Boolean).join(" · ");
+    const closed = fin || (c.scadenza && c.scadenza.getTime() <= real);
+    const meta = [c.leva != null && isNum(U.toNum(c.leva)) ? "Leva " + U.toNum(c.leva) : "", c.scadenza ? (closed ? "si è chiusa " : "si chiude ") + U.romeTime(c.scadenza) : "", status[0]].filter(Boolean).join(" · ");
     const ranked = Object.keys(rows).filter((k) => KEYS.includes(k) && obj(rows[k])).sort((a, b2) => {
       const ra = U.toNum(rows[a].risultato), rb = U.toNum(rows[b2].risultato);
       return (rb ?? -Infinity) - (ra ?? -Infinity) || KEYS.indexOf(a) - KEYS.indexOf(b2);
     });
-    const ol = h("ol", { class: "cp-u-rank", "aria-label": "La classifica" });
+    // the opening standing: only the entry costs, so no leader; equal results share the place
+    const ol = h("ol", { class: "cp-u-rank" + (c.opening ? " opening" : ""), "aria-label": c.opening ? "La classifica all'apertura" : "La classifica" });
+    const resOf = (k) => U.toNum(rows[k].risultato);
     ranked.forEach((k, i) => {
       const row = rows[k], w = obj(wallets[k]) || {};
       const pos = arr(w.positions).find(obj), cl = arr(w.closed).find(obj), p = pos || cl;
@@ -1557,7 +1572,7 @@ function renderGare() {
       if (p && p.symbol) bits.push(h("span", null, h("b", { text: String(p.symbol) }), " ", p.side ? h("span", { class: "side " + (p.side === "short" ? "short" : "long"), text: String(p.side) }) : null));
       if (p && isNum(U.toNum(p.margin))) bits.push(h("span", { text: "margine " + U.fmt(U.toNum(p.margin), 0) + " USDT" }));
       ol.append(h("li", { class: "cp-u-rk k-" + k },
-        h("span", { class: "cp-u-pos", text: String(i + 1) }),
+        h("span", { class: "cp-u-pos", text: String(isNum(resOf(k)) ? 1 + ranked.filter((x) => isNum(resOf(x)) && resOf(x) > resOf(k)).length : i + 1) }),
         h("span", { class: "cp-u-rm" }, h("span", { class: "whom" }, dot(k), NM[k]), bits.length ? h("small", null, bits) : null),
         h("span", { class: "cp-u-rr" }, h("b", { class: isNum(res) ? (res > 0 ? "up" : res < 0 ? "down" : "") : "muted", text: isNum(res) ? U.usd(res, true) : "—" }),
           row.aperta === true || (!cl && pos) ? h("span", { class: "cp-u-st aperta", text: "aperta" }) : cl && cl.exit_reason ? h("span", { class: "cp-u-st", text: U.shortReason(cl.exit_reason) }) : null)));
@@ -1569,8 +1584,9 @@ function renderGare() {
       h("div", { class: "cp-u-gh" }, h("h4", { text: contestTitle(c.id) }), h("span", { class: "cp-u-st " + status[1], text: fin ? "finita" : c.open ? "aperta" : "tempo scaduto" })),
       h("p", { class: "cp-u-gm", text: meta }),
       obj(C.data.proposte) && obj(C.data.proposte[c.id]) && C.data.proposte[c.id].testo ? h("p", { class: "cp-u-gm" }, "È la sfida che hai proposto tu: ", h("i", { text: U.plain(C.data.proposte[c.id].testo, 160) })) : null,
+      ranked.length && c.opening ? h("p", { class: "cp-u-src", text: `Classifica all'apertura${U.romeTime(doc.aperta_alle) ? ", " + U.romeTime(doc.aperta_alle) : ""}: per ora contano solo i costi; i conti veri alla chiusura.` }) : null,
       ranked.length ? ol : h("p", { class: "cp-u-gm", text: "La classifica arriva con i primi conti del motore." }),
-      win && isNum(wres) ? h("p", { class: "cp-u-win" }, `Vince ${NM[win]} con ${U.usd(wres, true)}: il premio è il doppio, ${isNum(U.toNum(sit.premio)) ? U.usd(U.toNum(sit.premio), true) : "il doppio"} finti.`)
+      win && isNum(wres) ? h("p", { class: "cp-u-win" }, `Vince ${withArt(win)} con ${U.usd(wres, true)}: il premio è il doppio, ${isNum(U.toNum(sit.premio)) ? U.usd(U.toNum(sit.premio), true) : "il doppio"} finti.`)
         : fin ? h("p", { class: "cp-u-win", text: "Nessun vincitore: nessuno ha chiuso in guadagno." }) : null,
       typeof words === "string" && words.trim() ? h("details", { open: true }, h("summary", { text: fin ? "Il commento del Preside" : "Le parole del Preside" }), h("p", { class: "cp-u-words", text: words.trim() })) : null));
   }
@@ -1593,8 +1609,13 @@ function onResize() {
   if (c !== compact) { compact = c; el.hud.classList.toggle("cp-u-compact", c); drawMinimap(); }
   if (planOn) drawPlan();
 }
+const CAPS_WAIT_MS = 12000;
 function wire() {
+  setTimeout(() => safe(renderForm), CAPS_WAIT_MS + 500);
   bus.on("data:change", () => playerSoon());
+  // the season's day and days to graduation follow the real date: after a replay and at midnight
+  bus.on("clock:override", () => playerSoon());
+  setInterval(playerSoon, 60000);
   bus.on("life:mode", () => { liveSig = ""; renderLive(); renderFeed(false); renderReplay(); renderTalk(); actsSoon(); renderClock(); });
   bus.on("life:feed", (p) => onFeed(p && p.entry));
   bus.on("life:activity", actsSoon);
@@ -1602,7 +1623,7 @@ function wire() {
   bus.on("life:replay", (p) => {
     const st = p && p.state;
     if (st === "loading") { replayMsg = `Carico il verbale del ${U.dm(p.date)}…`; replayMsgT = performance.now() + 12000; }
-    else if (st === "error") { replayMsg = `Il verbale del ${U.dm(p.date)} non c'è ancora.`; replayMsgT = performance.now() + 6000; }
+    else if (st === "error") { replayMsg = p.slow ? `Non riesco ancora a caricare il verbale del ${U.dm(p.date)}: lo aspetto.` : `Il verbale del ${U.dm(p.date)} non c'è ancora.`; replayMsgT = performance.now() + 6000; }
     else if (st === "start" || st === "end") replayMsg = null;
     renderReplay();
     if (st === "start" || st === "end") renderFeed(true); else if (st === "step") { if (repDate()) markReplay(); }

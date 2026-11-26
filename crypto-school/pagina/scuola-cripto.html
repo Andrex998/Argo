@@ -463,7 +463,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   <div class="wrap">
     <p class="eyebrow">ARGO · soldi finti, prezzi veri di BingX</p>
     <h1>Scuola Cripto</h1>
-    <p class="lede">Otto agenti di intelligenza artificiale studiano le criptovalute per tre mesi. Quattro di loro operano, e ognuno ha due portafogli da 10.000 USDT finti: uno segue la sua regola scritta, l'altro il suo giudizio. La differenza tra i due dice se il giudizio vale qualcosa. Ogni mattina alle 07:00 c'è la riunione.</p>
+    <p class="lede">Otto agenti di intelligenza artificiale studiano le criptovalute per tre mesi. Quattro di loro operano, e ognuno ha due portafogli da 10.000 USDT finti: uno segue la sua regola scritta, l'altro il suo giudizio. La differenza tra i due dice se il giudizio vale qualcosa. Ogni mattina alle 06:47 c'è la riunione.</p>
     <div class="status" id="status"><span class="chip">Carico i dati della scuola…</span></div>
     <p class="trust" id="trust" hidden></p>
   </div>
@@ -579,7 +579,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
         <div class="sheet">
           <h3>La riunione</h3>
           <ul>
-            <li>Ogni mattina alle <b>07:00</b>. Il motore fa i conti della notte; il Cronista porta calendario e notizie, con fonte e ora.</li>
+            <li>Ogni mattina alle <b>06:47</b>. Il motore fa i conti della notte; il Cronista porta calendario e notizie, con fonte e ora.</li>
             <li>Falco, Tartaruga, Spazzino, Ragioniere e Guardiano scrivono la loro posizione <b>in privato</b>, senza vedersi: la regola, una previsione con la sua probabilità, cosa farebbe cambiare idea, gli ordini.</li>
             <li>Lo Scettico fa <b>al massimo 2 domande</b>, e chi è chiamato risponde. Poi il motore esegue gli ordini, o li respinge se escono dalle regole.</li>
             <li>Il Preside chiude in <b>5 righe</b> e dà i voti: prima il ragionamento, poi la disciplina, per ultimo il risultato. Nessuno promette guadagni.</li>
@@ -618,7 +618,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
 (() => {
   "use strict";
   const CAPITAL = 10000;
-  const MEETING = "07:00";
+  const MEETING = "06:47";
   const RECOVERY = "13:17";
   const TRADERS = ["falco", "tartaruga", "spazzino", "ragioniere"];
   const GRADED = ["falco", "tartaruga", "spazzino", "ragioniere", "guardiano", "cronista", "scettico"];
@@ -649,9 +649,14 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   const CP = window.Campus && window.Campus.core && typeof window.Campus.boot === "function" ? window.Campus : null;
   const cp = (fn) => { if (CP) { try { fn(CP); } catch (e) { console.warn("Scuola Cripto: campus", e); } } };
   function bootCampus() {
-    window.CampusGlue = { select: (date) => selectDay(date) };
+    window.CampusGlue = { select: (date) => selectDay(date, { pin: date !== defaultDay() }) };
     if (!CP) { $("campus-live").textContent = "Il campus non si è caricato: il resto della scuola è qui sotto."; return; }
-    cp((C) => C.boot({ canvas: $("campus-canvas"), overlay: $("campus-overlay"), uiRoot: $("campus-section"), db: null, sample: null, reduceMotion: matchMedia("(prefers-reduced-motion: reduce)").matches }));
+    const rm = matchMedia("(prefers-reduced-motion: reduce)");
+    cp((C) => C.boot({ canvas: $("campus-canvas"), overlay: $("campus-overlay"), uiRoot: $("campus-section"), db: null, sample: null, reduceMotion: rm.matches }));
+    if (!CP.ui) $("campus-live").textContent = "Il campus non si è caricato del tutto: il resto della scuola è qui sotto.";
+    // the owner can turn Reduce Motion on or off while the page is open
+    const onRm = () => cp((C) => { if (C.ctx) C.ctx.reduceMotion = rm.matches; });
+    if (rm.addEventListener) rm.addEventListener("change", onRm); else if (rm.addListener) rm.addListener(onRm);
   }
   const arr = (v) => Array.isArray(v) ? v : [];
   const obj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
@@ -928,11 +933,11 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       const cells = mine.map((g, i) => {
         const h = done[g.data];
         const partial = h && h.stato && h.stato !== "completo";
-        const cls = ["day", "t-" + g.tipo, h ? "done" : "", partial ? "partial" : "", g.data === today ? "today" : ""].filter(Boolean).join(" ");
+        const cls = ["day", KIND[g.tipo] ? "t-" + g.tipo : "", h ? "done" : "", partial ? "partial" : "", g.data === today ? "today" : ""].filter(Boolean).join(" ");
         const style = i === 0 && firstCol > 1 ? ` style="grid-column-start:${firstCol}"` : "";
         const caps = h && obj(h.capitali) ? Object.values(h.capitali).filter(obj).map((c) => toNum(c.giudizio) - toNum(c.regole)).filter(isNum) : [];
         const label = `Giorno ${g.giorno}, ${longDay(g.data)}: ${KIND[g.tipo] || g.tipo}${h ? (partial ? ", svolta ma incompleta" : ", svolta") : ""}${h && h.titolo ? ". " + h.titolo : ""}${caps.length ? `. Giudizio meno regole: ${fmt(caps.reduce((a, b) => a + b, 0), 2, true)} USDT` : ""}`;
-        return `<button type="button" class="${cls}"${style} data-date="${esc(g.data)}" aria-pressed="${g.data === S.selected}" aria-label="${esc(label)}" title="${esc(label)}"><span class="n">${esc(g.giorno)}</span><span class="d">${esc(dm(g.data))}</span>${KMARK[g.tipo] ? `<span class="k" aria-hidden="true">${KMARK[g.tipo]}</span>` : ""}</button>`;
+        return `<button type="button" class="${esc(cls)}"${style} data-date="${esc(g.data)}" aria-pressed="${g.data === S.selected}" aria-label="${esc(label)}" title="${esc(label)}"><span class="n">${esc(g.giorno)}</span><span class="d">${esc(dm(g.data))}</span>${KMARK[g.tipo] ? `<span class="k" aria-hidden="true">${KMARK[g.tipo]}</span>` : ""}</button>`;
       }).join("");
       const cast = arr(w.protagonisti).map((k) => NAMES[k] || k);
       return `<div class="week"><p class="week-name"><b>Settimana ${esc(w.settimana)}</b>${esc(w.tema || "")}${cast.length && cast.length < 8 ? `<span class="muted"> · con ${esc(listIt(cast))}</span>` : ""}</p><div class="days">${cells}</div></div>`;
@@ -943,15 +948,15 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   $("registro").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-date]");
     if (!b) return;
-    selectDay(b.dataset.date);
+    selectDay(b.dataset.date, { autostart: false });
     $("verbale").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   });
-  function selectDay(date) {
+  function selectDay(date, o = {}) {
     S.selected = date;
-    S.picked = true;
+    S.picked = o.pin !== false;
     watchVerbale(date);
     render();
-    cp((C) => C.life && C.life.replay && C.life.replay(date));
+    cp((C) => C.life && C.life.replay && C.life.replay(date, { autostart: o.autostart !== false }));
   }
 
   // ---- the wallets: the rule against the judgment ------------------------------------------------
@@ -2108,16 +2113,24 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     cp((C) => { C.setDataIn("verbali", date, v); if (date === C.data.ultimoData) C.setData("ultimo", v); });
     soon();
   }
+  const DAYRE = /^\d{4}-\d{2}-\d{2}$/;
   function watchVerbale(date) {
     if (!db) return;
-    if (date && !vSubs.has(date)) vSubs.set(date, db.doc("riunione/" + date).onSnapshot((snap) => gotVerbale(date, snap.exists ? snap.data() : null), () => gotVerbale(date, null)));
+    if (date && !vSubs.has(date)) {
+      let off = () => {};
+      try {
+        if (!DAYRE.test(date)) throw new Error("bad meeting date: " + date);
+        off = db.doc("riunione/" + date).onSnapshot((snap) => gotVerbale(date, snap.exists ? snap.data() : null), () => gotVerbale(date, null));
+      } catch (e) { console.warn("Scuola Cripto: verbale", e); setTimeout(() => gotVerbale(date, null), 0); }
+      vSubs.set(date, off);
+    }
     const keep = new Set([S.selected, date, CP && CP.data.ultimoData]);
     for (const [d, off] of vSubs) if (!keep.has(d)) { vSubs.delete(d); try { off(); } catch (e) { /* already closed */ } }
   }
   // the last meeting held, from classe/stato: the campus replays it and its agents quote it
   function syncUltimo() {
     if (!CP) return;
-    const last = CP.derive.held().pop();
+    const last = CP.derive.held().filter((g) => DAYRE.test(g.data)).pop();
     const date = last ? last.data : null;
     if (date === CP.data.ultimoData && (date || CP.data.ultimo !== undefined)) return;
     CP.setData("ultimoData", date);

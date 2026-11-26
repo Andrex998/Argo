@@ -379,10 +379,13 @@
     const end = c.scadenza ? c.scadenza.getTime() : 0;
     return c.doc.finita === true && C.clock.real().getTime() - end < 2 * 86400000 ? c : null;
   }
+  // place: equal results share it (tied says so)
   function ranking(c) {
     const cl = (c && obj(c.situazione) && obj(c.situazione.classifica)) || {};
-    return KEYS.filter((k) => obj(cl[k]) && isNum(cl[k].risultato)).sort((x, y) => cl[y].risultato - cl[x].risultato || KEYS.indexOf(x) - KEYS.indexOf(y)).map((k) => ({ k, ...cl[k] }));
+    const ks = KEYS.filter((k) => obj(cl[k]) && isNum(cl[k].risultato)).sort((x, y) => cl[y].risultato - cl[x].risultato || KEYS.indexOf(x) - KEYS.indexOf(y));
+    return ks.map((k) => ({ k, ...cl[k], place: ks.filter((x) => cl[x].risultato > cl[k].risultato).length, tied: ks.some((x) => x !== k && cl[x].risultato === cl[k].risultato) }));
   }
+  const placeTxt = (x) => rankWord(x.k, x.place) + (x.tied ? " a pari merito" : "");
   const contestName = (id) => { const m = /^notte-(\d{4}-\d{2}-\d{2})$/.exec(String(id)); return m ? "della notte del " + f(U.dm(m[1])) : q(String(id), 40); };
   const awake = (k) => A[k].act && A[k].act.id !== "dormire";
   const free = (k) => !A[k].lock && !A[k].enc;
@@ -685,13 +688,13 @@
       label: "La gara",
       can: (a) => (has(TR, a) ? myContest(a) : null),
       open: {
-        _: [(c) => c.c.open ? `Nella gara sono ${rankWord(c.a, c.i)} su ${f(String(c.rk.length))}, con ${f(U.fmt(c.me.risultato, 2, true))} USDT.` : c.c.doc.finita ? `La gara ${contestName(c.c.id)} è finita: ho chiuso con ${f(U.fmt(c.me.risultato, 2, true))} USDT.` : null,
-          (c) => { const st = obj(c.c.doc.stato), w = st && obj(st.wallets) && obj(st.wallets[c.a]), p = w && (arr(w.positions)[0] || arr(w.closed)[0]); return obj(p) && p.symbol ? `In gara ho ${p.symbol} ${p.side || ""}: ${f(U.fmt(c.me.risultato, 2, true))} USDT${c.c.open ? " per ora" : ""}.` : null; },
-          (c) => c.c.open && c.i > 0 ? `In gara ${the(c.rk[0].k)} è davanti, con ${f(U.fmt(c.rk[0].risultato, 2, true))} USDT. Io ${f(U.fmt(c.me.risultato, 2, true))}.` : null],
-        falco: [(c) => isNum(c.c.leva) ? `Gara a leva ${f(String(c.c.leva))}: sono ${rankWord(c.a, c.i)}. Con quella leva lo stop è tutto.` : null],
+        _: [(c) => c.c.opening ? `All'apertura della gara contano solo i costi: io parto da ${f(U.fmt(c.me.risultato, 2, true))} USDT.` : c.c.open ? `Nella gara sono ${placeTxt(c.me)} su ${f(String(c.rk.length))}, con ${f(U.fmt(c.me.risultato, 2, true))} USDT.` : c.c.doc.finita ? `La gara ${contestName(c.c.id)} è finita: ho chiuso con ${f(U.fmt(c.me.risultato, 2, true))} USDT.` : null,
+          (c) => { const st = obj(c.c.doc.stato), w = st && obj(st.wallets) && obj(st.wallets[c.a]), p = w && (arr(w.positions)[0] || arr(w.closed)[0]); return obj(p) && p.symbol ? `In gara ho ${p.symbol} ${p.side || ""}: ${f(U.fmt(c.me.risultato, 2, true))} USDT${c.c.opening ? " all'apertura, solo i costi" : c.c.open ? " per ora" : ""}.` : null; },
+          (c) => c.c.open && !c.c.opening && c.me.place > 0 ? `In gara ${the(c.rk[0].k)} è davanti, con ${f(U.fmt(c.rk[0].risultato, 2, true))} USDT. Io ${f(U.fmt(c.me.risultato, 2, true))}.` : null],
+        falco: [(c) => isNum(c.c.leva) ? `Gara a leva ${f(String(c.c.leva))}: ${c.c.opening ? "i conti veri arrivano alla chiusura" : "sono " + placeTxt(c.me)}. Con quella leva lo stop è tutto.` : null],
       },
       reply: {
-        _: [(c) => { const m = myContest(c.b); return m ? `Io sono ${rankWord(c.b, m.i)}, con ${f(U.fmt(m.me.risultato, 2, true))} USDT.` : null; }, () => "Una gara è un esercizio: conta il fondo comune.", () => "Vediamo i conti del Preside, alla fine."],
+        _: [(c) => { const m = myContest(c.b); return !m ? null : m.c.opening ? `Io parto da ${f(U.fmt(m.me.risultato, 2, true))} USDT: per ora contano solo i costi.` : `Io sono ${placeTxt(m.me)}, con ${f(U.fmt(m.me.risultato, 2, true))} USDT.`; }, () => "Una gara è un esercizio: conta il fondo comune.", () => "Vediamo i conti del Preside, alla fine."],
         preside: [() => "Una gara è un esercizio, non lo scopo: conta il fondo comune."], guardiano: [(c) => isNum(c.c.leva) ? `Con leva ${f(String(c.c.leva))}, guarda la liquidazione prima del target.` : null],
       },
     },
@@ -835,7 +838,8 @@
     if (a.act.loop || a.act.id === "visita") return true;
     return walking(k) || !!a.act.interrupt;
   }
-  const encOk = (k, r) => L.mode === "vita" || (L.mode !== "replica" && L.mode !== "riunione" && has(["pranzo", "cena", "controllo", "serata", "caffe"], blockOf(k, r)));
+  // no invented chatter while a meeting is live or replayed: the official lines have the room
+  const encOk = (k, r) => L.mode === "vita" || (!has(["replica", "riunione", "diretta"], L.mode) && !liveDirective(k) && has(["pranzo", "cena", "controllo", "serata", "caffe"], blockOf(k, r)));
   function checkEncounters(step) {
     if (encs.length >= 2 || T - lastEncStart < 10) return;
     const r = U.rome();
@@ -1259,6 +1263,8 @@
     if (!U.isoDay(date)) return false;
     if (U.liveNow(C.data.live)) return false;
     const d = C.data.verbali && C.data.verbali[date];
+    // another day was picked: the running replay ends, so the campus and the page show the same day
+    if (rep && rep.date !== date && !obj(d)) stopReplay();
     if (d === null) { emitReplay("error", { date, step: 0, total: 0 }); return false; }
     if (talkRun) cancelTalk();
     if (d === undefined) {
@@ -1445,9 +1451,10 @@
     const order = rk.filter((x) => has(cast, x.k));
     order.forEach((x, n) => {
       REG = new Set();
-      const i = rk.indexOf(x), res = f(U.fmt(x.risultato, 2, true)), tot = f(String(rk.length));
-      const t = n === 0 ? pick([`Nella gara sono ${rankWord(x.k, i)} su ${tot}, con ${res} USDT.`, `Classifica della gara: sono ${rankWord(x.k, i)}, con ${res} USDT.`])
-        : pick([`Io sono ${rankWord(x.k, i)}, con ${res} USDT.`, `${U.cap(rankWord(x.k, i))} io: ${res} USDT.`, `Io ${rankWord(x.k, i)}, ${res} USDT. Vediamo a fine gara.`]);
+      const res = f(U.fmt(x.risultato, 2, true)), tot = f(String(rk.length)), pl = placeTxt(x);
+      const t = c.opening ? (n === 0 ? `All'apertura della gara contano solo i costi: io parto da ${res} USDT.` : `Io parto da ${res} USDT. I conti veri alla chiusura.`)
+        : n === 0 ? pick([`Nella gara sono ${pl} su ${tot}, con ${res} USDT.`, `Classifica della gara: sono ${pl}, con ${res} USDT.`])
+          : pick([`Io sono ${pl}, con ${res} USDT.`, `${U.cap(pl)} io: ${res} USDT.`, `Io ${pl}, ${res} USDT. Vediamo a fine gara.`]);
       if (lineOk(t)) lines.push({ who: x.k, to: n ? order[0].k : null, text: t, kind: "chiacchiera", label: "La gara", state: n === 0 ? "gesture" : "talk" });
     });
     if (lines.length < 2) return;
@@ -1602,6 +1609,8 @@
     return true;
   }
   function onModeChange(prev, mode) {
+    // a live meeting wins over a replay: the replay ends, so the clock and the seats are the live ones
+    if (mode === "diretta" && (rep || replayWait)) { replayWait = null; if (rep) endReplay(true); }
     if (prev === "palestra") { gymBoard = false; surf("palestra", null); }
     if (prev === "emergenza") { if (sera) { for (const k of sera.cast) if (A[k].lock === "sera") A[k].lock = null; sera = null; } if (scene && scene.kind === "allarme") endScene(scene, true); boardDefault(); }
     if (prev === "diretta") { liveBoardKey = ""; boardDefault(); surf("motore", null, ""); if (C.data.live && C.data.live.fase === "palestra") surf("palestra", null); }
@@ -1971,7 +1980,11 @@
     secAcc += step;
     if (secAcc >= 1 || !L.mode) { secAcc = 0; evalMode(); if (L.mode === "diretta") liveSync(); }
     if (jumpPending) { jumpPending = false; instantOnce = true; for (const k of KEYS) A[k].replan = true; }
-    if (replayWait && Date.now() > replayWait.until) { const d = replayWait.date; replayWait = null; bus.emit("life:replay", { state: "error", date: d, step: 0, total: 0 }); }
+    if (replayWait && Date.now() > replayWait.until) {
+      const w = replayWait;
+      if (w.late) replayWait = null;
+      else { w.late = true; w.until = Date.now() + 60000; bus.emit("life:replay", { state: "error", date: w.date, step: 0, total: 0, slow: true }); }
+    }
     plan(r);
     instantOnce = false;
     if (sayLater && T >= sayLater.at) {
