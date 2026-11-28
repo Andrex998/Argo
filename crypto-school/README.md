@@ -26,7 +26,7 @@ La pagina **Scuola Cripto** mostra tutto:
 È qui: https://claude.ai/artifact/WEB5jaWNy37UBRKYuscQne. Il sorgente è in
 [pagina/scuola-cripto.html](pagina/scuola-cripto.html).
 
-Sette attività programmate fanno girare la scuola, tutte con l'ora italiana:
+Otto attività programmate fanno girare la scuola, tutte con l'ora italiana:
 
 | Attività | Quando | Cosa fa |
 | --- | --- | --- |
@@ -34,6 +34,7 @@ Sette attività programmate fanno girare la scuola, tutte con l'ora italiana:
 | Scuola Cripto · recupero | ogni giorno alle 13:17 | la riunione, solo se quella del mattino non c'è stata |
 | Scuola Cripto · recupero della sera | ogni giorno alle 18:17 | la riunione, solo se non c'è stata né la mattina né alle 13:17 (aggiunta il 28/11/2026, dopo la riunione saltata del 27/11) |
 | Scuola Cripto · palestra | la domenica alle 11:13 | la palestra ([PALESTRA.md](PALESTRA.md)) |
+| Scuola Cripto · ricerca | la domenica alle 16:23 | la ricerca: ogni agente studia una sua domanda sul web ([RICERCA.md](RICERCA.md)); accesa il 28/11/2026 |
 | Scuola Cripto · sera | ogni giorno alle 20:41 | il controllo della sera ([SERA.md](SERA.md)) |
 | Scuola Cripto · revisione | il 2 di ogni mese alle 10:23 | il revisore esterno ([REVISIONE.md](REVISIONE.md)), con un messaggio sul telefono |
 | Sentinella delle scuole | ogni giorno alle 09:13 e alle 21:13 | controlla che le due scuole abbiano lavorato ([SENTINELLA.md](SENTINELLA.md)), con un messaggio sul telefono |
@@ -177,7 +178,8 @@ Il primo trimestre va dal 26/11/2026 al 21/2/2027: [programma.md](programma.md).
 | `preside.md`, `agenti/*.md` | Chi sono i personaggi e come ragionano. |
 | `PROCEDURA.md` | La riunione del mattino, passo per passo. |
 | `PALESTRA.md` | La palestra della domenica, passo per passo. |
-| `RICERCA.md` | La ricerca della domenica: ogni agente studia una sua domanda sul web. Pronta, da accendere con un'attività programmata. |
+| `RICERCA.md` | La ricerca della domenica: ogni agente studia una sua domanda sul web. |
+| `eventi.py`, `eventi.json` | Lo studio degli eventi: cosa hanno fatto i prezzi nei giorni dopo un tipo di evento (le decisioni della Fed, i crolli, le impennate), contro tutti gli altri giorni. |
 | `storia.py` | Rifà i conti dei quattro portafogli a regole sugli anni passati. |
 | `SERA.md` | Il controllo della sera e la riunione straordinaria. |
 
