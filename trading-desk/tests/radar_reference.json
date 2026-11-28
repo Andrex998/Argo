@@ -1,0 +1,1301 @@
+{
+ "now_ms": 1800000000000,
+ "cases": {
+  "demo_full": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 100
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 5.1
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3.2
+      },
+      {
+       "pct": 2.4
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.6
+      },
+      {
+       "pct": 1.3
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.8
+      },
+      {
+       "pct": 0.6
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": 22,
+    "social": {
+     "account": "solid",
+     "kol": "micro",
+     "vel": "med",
+     "cat": "yes"
+    }
+   },
+   "total": 78,
+   "coverage": 100,
+   "gate": false,
+   "cap": null,
+   "tier": "RISCHIO MODERATO*",
+   "traps": [
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": 2,
+    "mint": 5,
+    "freeze": 5,
+    "lp": 5,
+    "top10": 2,
+    "sacc": 8,
+    "skol": 5,
+    "svel": 6,
+    "scat": 10
+   }
+  },
+  "demo_auto_only": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 100
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 5.1
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3.2
+      },
+      {
+       "pct": 2.4
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.6
+      },
+      {
+       "pct": 1.3
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.8
+      },
+      {
+       "pct": 0.6
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": null,
+    "social": {
+     "account": "",
+     "kol": "",
+     "vel": "",
+     "cat": ""
+    }
+   },
+   "total": 47,
+   "coverage": 56,
+   "gate": false,
+   "cap": null,
+   "tier": "RISCHIO ALTO",
+   "traps": [
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": null,
+    "mint": 5,
+    "freeze": 5,
+    "lp": 5,
+    "top10": 2,
+    "sacc": null,
+    "skol": null,
+    "svel": null,
+    "scat": null
+   }
+  },
+  "mint_active": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": "Dev111",
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 100
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 5.1
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3.2
+      },
+      {
+       "pct": 2.4
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.6
+      },
+      {
+       "pct": 1.3
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.8
+      },
+      {
+       "pct": 0.6
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": 22,
+    "social": {
+     "account": "solid",
+     "kol": "micro",
+     "vel": "med",
+     "cat": "yes"
+    }
+   },
+   "total": 15,
+   "coverage": 100,
+   "gate": true,
+   "cap": 15,
+   "tier": "EVITARE",
+   "traps": [
+    "il dev può stampare supply",
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": 2,
+    "mint": 0,
+    "freeze": 5,
+    "lp": 5,
+    "top10": 2,
+    "sacc": 8,
+    "skol": 5,
+    "svel": 6,
+    "scat": 10
+   }
+  },
+  "freeze_active": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": "Dev111"
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 100
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 5.1
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3.2
+      },
+      {
+       "pct": 2.4
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.6
+      },
+      {
+       "pct": 1.3
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.8
+      },
+      {
+       "pct": 0.6
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": null,
+    "social": {
+     "account": "",
+     "kol": "",
+     "vel": "",
+     "cat": ""
+    }
+   },
+   "total": 15,
+   "coverage": 56,
+   "gate": true,
+   "cap": 15,
+   "tier": "EVITARE",
+   "traps": [
+    "i wallet possono essere congelati",
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": null,
+    "mint": 5,
+    "freeze": 0,
+    "lp": 5,
+    "top10": 2,
+    "sacc": null,
+    "skol": null,
+    "svel": null,
+    "scat": null
+   }
+  },
+  "lp_unlocked": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 30
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 5.1
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3.2
+      },
+      {
+       "pct": 2.4
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.6
+      },
+      {
+       "pct": 1.3
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.8
+      },
+      {
+       "pct": 0.6
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": 22,
+    "social": {
+     "account": "solid",
+     "kol": "micro",
+     "vel": "med",
+     "cat": "yes"
+    }
+   },
+   "total": 15,
+   "coverage": 100,
+   "gate": true,
+   "cap": 15,
+   "tier": "EVITARE",
+   "traps": [
+    "LP non bloccata: rug a un click",
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": 2,
+    "mint": 5,
+    "freeze": 5,
+    "lp": 0,
+    "top10": 2,
+    "sacc": 8,
+    "skol": 5,
+    "svel": 6,
+    "scat": 10
+   }
+  },
+  "lp_half_locked": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 60
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 5.1
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3.2
+      },
+      {
+       "pct": 2.4
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.6
+      },
+      {
+       "pct": 1.3
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.8
+      },
+      {
+       "pct": 0.6
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": null,
+    "social": {
+     "account": "",
+     "kol": "",
+     "vel": "",
+     "cat": ""
+    }
+   },
+   "total": 44,
+   "coverage": 56,
+   "gate": false,
+   "cap": null,
+   "tier": "RISCHIO ALTO",
+   "traps": [
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": null,
+    "mint": 5,
+    "freeze": 5,
+    "lp": 2,
+    "top10": 2,
+    "sacc": null,
+    "skol": null,
+    "svel": null,
+    "scat": null
+   }
+  },
+  "top10_whales": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 100
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 12
+      },
+      {
+       "pct": 9
+      },
+      {
+       "pct": 7
+      },
+      {
+       "pct": 5
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.5
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.5
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": 22,
+    "social": {
+     "account": "solid",
+     "kol": "micro",
+     "vel": "med",
+     "cat": "yes"
+    }
+   },
+   "total": 15,
+   "coverage": 100,
+   "gate": true,
+   "cap": 15,
+   "tier": "EVITARE",
+   "traps": [
+    "top 10 wallet: 45% della supply",
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": 2,
+    "mint": 5,
+    "freeze": 5,
+    "lp": 5,
+    "top10": 0,
+    "sacc": 8,
+    "skol": 5,
+    "svel": 6,
+    "scat": 10
+   }
+  },
+  "top10_heavy": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 100
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 8
+      },
+      {
+       "pct": 6
+      },
+      {
+       "pct": 5
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3
+      },
+      {
+       "pct": 3
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 1
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": null,
+    "social": {
+     "account": "",
+     "kol": "",
+     "vel": "",
+     "cat": ""
+    }
+   },
+   "total": 45,
+   "coverage": 56,
+   "gate": false,
+   "cap": null,
+   "tier": "RISCHIO ALTO",
+   "traps": [
+    "top 10 wallet: 35% della supply",
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": null,
+    "mint": 5,
+    "freeze": 5,
+    "lp": 5,
+    "top10": 0,
+    "sacc": null,
+    "skol": null,
+    "svel": null,
+    "scat": null
+   }
+  },
+  "security_unknown": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": 4.2,
+      "h1": 38,
+      "h6": 61,
+      "h24": 112
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799982000000
+    },
+    "rug": null,
+    "holderGrowth": 40,
+    "social": {
+     "account": "solid",
+     "kol": "top",
+     "vel": "high",
+     "cat": "yes"
+    }
+   },
+   "total": 49,
+   "coverage": 80,
+   "gate": false,
+   "cap": 49,
+   "tier": "RISCHIO ALTO",
+   "traps": [],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 7,
+    "age": 4,
+    "hold": 4,
+    "mint": null,
+    "freeze": null,
+    "lp": null,
+    "top10": null,
+    "sacc": 8,
+    "skol": 12,
+    "svel": 10,
+    "scat": 10
+   }
+  },
+  "weak_market": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 4000
+     },
+     "volume": {
+      "m5": 100,
+      "h1": 9000,
+      "h24": 15000
+     },
+     "priceChange": {
+      "m5": -3,
+      "h1": -12
+     },
+     "txns": {
+      "h1": {
+       "buys": 30,
+       "sells": 90
+      }
+     },
+     "pairCreatedAt": 1798560000000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 100
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 5.1
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3.2
+      },
+      {
+       "pct": 2.4
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.6
+      },
+      {
+       "pct": 1.3
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.8
+      },
+      {
+       "pct": 0.6
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": -5,
+    "social": {
+     "account": "none",
+     "kol": "none",
+     "vel": "low",
+     "cat": "no"
+    }
+   },
+   "total": 21,
+   "coverage": 100,
+   "gate": false,
+   "cap": null,
+   "tier": "RISCHIO ESTREMO",
+   "traps": [
+    "volume anemico vs mcap",
+    "liquidità sottile: uscita = slippage",
+    "pressione di vendita dominante (1h)",
+    "vecchio e senza trazione",
+    "holder in calo: distribuzione in corso",
+    "nessuna identità social dietro il token",
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 1,
+    "liq": 1,
+    "bp": 0,
+    "mom": 0,
+    "age": 0,
+    "hold": 0,
+    "mint": 5,
+    "freeze": 5,
+    "lp": 5,
+    "top10": 2,
+    "sacc": 0,
+    "skol": 0,
+    "svel": 2,
+    "scat": 0
+   }
+  },
+  "ultra_early": {
+   "input": {
+    "pair": {
+     "chainId": "solana",
+     "baseToken": {
+      "name": "Demo Sample",
+      "symbol": "DEMO"
+     },
+     "priceUsd": "0.000412",
+     "marketCap": 412000,
+     "fdv": 412000,
+     "liquidity": {
+      "usd": 86000
+     },
+     "volume": {
+      "m5": 9400,
+      "h1": 64000,
+      "h6": 142000,
+      "h24": 310000
+     },
+     "priceChange": {
+      "m5": -2,
+      "h1": 80
+     },
+     "txns": {
+      "h1": {
+       "buys": 412,
+       "sells": 233
+      }
+     },
+     "pairCreatedAt": 1799998200000
+    },
+    "rug": {
+     "token": {
+      "mintAuthority": null,
+      "freezeAuthority": null
+     },
+     "markets": [
+      {
+       "lp": {
+        "lpLockedPct": 100
+       }
+      }
+     ],
+     "topHolders": [
+      {
+       "pct": 5.1
+      },
+      {
+       "pct": 4
+      },
+      {
+       "pct": 3.2
+      },
+      {
+       "pct": 2.4
+      },
+      {
+       "pct": 2
+      },
+      {
+       "pct": 1.6
+      },
+      {
+       "pct": 1.3
+      },
+      {
+       "pct": 1
+      },
+      {
+       "pct": 0.8
+      },
+      {
+       "pct": 0.6
+      }
+     ],
+     "risks": [
+      {
+       "name": "Concentrazione top holder",
+       "level": "warn"
+      }
+     ]
+    },
+    "holderGrowth": 12,
+    "social": {
+     "account": "fresh",
+     "kol": "mid",
+     "vel": "high",
+     "cat": "no"
+    }
+   },
+   "total": 63,
+   "coverage": 100,
+   "gate": false,
+   "cap": null,
+   "tier": "RISCHIO ALTO",
+   "traps": [
+    "ultra-early (<1h): varianza massima, sniper in vantaggio",
+    "Concentrazione top holder"
+   ],
+   "points": {
+    "volm": 4,
+    "liq": 8,
+    "bp": 7,
+    "mom": 4,
+    "age": 0,
+    "hold": 2,
+    "mint": 5,
+    "freeze": 5,
+    "lp": 5,
+    "top10": 2,
+    "sacc": 3,
+    "skol": 8,
+    "svel": 10,
+    "scat": 0
+   }
+  },
+  "missing_fields": {
+   "input": {
+    "pair": {
+     "baseToken": {
+      "name": "X",
+      "symbol": "X"
+     },
+     "priceUsd": "1"
+    },
+    "rug": {
+     "token": {}
+    },
+    "holderGrowth": null,
+    "social": {
+     "account": "",
+     "kol": "",
+     "vel": "",
+     "cat": ""
+    }
+   },
+   "total": 0,
+   "coverage": 0,
+   "gate": false,
+   "cap": 49,
+   "tier": "RISCHIO ESTREMO",
+   "traps": [],
+   "points": {
+    "volm": null,
+    "liq": null,
+    "bp": null,
+    "mom": null,
+    "age": null,
+    "hold": null,
+    "mint": null,
+    "freeze": null,
+    "lp": null,
+    "top10": null,
+    "sacc": null,
+    "skol": null,
+    "svel": null,
+    "scat": null
+   }
+  }
+ }
+}

@@ -1,0 +1,8 @@
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "B", "UP", "SIM", "I"]
+
+[lint.isort]
+known-first-party = ["data", "eventi", "gara", "gym", "judgment", "picture", "rules", "salva_oi", "school", "trust"]
+known-third-party = ["desk", "perps", "trend"]

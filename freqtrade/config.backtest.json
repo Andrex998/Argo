@@ -1,0 +1,19 @@
+{
+    "fee": 0.005,
+    "exchange": {
+        "pair_whitelist": [
+            "BTC/USD", "ETH/USD", "BNB/USD", "SOL/USD", "XRP/USD", "DOGE/USD", "ADA/USD",
+            "AVAX/USD", "TRX/USD", "LINK/USD", "DOT/USD", "POL/USD", "LTC/USD", "BCH/USD",
+            "ATOM/USD", "UNI/USD", "ETC/USD", "XLM/USD", "NEAR/USD", "FIL/USD", "APT/USD",
+            "ARB/USD", "OP/USD", "INJ/USD", "SEI/USD", "SUI/USD", "TIA/USD", "ICP/USD",
+            "HBAR/USD", "AAVE/USD", "RENDER/USD", "S/USD", "IMX/USD", "STX/USD", "RUNE/USD",
+            "WLD/USD", "PEPE/USD", "SHIB/USD", "FLOKI/USD"
+        ]
+    },
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
+    "dataformat_ohlcv": "feather"
+}

@@ -1,0 +1,560 @@
+"""Scuola Cripto: the class's books. BingX prices, fake money.
+
+The agents propose, this script decides what happened. It runs with the trading desk's
+Python environment, because the rules wallets reuse the desk's research code. From
+trading-desk/, after `uv sync --frozen`:
+
+  uv run --frozen python ../crypto-school/school.py <command> ...
+
+  new STATE START           the judgment wallets, 10,000 USDT each, from START (a date)
+  mark STATE OI             prices now; funding, stops and targets on the hourly candles;
+                            today's open interest added to the record OI
+  giorno STATE OI DIR       the rules wallets replayed from the start, the picture of the
+                            market and the Guardiano's numbers: DIR/regole.json,
+                            DIR/quadro.json, DIR/rischio.json and the traffic lights in
+                            DIR/semaforo.json (yesterday's file there is read first)
+  contesto DIR             from DIR/stato.json and the files of `giorno`, one file for each
+                            wallet agent and the Guardiano: DIR/contesto-<agent>.json
+  execute STATE ORDERS      the agents' orders for their judgment wallets, at the last prices
+  verify NOTEBOOK           score the notebook's predictions now due
+  gara-nuova STATE [DEADLINE_UTC] [LEVERAGE]
+                            a contest on four separate wallets (by default the night contest of
+                            26/11/2026: until 14:00 UTC, leverage 10)
+  gara-ordini STATE ORDERS  each agent's one trade, at the last prices
+  gara-conti STATE          liquidations, stops, targets and the end at 15:00 Italian time
+  sigilla MINUTES REGISTER [mattina|sera]
+                            seal the meeting's decisions in the register (a chain of SHA-256)
+  registro REGISTER         check every seal of the chain
+  revisione DIR             the monthly auditor: from DIR/stato.json, regole.json, registro.json
+                            and quaderno-*.json, every number recomputed from BingX's data
+  sera STATE OI             the evening check: did something big happen since the morning?
+                            {"allarme": true|false, "motivi": [...]}; it changes no file
+  palestra-casi DAY DIR     the Sunday gym: 20 anonymous past cases for each wallet agent,
+                            DIR/palestra-<agent>.json
+  palestra-voti DAY DIR     score the answers in DIR/palestra-risposte-<agent>.json against
+                            what happened next: DIR/palestra-esito.json
+  palestra-quaderno NOTEBOOK OUTCOME AGENT
+                            add the agent's gym session to its notebook
+  limite STATE AGENT PCT    the most AGENT may risk on a position (the Preside's monthly call)
+  history COIN [DAYS]       daily candles, for homework (at most 1,000 days)
+
+Each command prints a JSON report; `mark`, `giorno`, `execute` and `verify` write the files
+they are given back. When BingX does not answer, the command prints {"error": ...}.
+"""
+
+from __future__ import annotations
+
+import json
+import pickle
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+import data
+import gara
+import gym
+import judgment
+import picture
+import rules
+import trust
+
+DAY_MS = rules.DAY_MS
+HOUR_MS = 3_600_000
+OI_DAYS = 400  # days of open interest kept in the record
+TRADES_KEPT = 40  # each rules wallet's last trades, in its report
+
+
+def _load(path: str, default: dict | None = None) -> dict:
+    p = Path(path)
+    if default is not None and not p.exists():
+        return default
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def _save(path: str, content: dict, compact: bool = False) -> None:
+    text = (
+        json.dumps(content, ensure_ascii=False, separators=(",", ":"))
+        if compact
+        else json.dumps(content, ensure_ascii=False, indent=1)
+    )
+    Path(path).write_text(text, encoding="utf-8")
+
+
+def _print(content: dict) -> None:
+    print(json.dumps(content, ensure_ascii=False, indent=1))
+
+
+def _now_ms(now: datetime) -> int:
+    return int(now.timestamp() * 1000)
+
+
+# --- commands --------------------------------------------------------------------------------
+
+
+def mark(state_path: str, oi_path: str, now: datetime) -> dict:
+    state, record = _load(state_path), _load(oi_path, {})
+    end, today = _now_ms(now), now.date().isoformat()
+    prices = data.tickers()
+    candles, rates = {}, {}
+    for coin in sorted({p["symbol"] for w in state["wallets"].values() for p in w["positions"]}):
+        mine = [p for w in state["wallets"].values() for p in w["positions"] if p["symbol"] == coin]
+        candles[coin] = data.klines(coin, "1h", min(judgment.ms(p["checked"]) for p in mine), end)
+        rates[coin] = data.funding(coin, min(judgment.ms(p["funded"]) for p in mine), end)
+    events = judgment.mark(state, candles, rates)
+    state["prices"], state["prices_at"] = prices, judgment.text(end)
+    if today not in record:
+        snap = {"_btc": prices.get("BTC")}
+        for coin in data.COINS:
+            try:
+                snap[coin] = round(data.open_interest(coin))
+            except (data.DataError, KeyError, TypeError, ValueError):
+                continue
+        record[today] = snap
+        record = dict(sorted(record.items())[-OI_DAYS:])
+    values = judgment.snapshot(state, today)
+    _save(state_path, state)
+    _save(oi_path, record)
+    return {"now": judgment.text(end), "events": events, "equity": values, "prices": prices,
+            "open_interest_coins": len(record[today]) - 1}  # fmt: skip
+
+
+def _readable(name: str, result: dict) -> dict:
+    """A rules wallet's report, with times as text (the replay keeps them in seconds) and only
+    its last trades."""
+    out = dict(result)
+    if name == "falco":
+        out["trades"] = [{**{k: v for k, v in t.items() if not k.endswith("_ts")},
+                          "entry": judgment.text(t["entry_ts"] * 1000), "exit": judgment.text(t["exit_ts"] * 1000)}
+                         for t in result["trades"]]  # fmt: skip
+        out["open"] = [{**{k: v for k, v in o.items() if k != "entry_ts"}, "since": judgment.text(o["entry_ts"] * 1000)}
+                       for o in result["open"]]  # fmt: skip
+    out["n_trades"] = len(result["trades"])
+    out["trades"] = out["trades"][-TRADES_KEPT:]
+    return out
+
+
+def day(state_path: str, oi_path: str, out_dir: str, now: datetime) -> dict:
+    state, record = _load(state_path), _load(oi_path, {})
+    end, today = _now_ms(now), now.date().isoformat()
+    start_day = state["school"]["start"]
+    start = rules.ms_of(start_day)
+    first_rate = min(start - 10 * DAY_MS, rules.ms_of(today) - 200 * DAY_MS)
+    k4h, k1d, rates = {}, {}, {}
+    for coin in data.COINS:
+        s = data.pair(coin)
+        k4h[s] = data.klines(coin, "4h", start - 40 * DAY_MS, end)
+        k1d[s] = data.klines(coin, "1d", min(start, end) - 400 * DAY_MS, end)
+        rates[s] = data.funding(coin, first_rate, end)
+    # Replayed even before the first day: the signals then say what each rule will do at the start.
+    results = {
+        "falco": rules.falco(k4h, rates, k1d["BTC/USDT"], start, max(end, start + DAY_MS)),
+        "tartaruga": rules.tartaruga(k1d, rates, start_day),
+        "spazzino": rules.spazzino(k1d, rates, start_day),
+        "ragioniere": rules.ragioniere(k1d, rates, start_day),
+    }
+    results = {name: _readable(name, r) for name, r in results.items()}
+    pic = picture.picture(k1d, rates, record, state.get("prices", {}), today, state.get("market"))
+    numbers = picture.risk(state, results, pic)
+    m = pic["mercato"]
+    state["market"] = {"day": today, "panic": m["panico"], "fragile": m["fragile"], "caldo_pct": m["caldo_pct"]}
+    folder = Path(out_dir)
+    folder.mkdir(parents=True, exist_ok=True)
+    _save(str(folder / "regole.json"), {"giorno": today, "inizio": start_day, "portafogli": results})
+    _save(str(folder / "quadro.json"), pic)
+    _save(str(folder / "rischio.json"), numbers)
+    light = traffic_lights(state, results, k1d["BTC/USDT"], start_day, today, _load(str(folder / "semaforo.json"), {}))
+    _save(str(folder / "semaforo.json"), light)
+    _save(state_path, state)
+    return {"now": judgment.text(end), "regole": {n: {"capitale": numbers["portafogli"][f"{n}_regole"]["capitale"],
+            "operazioni": r["n_trades"], "aperte": len(r["open"])} for n, r in results.items()},
+            "confronto": numbers["confronto"], "allarmi": numbers["allarmi"], "note": numbers["note"],
+            "semaforo": {n: w["colore"] for n, w in light["portafogli"].items()},
+            "mercato": m}  # fmt: skip
+
+
+def traffic_lights(state: dict, results: dict, btc_daily: list, start_day: str, today: str, before: dict) -> dict:
+    """The eight wallets' lights against BTC held and cash, from the class's start."""
+    curves, trades = {}, {}
+    for name in judgment.AGENTS:
+        curves[f"{name}_regole"] = dict(results[name]["curve"])
+        trades[f"{name}_regole"] = results[name].get("n_trades", 0)
+        wallet = state["wallets"][name]
+        curves[f"{name}_giudizio"] = {e["date"]: e["value"] for e in wallet["equity"] if e["date"] >= start_day}
+        trades[f"{name}_giudizio"] = len(wallet["closed"])
+    eve = rules.day_of(rules.ms_of(start_day) - DAY_MS)
+    closes = {rules.day_of(c.ts): c.close for c in btc_daily}
+    base = closes.get(eve)
+    btc = {d: round(judgment.CAPITAL * c / base, 2) for d, c in closes.items() if base and d >= eve}
+    return trust.lights(today, curves, trades, btc, before)
+
+
+def execute(state_path: str, orders_path: str, now: datetime) -> dict:
+    state, orders = _load(state_path), _load(orders_path)
+    prices = data.tickers()
+    state["prices"], state["prices_at"] = {**state.get("prices", {}), **prices}, judgment.text(_now_ms(now))
+    events = judgment.execute(state, orders, prices, now)
+    values = judgment.snapshot(state, now.date().isoformat())
+    _save(state_path, state)
+    return {"now": judgment.text(_now_ms(now)), "events": events, "equity": values}
+
+
+def verify(notebook_path: str, now: datetime) -> dict:
+    notebook = _load(notebook_path)
+    predictions = notebook.setdefault("previsioni", [])
+    today = now.date().isoformat()
+    due: dict[str, str] = {}
+    for p in predictions:
+        coin, deadline = str(p.get("mercato", "")).upper(), str(p.get("scadenza", "9999"))[:10]
+        if p.get("stato", "aperta") == "aperta" and coin in data.COINS and deadline < today:
+            due[coin] = min(due.get(coin, deadline), deadline)
+    closes = {}
+    for coin, oldest in due.items():
+        try:
+            first = rules.ms_of(oldest)
+        except ValueError:
+            continue
+        closes[coin] = {rules.day_of(c.ts): c.close for c in data.klines(coin, "1d", first, _now_ms(now))}
+    scored = judgment.verify(predictions, closes, today)
+    notebook["calibrazione"] = judgment.calibration(predictions)
+    _save(notebook_path, notebook)
+    return {"verificate": scored, "calibrazione": notebook["calibrazione"]}
+
+
+def context(folder: str) -> dict:
+    """What each agent needs from the engine's files in `folder`, in one file each:
+    contesto-<agent>.json for the four wallet agents and the Guardiano."""
+    base = Path(folder)
+    state, regole = _load(str(base / "stato.json")), _load(str(base / "regole.json"))
+    numbers, pic = _load(str(base / "rischio.json")), _load(str(base / "quadro.json"))
+    prices, day_ = state.get("prices", {}), numbers["giorno"]
+    written = []
+    for name in judgment.AGENTS:
+        w, r = state["wallets"][name], regole["portafogli"][name]
+        top, why = judgment.risk_limit(state, w, day_)
+        positions = []
+        for p in w["positions"]:
+            now_price = prices.get(p["symbol"], p["entry"])
+            gain = judgment._sign(p) * p["units"] * (now_price - p["entry"])
+            positions.append({**p, "prezzo_ora": now_price, "pnl_aperto": round(gain, 2)})
+        curve = sorted(r["curve"].items())
+        by_rules = {k: v for k, v in r.items() if k not in ("curve", "trades")}
+        by_rules |= {"capitale_ultimi_giorni": dict(curve[-10:]), "ultime_operazioni": r["trades"][-10:]}
+        by_judgment = {"capitale": round(judgment.equity(w, prices), 2), "contanti": round(w["cash"], 2),
+                       "posizioni": positions, "ultime_chiuse": w["closed"][-5:],
+                       "funding_pagato": round(w["funding"], 2), "costi": round(w["costs"], 2),
+                       "rischio_massimo_oggi_pct": top, "perche_il_limite": why.strip(" ()")}  # fmt: skip
+        content = {
+            "agente": name, "giorno": day_, "prezzi_ora": state.get("prices_at"),
+            "portafoglio_a_regole": by_rules, "portafoglio_a_giudizio": by_judgment,
+            "confronto_regole_giudizio": numbers["confronto"][name],
+            "rischio_dei_tuoi_portafogli": {k: numbers["portafogli"][f"{name}_{k}"] for k in ("regole", "giudizio")},
+            "allarmi": numbers["allarmi"], "note": numbers["note"], "mercato": pic["mercato"],
+        }  # fmt: skip
+        _save(str(base / f"contesto-{name}.json"), content)
+        written.append(f"contesto-{name}.json")
+    held = {n: [{k: p[k] for k in ("id", "symbol", "side", "units", "entry", "stop", "risk_usd")}
+                for p in state["wallets"][n]["positions"]] for n in judgment.AGENTS}  # fmt: skip
+    rules_open = {n: regole["portafogli"][n]["open"] for n in judgment.AGENTS}
+    _save(str(base / "contesto-guardiano.json"), {**numbers, "mercato": pic["mercato"],
+          "posizioni_a_giudizio": held, "posizioni_a_regole": rules_open})  # fmt: skip
+    return {"scritti": [*written, "contesto-guardiano.json"]}
+
+
+# --- the night contest of 26/11/2026 ------------------------------------------------------------------
+
+
+def contest_orders(state_path: str, orders_path: str, now: datetime) -> dict:
+    state, orders, prices = _load(state_path), _load(orders_path), data.tickers()
+    when, events = judgment.text(_now_ms(now)), []
+    for name in gara.AGENTS:
+        mine = orders.get(name)
+        for order in mine if isinstance(mine, list) else [mine] if isinstance(mine, dict) else []:
+            events.append(gara.open_trade(state, name, order, prices, when))
+    _save(state_path, state)
+    return {"now": when, "events": events, "situazione": gara.standings(state, prices)}
+
+
+def contest_accounts(state_path: str, now: datetime) -> dict:
+    state, end = _load(state_path), _now_ms(now)
+    held = [p for w in state["wallets"].values() for p in w["positions"]]
+    candles = {p["symbol"]: data.klines(p["symbol"], "1h", judgment.ms(p["checked"]), end) for p in held}
+    rates = {p["symbol"]: data.funding(p["symbol"], judgment.ms(p["funded"]), end) for p in held}
+    events = gara.mark(state, candles, rates)
+    prices = data.tickers()
+    _save(state_path, state)
+    over = end >= judgment.ms(state.get("scadenza_utc", gara.DEADLINE))
+    return {"now": judgment.text(end), "events": events, "situazione": gara.standings(state, prices, over)}
+
+
+# --- the sealed register and the monthly auditor ------------------------------------------------------
+
+
+def seal(minutes_path: str, register_path: str, moment: str) -> dict:
+    minutes, register = _load(minutes_path), _load(register_path, {"giorni": []})
+    entry = trust.seal(register, minutes, moment)
+    if moment == "sera":
+        minutes.setdefault("sera", {})["registro"] = {"sigillo": entry["sigillo"], "precedente": entry["precedente"]}
+    else:
+        minutes["registro"] = {"sigillo": entry["sigillo"], "precedente": entry["precedente"]}
+    _save(minutes_path, minutes)
+    _save(register_path, register)
+    return {**{k: v for k, v in entry.items() if k != "testo"}, "catena": trust.check(register)}
+
+
+def accounts(state: dict) -> list[dict]:
+    """The judgment wallets' books must add up: every closed trade, and the cash."""
+    problems = []
+    for name, w in state["wallets"].items():
+        for t in w["closed"]:
+            sign = 1 if t["side"] == "long" else -1
+            move = sign * t["units"] * (t["exit"] - t["entry"])
+            costs = t["units"] * (t["entry"] + t["exit"]) * judgment.COST
+            if abs(move - t["price_pnl"]) > 0.02 or abs(costs - t["costs"]) > 0.02:
+                problems.append({"portafoglio": name, "operazione": t["id"], "problema": "prezzo o costi non tornano"})
+            if abs(t["price_pnl"] - t["costs"] - t["funding"] - t["pnl"]) > 0.03:
+                problems.append(
+                    {"portafoglio": name, "operazione": t["id"], "problema": "il risultato netto non torna"}
+                )
+        expected = judgment.CAPITAL + sum(t["pnl"] for t in w["closed"])
+        expected -= sum(p["entry_cost"] + p["funding"] for p in w["positions"])
+        if abs(expected - w["cash"]) > 0.05 * (1 + len(w["closed"])):
+            problems.append({"portafoglio": name, "problema": f"contanti {w['cash']:.2f} invece di {expected:.2f}"})
+    return problems
+
+
+def audit(folder: str, now: datetime) -> dict:
+    """The monthly auditor: every number the school shows, recomputed from BingX's raw data."""
+    base, end = Path(folder), _now_ms(now)
+    state, stored = _load(str(base / "stato.json")), _load(str(base / "regole.json"), {"portafogli": {}})
+    checks = []
+    found = accounts(state)
+    checks.append({"controllo": "i conti dei portafogli a giudizio", "esito": "ok" if not found else "problema",
+                   "dettagli": found})  # fmt: skip
+    found = []
+    for name, w in state["wallets"].items():
+        for t in w["closed"]:
+            if not t["exit_reason"].startswith(("stop", "target")) or end - judgment.ms(t["closed"]) > 35 * DAY_MS:
+                continue
+            at = judgment.ms(t["closed"])
+            candle = next((c for c in data.klines(t["symbol"], "1h", at, at + HOUR_MS) if c.ts == at), None)
+            if candle is None or not candle.low - 1e-9 <= t["exit"] <= candle.high + 1e-9:
+                found.append({"portafoglio": name, "operazione": t["id"], "problema": "uscita fuori dalla candela"})
+    checks.append({"controllo": "le uscite su stop e target del mese, contro le candele orarie",
+                   "esito": "ok" if not found else "problema", "dettagli": found})  # fmt: skip
+    start_day, start = state["school"]["start"], rules.ms_of(state["school"]["start"])
+    k4h, k1d, rates = {}, {}, {}
+    for coin in data.COINS:
+        s = data.pair(coin)
+        k4h[s] = data.klines(coin, "4h", start - 40 * DAY_MS, end)
+        k1d[s] = data.klines(coin, "1d", start - 400 * DAY_MS, end)
+        rates[s] = data.funding(coin, start - 10 * DAY_MS, end)
+    again = {"falco": rules.falco(k4h, rates, k1d["BTC/USDT"], start, max(end, start + DAY_MS)),
+             "tartaruga": rules.tartaruga(k1d, rates, start_day), "spazzino": rules.spazzino(k1d, rates, start_day),
+             "ragioniere": rules.ragioniere(k1d, rates, start_day)}  # fmt: skip
+    found = []
+    for name, r in again.items():
+        kept = stored["portafogli"].get(name, {}).get("curve", {})
+        for d, v in kept.items():
+            if d in r["curve"] and abs(r["curve"][d] - v) > 0.01:
+                found.append({"portafoglio": name, "giorno": d, "problema": f"{v} salvato, {r['curve'][d]} rifatto"})
+                break
+    checks.append({"controllo": "i portafogli a regole rifatti da capo", "esito": "ok" if not found else "problema",
+                   "dettagli": found})  # fmt: skip
+    found = []
+    for path in sorted(base.glob("quaderno-*.json")):
+        for p in _load(str(path)).get("previsioni", []):
+            if p.get("stato") != "verificata":
+                continue
+            coin, day_ = str(p["mercato"]).upper(), p["giorno_chiusura"]
+            close = {rules.day_of(c.ts): c.close for c in k1d.get(data.pair(coin), [])}.get(day_)
+            hit = close is not None and (
+                close > float(p["livello"]) if p["direzione"] == "sopra" else close < float(p["livello"])
+            )
+            if close is None or abs(close - float(p["chiusura"])) > 1e-6 * max(1.0, close) or int(hit) != p["esito"]:
+                found.append({"previsione": p.get("id"), "problema": "chiusura o esito diversi da quelli dei dati"})
+    checks.append(
+        {"controllo": "le previsioni verificate", "esito": "ok" if not found else "problema", "dettagli": found}
+    )
+    chain = trust.check(_load(str(base / "registro.json"), {"giorni": []}))
+    checks.append({"controllo": "la catena dei sigilli", "esito": "ok" if chain["integra"] else "problema",
+                   "dettagli": [] if chain["integra"] else [{"problema": f"rotta a {chain['rotta_a']}"}]})  # fmt: skip
+    report = {"data": now.date().isoformat(), "ora": judgment.text(end), "controlli": checks,
+              "problemi": sum(c["esito"] != "ok" for c in checks), "sigilli": chain["sigilli"],
+              "ultimo_sigillo": chain["ultimo"]}  # fmt: skip
+    _save(str(base / "revisione.json"), report)
+    return report
+
+
+# --- the evening check ----------------------------------------------------------------------------
+
+BTC_MOVE = 0.07  # BTC this far from the morning's price
+COIN_MOVE, COINS_MOVED = 0.10, 10  # this many coins this far from the morning's price
+WALLET_DROP = -0.04  # a judgment wallet this far under its value after the meeting
+CASCADE_OI, CASCADE_BTC = -0.15, -0.08  # the library's cascade: open interest and BTC together
+
+
+OF_AGENT = {"falco": "del Falco", "tartaruga": "della Tartaruga", "spazzino": "dello Spazzino",
+            "ragioniere": "del Ragioniere"}  # fmt: skip
+
+
+def _it_pct(x: float) -> str:
+    """A change in % the Italian way: +1,7% or −12,0%."""
+    return f"{x * 100:+.1f}%".replace(".", ",").replace("-", "−")
+
+
+def evening_reasons(state: dict, prices: dict[str, float], open_interest: dict[str, float] | None,
+                    morning_oi: dict | None, today: str) -> tuple[list[str], dict]:  # fmt: skip
+    """The written reasons to meet again in the evening, measured from the morning's prices
+    (those of the meeting) and from the open interest recorded in the morning."""
+    morning, reasons = state.get("prices", {}), []
+    numbers: dict = {"prezzi_della_mattina": state.get("prices_at")}
+    moves = {c: prices[c] / morning[c] - 1 for c in prices if morning.get(c)}
+    btc = moves.get("BTC")
+    if btc is not None:
+        numbers["btc_pct"] = round(btc * 100, 2)
+        if abs(btc) >= BTC_MOVE:
+            reasons.append(f"BTC {_it_pct(btc)} dalla mattina")
+    big = sorted((c for c, m in moves.items() if abs(m) >= COIN_MOVE), key=lambda c: -abs(moves[c]))
+    numbers["monete_oltre_10pct"] = {c: round(moves[c] * 100, 1) for c in big}
+    if len(big) >= COINS_MOVED:
+        reasons.append(f"{len(big)} monete su {len(moves)} mosse di oltre il 10% dalla mattina")
+    numbers["portafogli_pct"] = {}
+    for name, w in state["wallets"].items():
+        after_meeting = next((e["value"] for e in w["equity"] if e["date"] == today), None)
+        if not after_meeting:
+            continue
+        change = judgment.equity(w, {**morning, **prices}) / after_meeting - 1
+        numbers["portafogli_pct"][name] = round(change * 100, 2)
+        if change <= WALLET_DROP:
+            reasons.append(f"il portafoglio a giudizio {OF_AGENT.get(name, name)} {_it_pct(change)} dalla mattina")
+    if open_interest and morning_oi:
+        both = [c for c in open_interest if morning_oi.get(c)]
+        if both:
+            total = sum(open_interest[c] for c in both) / sum(morning_oi[c] for c in both) - 1
+            numbers["open_interest_pct"] = round(total * 100, 2)
+            if total <= CASCADE_OI and btc is not None and btc <= CASCADE_BTC:
+                reasons.append(f"CASCATA: open interest {_it_pct(total)} con BTC {_it_pct(btc)}")
+    return reasons, numbers
+
+
+def evening(state_path: str, oi_path: str, now: datetime) -> dict:
+    """Did something big happen since the morning? It changes no file."""
+    state, record, today = _load(state_path), _load(oi_path, {}), now.date().isoformat()
+    prices = data.tickers()
+    morning_oi = record.get(today)
+    open_interest = None
+    if morning_oi:
+        open_interest = {}
+        for coin in data.COINS:
+            try:
+                open_interest[coin] = data.open_interest(coin)
+            except (data.DataError, KeyError, TypeError, ValueError):
+                continue
+    reasons, numbers = evening_reasons(state, prices, open_interest, morning_oi, today)
+    return {"data": today, "ora": judgment.text(_now_ms(now)), "allarme": bool(reasons), "motivi": reasons,
+            "numeri": numbers}  # fmt: skip
+
+
+# --- the Sunday gym ------------------------------------------------------------------------------
+
+
+def gym_market(session_day: str, folder: str) -> gym.Market:
+    """Three years of daily candles and a year and a half of funding, up to the session's day,
+    kept in DIR/palestra-dati.pkl so that drawing and scoring see the same data."""
+    cache = Path(folder) / "palestra-dati.pkl"
+    if cache.exists():
+        daily, rates = pickle.loads(cache.read_bytes())
+    else:
+        end = rules.ms_of(session_day)
+        daily = {data.pair(c): data.klines(c, "1d", rules.ms_of("2022-06-01"), end) for c in data.COINS}
+        rates = {data.pair(c): data.funding(c, end - 560 * DAY_MS, end) for c in data.COINS}
+        Path(folder).mkdir(parents=True, exist_ok=True)
+        cache.write_bytes(pickle.dumps((daily, rates)))
+    return gym.Market(daily, rates)
+
+
+def gym_cases(session_day: str, folder: str) -> dict:
+    m = gym_market(session_day, folder)
+    drawn = gym.draw(m, session_day)
+    for agent, cases in drawn.items():
+        _save(str(Path(folder) / f"palestra-{agent}.json"),
+              {"data": session_day, "agente": agent, "orizzonte_giorni": gym.HORIZON,
+               "casi": [gym.public(m, c) for c in cases]}, compact=True)  # fmt: skip
+    return {"data": session_day, "casi": {a: len(c) for a, c in drawn.items()},
+            "del_mestiere": {a: sum(c["tipo"] == "mestiere" for c in cs) for a, cs in drawn.items()}}  # fmt: skip
+
+
+def gym_scores(session_day: str, folder: str) -> dict:
+    m = gym_market(session_day, folder)
+    out = {}
+    for agent, cases in gym.draw(m, session_day).items():
+        answers = _load(str(Path(folder) / f"palestra-risposte-{agent}.json"), {"risposte": []})
+        rows = gym.score(agent, m, cases, answers.get("risposte", []))
+        out[agent] = {"riassunto": gym.summary(rows), "casi": rows}
+    _save(str(Path(folder) / "palestra-esito.json"), {"data": session_day, "orizzonte_giorni": gym.HORIZON,
+                                                       "agenti": out})  # fmt: skip
+    return {a: {k: v for k, v in x["riassunto"].items() if k != "calibrazione"} for a, x in out.items()}
+
+
+def main(argv: list[str]) -> None:
+    command, args, now = (argv[1] if len(argv) > 1 else ""), argv[2:], datetime.now(UTC)
+    if command == "new" and len(args) == 2:
+        _save(args[0], judgment.new_state(datetime.fromisoformat(args[1]).date().isoformat()))
+        _print({"created": args[0], "start": args[1]})
+    elif command == "mark" and len(args) == 2:
+        _print(mark(args[0], args[1], now))
+    elif command == "giorno" and len(args) == 3:
+        _print(day(args[0], args[1], args[2], now))
+    elif command == "execute" and len(args) == 2:
+        _print(execute(args[0], args[1], now))
+    elif command == "gara-nuova" and len(args) in (1, 2, 3):
+        deadline = args[1][:19] if len(args) > 1 else gara.DEADLINE
+        state = gara.new_state(deadline, int(args[2]) if len(args) > 2 else gara.LEVERAGE)
+        _save(args[0], state)
+        _print({"creata": args[0], "scadenza_utc": state["scadenza_utc"], "leva": state["leva"]})
+    elif command == "gara-ordini" and len(args) == 2:
+        _print(contest_orders(args[0], args[1], now))
+    elif command == "gara-conti" and len(args) == 1:
+        _print(contest_accounts(args[0], now))
+    elif command == "sigilla" and len(args) in (2, 3):
+        _print(seal(args[0], args[1], args[2] if len(args) == 3 else "mattina"))
+    elif command == "registro" and len(args) == 1:
+        _print(trust.check(_load(args[0], {"giorni": []})))
+    elif command == "revisione" and len(args) == 1:
+        _print(audit(args[0], now))
+    elif command == "sera" and len(args) == 2:
+        _print(evening(args[0], args[1], now))
+    elif command == "palestra-casi" and len(args) == 2:
+        _print(gym_cases(datetime.fromisoformat(args[0]).date().isoformat(), args[1]))
+    elif command == "palestra-voti" and len(args) == 2:
+        _print(gym_scores(datetime.fromisoformat(args[0]).date().isoformat(), args[1]))
+    elif command == "palestra-quaderno" and len(args) == 3:
+        notebook, outcome = _load(args[0]), _load(args[1])
+        stats = gym.into_notebook(notebook, outcome["data"], outcome["agenti"][args[2]]["casi"])
+        _save(args[0], notebook)
+        _print({"agente": args[2], **{k: v for k, v in stats.items() if k != "calibrazione"}})
+    elif command == "contesto" and len(args) == 1:
+        _print(context(args[0]))
+    elif command == "verify" and len(args) == 1:
+        _print(verify(args[0], now))
+    elif command == "limite" and len(args) == 3:
+        state = _load(args[0])
+        judgment.set_limit(state, args[1], float(args[2]))
+        _save(args[0], state)
+        _print({"agente": args[1], "rischio_massimo_pct": float(args[2])})
+    elif command == "history" and args:
+        coin, days = args[0].upper(), min(1000, int(args[1])) if len(args) > 1 else 365
+        candles = data.klines(coin, "1d", _now_ms(now) - days * DAY_MS, _now_ms(now))
+        print(json.dumps([{"giorno": rules.day_of(c.ts), "apertura": c.open, "massimo": c.high, "minimo": c.low,
+                           "chiusura": c.close, "volume": c.volume} for c in candles]))  # fmt: skip
+    else:
+        print(__doc__)
+        raise SystemExit(2)
+
+
+if __name__ == "__main__":
+    try:
+        main(sys.argv)
+    except data.DataError as e:
+        _print({"error": str(e)})
+        raise SystemExit(1) from e

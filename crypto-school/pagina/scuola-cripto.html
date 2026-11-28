@@ -1,0 +1,2265 @@
+<title>Scuola Cripto</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Titillium+Web:wght@400;600;700&display=swap">
+<style>
+/* Layout: lo stesso quaderno a quadretti della scuola forex. In alto il campus in 3D, dove
+   gli otto agenti vivono la loro giornata, poi il registro degli 89 giorni, i quattro banchi con i due
+   portafogli gemelli (regola contro giudizio), i numeri del Guardiano, i quaderni degli
+   otto personaggi, il verbale del giorno, le 36 monete e le regole. Ogni personaggio ha il
+   suo colore, sempre accanto al suo nome. Di notte il quaderno diventa una lavagna. */
+:root {
+  --paper: #fbfbf8;
+  --sheet: #ffffff;
+  --grid: #e7edf5;
+  --ink: #15233a;
+  --ink-2: #47526a;
+  --muted: #677085;
+  --rule: #d6dde8;
+  --wash: #eef2f8;
+  --pen: #b8243a;
+  --gain: #006300;
+  --loss: #c62f2f;
+  --alarm: #fbeaea;
+  --amber: #c58a00;
+  --focus: #2a78d6;
+  --c-preside: #b8243a;
+  --c-falco: #257de0;
+  --c-tartaruga: #128a2b;
+  --c-spazzino: #ef6a26;
+  --c-ragioniere: #d99400;
+  --c-guardiano: #00a383;
+  --c-cronista: #db5a93;
+  --c-scettico: #6a4ce2;
+  --c-motore: #47526a;
+  --font-head: "Titillium Web", "Segoe UI", system-ui, sans-serif;
+  --font-read: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-num: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #17201c; --sheet: #1c2722; --grid: #212c27; --ink: #e8ede7; --ink-2: #b7c2bb;
+    --muted: #8d9991; --rule: #2f3b35; --wash: #223029; --pen: #f28b96; --gain: #35b54a;
+    --loss: #f07272; --alarm: #3a2527; --amber: #e5b43c; --focus: #6aa6ef;
+    --c-preside: #ef6a6b; --c-falco: #3d93f0; --c-tartaruga: #22b83c; --c-spazzino: #ef7a3c;
+    --c-ragioniere: #dca21c; --c-guardiano: #19b496; --c-cronista: #e8649f; --c-scettico: #9d8cf1;
+    --c-motore: #b7c2bb; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #17201c; --sheet: #1c2722; --grid: #212c27; --ink: #e8ede7; --ink-2: #b7c2bb;
+  --muted: #8d9991; --rule: #2f3b35; --wash: #223029; --pen: #f28b96; --gain: #35b54a;
+  --loss: #f07272; --alarm: #3a2527; --amber: #e5b43c; --focus: #6aa6ef;
+  --c-preside: #ef6a6b; --c-falco: #3d93f0; --c-tartaruga: #22b83c; --c-spazzino: #ef7a3c;
+  --c-ragioniere: #dca21c; --c-guardiano: #19b496; --c-cronista: #e8649f; --c-scettico: #9d8cf1;
+  --c-motore: #b7c2bb; color-scheme: dark;
+}
+
+body {
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font: 15px/1.55 var(--font-head);
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3, h4 { font-family: var(--font-head); line-height: 1.15; text-wrap: balance; margin: 0; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.12rem; font-weight: 600; }
+h4 { font-size: .76rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+p { margin: 0; }
+a { color: inherit; text-underline-offset: 2px; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.muted { color: var(--muted); }
+.up { color: var(--gain); }
+.down { color: var(--loss); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* the cast: every colour sits next to a name */
+.k-preside { --who: var(--c-preside); }
+.k-falco { --who: var(--c-falco); }
+.k-tartaruga { --who: var(--c-tartaruga); }
+.k-spazzino { --who: var(--c-spazzino); }
+.k-ragioniere { --who: var(--c-ragioniere); }
+.k-guardiano { --who: var(--c-guardiano); }
+.k-cronista { --who: var(--c-cronista); }
+.k-scettico { --who: var(--c-scettico); }
+.k-motore { --who: var(--c-motore); }
+.key { width: 22px; height: 4px; border-radius: 2px; flex: none; display: inline-block; background: var(--who, var(--ink-2)); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; background: var(--who, var(--ink-2)); }
+.whom { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; white-space: nowrap; font-family: var(--font-head); }
+
+/* testata */
+.top { padding-block: 28px 18px; }
+.top .wrap { display: grid; gap: 10px; }
+.eyebrow { font-size: .76rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.top h1 { font-size: clamp(2.1rem, 5vw, 3.2rem); font-weight: 700; letter-spacing: -.01em; }
+.lede { max-width: 64ch; color: var(--ink-2); font-size: 1.02rem; }
+.status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  background: var(--sheet); border: 1px solid var(--rule); font-size: .88rem; color: var(--ink-2); max-width: 100%;
+}
+.chip strong, .chip b { color: var(--ink); font-weight: 600; }
+.chip.warn { border-color: var(--loss); }
+.chip.warn b { color: var(--loss); }
+.notice { padding: 10px 14px; border: 1px solid var(--loss); background: var(--sheet); border-radius: 8px; color: var(--ink-2); }
+
+section { padding-block: 18px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 12px; }
+.section-head .muted { font-size: .9rem; }
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.block { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.speaker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.speaker .turn { font-size: .8rem; color: var(--muted); }
+.lines { display: grid; gap: 4px; font-size: .88rem; color: var(--ink-2); margin: 0; padding: 0; list-style: none; }
+.empty { display: grid; gap: 6px; color: var(--ink-2); }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: .86rem; color: var(--ink-2); }
+.facts b { color: var(--ink); font-weight: 600; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.read { font-family: var(--font-read); font-size: .98rem; line-height: 1.55; overflow-wrap: anywhere; }
+details > summary { cursor: pointer; color: var(--ink-2); font-size: .88rem; }
+details[open] > summary { margin-bottom: 6px; }
+
+/* tables */
+.table-scroll { overflow-x: auto; min-width: 0; }
+table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; vertical-align: bottom; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+th.num { font-family: var(--font-head); }
+table.tight td, table.tight th { padding: 5px 6px; }
+.side { display: inline-block; white-space: nowrap; padding: 1px 7px; border-radius: 999px; font-size: .74rem; font-weight: 600; border: 1px solid var(--rule); }
+.side.long::before { content: "▲ "; color: var(--gain); }
+.side.short::before { content: "▼ "; color: var(--loss); }
+td.hot, .hot { color: var(--loss); font-weight: 600; }
+
+/* tags in the minutes */
+.tag { display: inline-block; font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
+.tag.ok { border-color: var(--gain); color: var(--gain); }
+.tag.no { border-color: var(--loss); color: var(--loss); }
+.event { font-size: .88rem; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.event > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.order { font-size: .88rem; padding: 7px 0; border-top: 1px solid var(--rule); display: grid; gap: 3px; }
+.order .why { color: var(--ink-2); }
+
+/* the grades in red pen */
+.voti { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.voto { display: inline-flex; align-items: center; gap: 6px; font-size: .86rem; color: var(--ink-2); }
+.voto i {
+  font-style: normal; font-family: var(--font-hand); font-weight: 700; font-size: 1.45rem; line-height: 1;
+  color: var(--pen); width: 34px; height: 34px; display: inline-grid; place-items: center;
+  border: 2px solid var(--pen); border-radius: 50% 46% 52% 48%;
+}
+.voti.self .voto i { color: var(--ink-2); border-color: var(--ink-2); }
+.pen { font-family: var(--font-hand); color: var(--pen); font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.thought { font-family: var(--font-read); font-style: italic; color: var(--ink-2); border: 1px dashed var(--rule); border-radius: 10px; padding: 8px 12px; }
+
+/* il campus in 3D: la scena, il pannello e il gioco li disegnano i moduli campus/*.js */
+.cp { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: stretch; }
+.cp-stage { position: relative; height: clamp(420px, 68vh, 680px); border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); background: #0d1317; min-width: 0; isolation: isolate; }
+.cp-stage > canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+.cp-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+.cp-hud { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.cp-side { min-width: 0; max-height: clamp(420px, 68vh, 680px); display: flex; flex-direction: column; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.cp-player { margin-top: 16px; display: grid; gap: 16px; min-width: 0; }
+.cp-live { display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; color: var(--ink-2); }
+.cp-stage.cp-no3d > canvas { display: none; }
+@media (max-width: 900px) {
+  .cp { grid-template-columns: minmax(0, 1fr); }
+  .cp-stage { height: clamp(360px, 62vh, 560px); }
+  .cp-side { max-height: none; }
+}
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--loss); flex: none; display: inline-block; }
+@media (prefers-reduced-motion: no-preference) { .live-dot { animation: pulse 1.8s ease-out infinite; } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(198, 47, 47, .5); } 100% { box-shadow: 0 0 0 10px rgba(198, 47, 47, 0); } }
+
+/* registro */
+.registro { display: grid; gap: 10px; }
+.week { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 6px 14px; align-items: start; }
+.week-name { font-size: .84rem; color: var(--ink-2); padding-top: 4px; line-height: 1.35; }
+.week-name b { display: block; color: var(--ink); font-weight: 600; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.day {
+  position: relative; display: grid; justify-items: start; gap: 0; padding: 5px 7px 6px; min-height: 50px;
+  border: 1px solid var(--rule); border-radius: 6px; background: transparent; cursor: pointer; text-align: left; color: var(--muted);
+}
+.day .n { font-family: var(--font-num); font-weight: 500; font-size: .95rem; }
+.day .d { font-size: .74rem; white-space: nowrap; }
+.day .k { position: absolute; top: 4px; right: 5px; font-size: .62rem; font-weight: 700; letter-spacing: .04em; line-height: 1; padding: 2px 3px; border-radius: 3px; border: 1px solid currentColor; }
+.day.t-scrutinio .k, .day.t-fine .k, .day.t-accoglienza .k { color: var(--pen); }
+.day.t-scrutinio, .day.t-fine, .day.t-accoglienza { border-width: 2px; }
+.wd { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-left: 7px; }
+.day.done { background-color: var(--sheet); color: var(--ink); border-color: var(--ink-2); }
+.day.partial { border-style: dashed; border-color: var(--loss); }
+.day.today { box-shadow: 0 0 0 2px var(--pen); }
+.day[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.day[aria-pressed="true"] .k { color: var(--paper); }
+.day:hover { border-color: var(--ink); }
+.legend-row { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .82rem; color: var(--muted); }
+.legend-row span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 16px; height: 12px; border: 1px solid var(--rule); border-radius: 3px; display: inline-block; }
+.sw.done { background: var(--sheet); border-color: var(--ink-2); }
+.sw.partial { border-style: dashed; border-color: var(--loss); }
+.sw.today { box-shadow: 0 0 0 2px var(--pen); }
+.sw-k { font-size: .62rem; font-weight: 700; padding: 1px 3px; border: 1px solid currentColor; border-radius: 3px; line-height: 1; }
+
+/* i portafogli */
+.fund { display: flex; flex-wrap: wrap; gap: 10px 32px; align-items: baseline; padding: 14px 18px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; margin-bottom: 16px; }
+.fund .fig { display: grid; gap: 2px; }
+.fund .fig .v { font-family: var(--font-num); font-size: 1.45rem; font-weight: 500; letter-spacing: -.01em; }
+.fund .fig .v small { font-size: .8rem; color: var(--muted); font-weight: 400; }
+.fund .fig p { font-size: .84rem; color: var(--ink-2); }
+.wallets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.wallet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.who { display: flex; align-items: center; gap: 10px; }
+.who h3 { font-size: 1.3rem; }
+.who p { color: var(--ink-2); font-size: .88rem; }
+.gapfig { display: grid; gap: 2px; padding: 10px 12px; border-radius: 8px; background: var(--wash); }
+.gapfig .gap { font-family: var(--font-num); font-size: clamp(1.7rem, 4vw, 2.2rem); font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
+.gapfig .gap small { font-size: .85rem; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+.gapfig p { font-size: .88rem; color: var(--ink-2); }
+.twins { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.twin { border-top: 3px solid var(--who); padding-top: 6px; display: grid; gap: 1px; min-width: 0; }
+.twin.rules { border-top: 3px dashed var(--ink-2); }
+.twin .v { font-family: var(--font-num); font-size: 1.22rem; font-weight: 500; }
+.twin .s { font-size: .84rem; }
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.chart-box { position: relative; }
+.chart-box svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-box svg text { font-family: var(--font-num); font-size: 11px; fill: var(--muted); }
+.chart-box svg text.end { fill: var(--ink-2); font-size: 11.5px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .82rem; color: var(--ink-2); }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ln { width: 22px; height: 0; border-top: 2px solid var(--who); display: inline-block; }
+.ln.rules { border-top: 2px dashed var(--ink-2); }
+.chart-empty { padding: 18px 0; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px;
+  padding: 7px 10px; font-size: .8rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .14); min-width: 160px; z-index: 2;
+}
+.tip .t-date { color: var(--muted); font-size: .74rem; margin-bottom: 2px; }
+.tip .t-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tip .t-row b { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink); }
+.tip .t-row span { color: var(--muted); }
+
+/* il rischio */
+.risk-top { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.stat .v { font-family: var(--font-num); font-size: 1.7rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.15; }
+.stat .v small { font-size: .82rem; color: var(--muted); font-weight: 400; }
+.stat p { font-size: .86rem; color: var(--ink-2); }
+.risk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.alarms { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.alarms li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: baseline; font-size: .9rem; }
+.alarms li > span:last-child { overflow-wrap: anywhere; }
+.tag.alarm { border-color: var(--loss); color: var(--loss); background: var(--alarm); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--rule); font-size: .84rem; color: var(--ink-2); }
+.pill b { font-size: .72rem; letter-spacing: .06em; color: var(--ink); }
+.pill.on { border-color: var(--loss); background: var(--alarm); color: var(--loss); }
+.pill.on b { color: var(--loss); }
+.pill.na { border-style: dashed; color: var(--muted); }
+.kvs { display: grid; gap: 6px; margin: 0; }
+.kvs div { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 2px 12px; font-size: .88rem; }
+.kvs dt { color: var(--muted); }
+.kvs dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+
+/* consapevolezza */
+.minds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.mind { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.mind ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: .88rem; color: var(--ink-2); }
+.mind .prose { font-size: .95rem; }
+.calib-row { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 10px 18px; align-items: start; }
+.kv { display: grid; gap: 3px; font-size: .88rem; color: var(--ink-2); }
+.kv b { color: var(--ink); font-family: var(--font-num); font-weight: 500; }
+.verdict { font-size: .88rem; padding: 2px 0; }
+.kv .verdict b { font-family: var(--font-head); font-weight: 600; }
+.calib svg { width: 100%; max-width: 260px; height: auto; display: block; }
+.calib text { font: 10px var(--font-num); fill: var(--muted); }
+.calib .ax { stroke: var(--rule); stroke-width: 1; }
+.calib .ideal { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.calib-note { font-size: .78rem; }
+.sum-table td, .sum-table th, .risk-table td:first-child, td.id { white-space: nowrap; }
+.self-up { color: var(--loss); }
+.minds-sum { margin-bottom: 16px; }
+
+/* il verbale */
+.v-head { display: grid; gap: 4px; }
+.v-head .when { font-size: .9rem; color: var(--ink-2); }
+.v-title { font-size: 1.3rem; font-weight: 600; max-width: 60ch; }
+.theme { max-width: 80ch; color: var(--ink-2); font-size: .92rem; }
+.v-stack { display: grid; gap: 16px; }
+.v-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.prose { font-family: var(--font-read); font-size: 1rem; line-height: 1.6; max-width: 70ch; overflow-wrap: anywhere; }
+.prose :where(p, ul, ol, blockquote, h1, h2, h3, h4, table) { margin: 0; }
+.prose > * + * { margin-top: .6em; }
+.prose ul, .prose ol { padding-left: 1.3em; }
+.prose li + li { margin-top: .25em; }
+.prose h1, .prose h2, .prose h3, .prose h4 { font-family: var(--font-head); font-size: 1rem; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.prose blockquote { padding-left: 12px; border-left: 2px solid var(--rule); color: var(--ink-2); }
+.prose code { font-family: var(--font-num); font-size: .9em; }
+.prose table { display: block; overflow-x: auto; font-family: var(--font-head); }
+.news { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.news-item { display: grid; gap: 4px; border-top: 1px solid var(--rule); padding-top: 8px; }
+.news-item p { font-family: var(--font-read); }
+.news-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: .8rem; }
+.lab { display: inline-block; font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--ink-2); color: var(--ink); white-space: nowrap; }
+.lab.lab-interpretazione { border-style: dashed; color: var(--ink-2); }
+.lab.lab-previsione { border-style: dotted; border-color: var(--pen); color: var(--pen); }
+.lab.lab-classe { border-color: var(--loss); color: var(--loss); }
+.src { font-size: .82rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.cal { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: .88rem; }
+.cal li { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.cal .when { color: var(--muted); }
+.pred { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.prob { font-family: var(--font-num); font-weight: 500; padding: 0 8px; border-radius: 999px; border: 1px solid var(--who, var(--ink-2)); font-size: .9rem; }
+.preds { display: grid; gap: 4px; font-size: .88rem; color: var(--ink-2); margin: 0; padding: 0; list-style: none; }
+.qa { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: q; }
+.qa > li { display: grid; gap: 8px; }
+.qa .q { font-family: var(--font-read); font-size: 1rem; }
+.qa .a { border-left: 3px solid var(--who, var(--rule)); padding-left: 12px; display: grid; gap: 4px; }
+.righe { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.righe li { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 2px 14px; align-items: baseline; }
+.righe .r-k { font-size: .76rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.righe .r-t { font-family: var(--font-read); font-size: 1rem; overflow-wrap: anywhere; }
+.judgement { border-color: var(--pen); }
+.grades td { vertical-align: middle; }
+.grade { font-style: normal; font-family: var(--font-hand); font-weight: 700; font-size: 1.35rem; line-height: 1; color: var(--pen); width: 32px; height: 32px; display: inline-grid; place-items: center; border: 2px solid var(--pen); border-radius: 50% 46% 52% 48%; }
+.grade.self { color: var(--ink-2); border-color: var(--ink-2); font-size: 1.15rem; width: 28px; height: 28px; }
+.verified { display: grid; gap: 6px; }
+
+/* le monete */
+.coins-scroll { overflow-x: auto; }
+table.coins { min-width: 980px; }
+table.coins td, table.coins th { padding: 4px 8px; }
+table.coins th:first-child, table.coins td:first-child { position: sticky; left: 0; background: var(--sheet); z-index: 1; box-shadow: 1px 0 0 var(--rule); }
+table.coins tbody tr:hover td { background: var(--wash); }
+table.coins th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+table.coins th button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+table.coins th[aria-sort] { color: var(--ink); }
+.rsi-lo { color: var(--gain); font-weight: 600; }
+.rsi-hi { color: var(--loss); font-weight: 600; }
+
+/* le regole */
+.rules-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.rules-grid ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; color: var(--ink-2); font-size: .92rem; }
+.rules-grid li b { color: var(--ink); }
+footer { padding-block: 10px 36px; color: var(--muted); font-size: .82rem; }
+
+/* il semaforo e la fiducia */
+.trust { font-size: .86rem; color: var(--ink-2); max-width: 100%; overflow-wrap: anywhere; }
+.trust b { color: var(--ink); font-weight: 600; }
+.trust .ok { color: var(--gain); font-weight: 600; }
+.trust.broken { color: var(--loss); background: var(--alarm); border: 1px solid var(--loss); border-radius: 8px; padding: 4px 10px; justify-self: start; }
+.trust.broken b { color: var(--loss); }
+.calm { background: var(--wash); border-radius: 10px; padding: 12px 16px; color: var(--ink-2); margin-bottom: 16px; display: grid; gap: 4px; }
+.calm b { color: var(--ink); }
+.lights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.light-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.light { border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.light-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.light-head b { font-size: .95rem; }
+.light.c-grigio .light-head b { color: var(--muted); font-weight: 600; }
+.lamp { display: inline-flex; gap: 3px; padding: 3px 4px; border-radius: 999px; border: 1px solid var(--rule); background: var(--paper); }
+.lamp i { width: 11px; height: 11px; border-radius: 50%; background: var(--rule); display: inline-block; }
+.lamp i.on.l-r { background: var(--loss); }
+.lamp i.on.l-y { background: var(--amber); }
+.lamp i.on.l-g { background: var(--gain); }
+.reasons { margin: 0; padding-left: 1.1em; font-size: .84rem; color: var(--ink-2); display: grid; gap: 2px; }
+.meters { display: grid; gap: 6px; font-size: .8rem; color: var(--ink-2); }
+.meters > div { display: grid; gap: 3px; }
+.meter { display: block; height: 6px; border-radius: 3px; background: var(--wash); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--ink-2); border-radius: 3px; }
+.meter.green i { background: var(--gain); }
+.crit { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: .8rem; color: var(--ink-2); }
+.crit li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 4px; }
+.crit-h { font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: -4px; }
+.crit .y { color: var(--gain); font-weight: 700; }
+.crit .n { color: var(--muted); font-weight: 700; }
+.verdict-chip { display: inline-block; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--ink-2); font-size: .8rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.verdict-chip.aggiunge { border-color: var(--gain); color: var(--gain); }
+.verdict-chip.toglie { border-color: var(--loss); color: var(--loss); }
+.trust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .9rem; }
+.checklist > li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; }
+.checklist .mark { font-weight: 700; }
+.checklist > li.ok .mark { color: var(--gain); }
+.checklist > li.ko .mark { color: var(--loss); }
+.fp { font-family: var(--font-num); font-size: .8rem; overflow-wrap: anywhere; word-break: break-all; color: var(--ink-2); }
+.seal { display: grid; gap: 6px; font-size: .88rem; border: 1px dashed var(--rule); border-radius: 8px; padding: 8px 12px; }
+.seal.bad { border: 1px solid var(--loss); background: var(--alarm); }
+.seal .ok { color: var(--gain); font-weight: 600; }
+.seal .ko { color: var(--loss); font-weight: 600; }
+.ln.btc { border-top: 2px dotted var(--muted); }
+
+/* la palestra, la sera, gli ordini cambiati */
+.gym-days { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.gym-days button { border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 999px; padding: 3px 11px; font-size: .84rem; cursor: pointer; }
+.gym-days button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.gyms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.figs > div { display: grid; gap: 1px; align-content: start; min-width: 0; }
+.figs .v { font-family: var(--font-num); font-size: 1.3rem; font-weight: 500; }
+.figs p { font-size: .8rem; color: var(--muted); }
+.gauge { width: 100%; max-width: 380px; height: auto; display: block; }
+.gauge text { font: 10px var(--font-num); fill: var(--muted); }
+.vs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.vs > div { border-top: 3px solid var(--who); padding-top: 6px; display: grid; gap: 1px; min-width: 0; }
+.vs > div.rule { border-top: 3px dashed var(--ink-2); }
+.vs .v { font-family: var(--font-num); font-size: 1.2rem; font-weight: 500; }
+.calib-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .8rem; color: var(--muted); }
+.calib-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.ring { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 2px dashed var(--who); }
+.ring.fill { background: var(--who); border-style: solid; }
+details.cases > summary { font-weight: 600; color: var(--ink); }
+.struck { color: var(--muted); }
+.struck .order > span:first-child, .struck .order .why { text-decoration: line-through; text-decoration-thickness: 1px; }
+.hyps { display: grid; gap: 10px; }
+.hyp { border-left: 3px solid var(--rule); padding-left: 10px; display: grid; gap: 4px; font-size: .9rem; min-width: 0; }
+.kvs.small div { grid-template-columns: 170px minmax(0, 1fr); font-size: .86rem; }
+.evening { margin-bottom: 16px; }
+.ev-agent { border-left: 3px solid var(--who); padding-left: 12px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+
+@media (max-width: 900px) {
+  .lights, .trust-grid { grid-template-columns: minmax(0, 1fr); }
+  .gyms { grid-template-columns: minmax(0, 1fr); }
+  .week { grid-template-columns: minmax(0, 1fr); }
+  .week-name { padding-top: 0; }
+  .week-head > span:first-child { display: none; }
+  .wallets, .minds, .v-grid, .risk-grid, .rules-grid { grid-template-columns: minmax(0, 1fr); }
+  .risk-top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .day { padding: 4px 4px 5px; min-height: 46px; }
+  .day .d { font-size: .64rem; }
+  .day .k { top: 3px; right: 3px; font-size: .56rem; padding: 1px 2px; }
+  .wd { padding-left: 4px; }
+  .sheet, .wallet, .mind { padding: 14px; }
+  .risk-top, .two-col, .twins { grid-template-columns: minmax(0, 1fr); }
+  .calib-row { grid-template-columns: minmax(0, 1fr); }
+  .kvs div { grid-template-columns: minmax(0, 1fr); }
+  .righe li { grid-template-columns: minmax(0, 1fr); }
+  .fund { gap: 10px 20px; }
+  .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vs, .light-pair { grid-template-columns: minmax(0, 1fr); }
+  .kvs.small div { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .day { transition: border-color .15s, background-color .15s; }
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">ARGO · soldi finti, prezzi veri di BingX</p>
+    <h1>Scuola Cripto</h1>
+    <p class="lede">Otto agenti di intelligenza artificiale studiano le criptovalute per tre mesi. Quattro di loro operano, e ognuno ha due portafogli da 10.000 USDT finti: uno segue la sua regola scritta, l'altro il suo giudizio. La differenza tra i due dice se il giudizio vale qualcosa. Ogni mattina alle 06:47 c'è la riunione.</p>
+    <div class="status" id="status"><span class="chip">Carico i dati della scuola…</span></div>
+    <p class="trust" id="trust" hidden></p>
+  </div>
+</header>
+
+<main>
+  <section class="cp-section" id="campus-section" aria-labelledby="t-campus">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-campus">Il campus</h2><p class="cp-live" id="campus-live" data-slot="live">Carico il campus…</p></div>
+      <div class="cp" id="campus">
+        <div class="cp-stage" id="campus-stage">
+          <canvas id="campus-canvas" role="img" aria-label="Il campus della Scuola Cripto in 3D: gli otto agenti nelle loro stanze"></canvas>
+          <div class="cp-overlay" id="campus-overlay" aria-hidden="true"></div>
+          <div class="cp-hud" id="campus-hud" data-slot="hud"></div>
+        </div>
+        <aside class="cp-side" id="campus-side" data-slot="side" aria-label="Cosa succede nel campus"></aside>
+      </div>
+      <div class="cp-player" id="campus-player" data-slot="player"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-registro">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="t-registro">Registro</h2>
+        <div class="legend-row">
+          <span><i class="sw done"></i>riunione svolta</span>
+          <span><i class="sw partial"></i>svolta ma incompleta</span>
+          <span><i class="sw today"></i>oggi</span>
+          <span><b class="sw-k">C</b>consiglio</span>
+          <span><b class="sw-k">S</b>scrutinio</span>
+          <span><b class="sw-k">A</b>accoglienza</span>
+          <span><b class="sw-k">F</b>fine</span>
+        </div>
+      </div>
+      <div class="registro" id="registro"><p class="muted">Il registro compare qui appena i dati arrivano.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-portafogli">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-portafogli">I portafogli</h2><p class="muted" id="wallets-at"></p></div>
+      <div class="fund" id="fund"><p class="muted">Carico i portafogli…</p></div>
+      <div class="wallets" id="wallets"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-semaforo">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-semaforo">Il semaforo</h2><p class="muted" id="semaforo-at"></p></div>
+      <div id="semaforo"><p class="muted">Carico il semaforo…</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-rischio">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-rischio">Il rischio, con il Guardiano</h2><p class="muted" id="rischio-at"></p></div>
+      <div id="rischio"><p class="muted">Carico i numeri del Guardiano…</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-consapevolezza">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-consapevolezza">Consapevolezza</h2><p class="muted">Quanto si conoscono: previsioni verificate sui prezzi veri, autovoti accanto ai voti del Preside, errori che ripetono.</p></div>
+      <div class="sheet minds-sum" id="minds-sum"></div>
+      <div class="minds" id="minds"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-palestra">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-palestra">La palestra</h2><p class="muted" id="palestra-at"></p></div>
+      <div id="palestra"><p class="muted">Carico la palestra…</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-ricerca">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-ricerca">La ricerca</h2><p class="muted" id="ricerca-at"></p></div>
+      <div id="ricerca"><p class="muted">Carico la ricerca…</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-verbale">
+    <div class="wrap" id="verbale"></div>
+  </section>
+
+  <section aria-labelledby="t-monete">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-monete">Le monete</h2><p class="muted" id="monete-at"></p></div>
+      <div class="sheet"><div class="coins-scroll" id="monete"></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-regole">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-regole">Le regole della scuola</h2></div>
+      <div class="rules-grid">
+        <div class="sheet">
+          <h3>Il portafoglio a giudizio</h3>
+          <ul>
+            <li>Ogni agente con un portafoglio parte con <b>10.000 USDT</b> finti. I prezzi sono quelli veri dei contratti perpetui di BingX, sulle 36 monete della scuola, senza memecoin.</li>
+            <li><b>Lo stop è obbligatorio</b>, tra l'1% e il 25% dal prezzo. Il target è facoltativo.</li>
+            <li>Si rischia <b>al massimo il 2%</b> del portafoglio a posizione, costi compresi. Nei giorni di panico di BTC, nello stato FRAGILE o per decisione del Preside il massimo scende all'1%. Allo scrutinio il Preside assegna a ognuno 0,5%, 1% o 2%.</li>
+            <li><b>Al massimo 4 posizioni</b>, una per moneta. Tutte insieme valgono al massimo 3 volte il portafoglio.</li>
+            <li><b>I costi:</b> 0,055% di commissione più 0,1% di slittamento a ogni entrata e a ogni uscita. Il funding si paga o si incassa a ogni scadenza, come su un conto vero.</li>
+            <li>Gli ordini si eseguono al prezzo del momento della riunione. Stop e target si controllano su ogni candela oraria.</li>
+          </ul>
+        </div>
+        <div class="sheet">
+          <h3>I portafogli a regole</h3>
+          <ul>
+            <li><b>Falco:</b> entra sulle rotture del massimo o del minimo di 20 candele a 4 ore con un picco di volume, nel verso di BTC; stop a 3 ATR (al massimo 12%), target a 3R.</li>
+            <li><b>Tartaruga:</b> compra solo le monete con il trend positivo su 1-16 settimane, pesate per la volatilità; con il trend negativo sta fuori.</li>
+            <li><b>Spazzino:</b> compra le monete sopra la media a 100 giorni quando l'RSI a 2 periodi va sotto 10 (e vende nel caso opposto); esce entro 5 giorni.</li>
+            <li><b>Ragioniere:</b> ogni lunedì compra le monete con il funding più basso e vende quelle con il funding più alto, neutrale in dollari.</li>
+          </ul>
+          <p class="muted" style="font-size:.86rem">Le regole sono codice: il motore le rifà ogni giorno dall'inizio della scuola, e nessuno le può toccare.</p>
+        </div>
+        <div class="sheet">
+          <h3>La riunione</h3>
+          <ul>
+            <li>Ogni mattina alle <b>06:47</b>. Il motore fa i conti della notte; il Cronista porta calendario e notizie, con fonte e ora.</li>
+            <li>Falco, Tartaruga, Spazzino, Ragioniere e Guardiano scrivono la loro posizione <b>in privato</b>, senza vedersi: la regola, una previsione con la sua probabilità, cosa farebbe cambiare idea, gli ordini.</li>
+            <li>Lo Scettico fa <b>al massimo 2 domande</b>, e chi è chiamato risponde. Poi il motore esegue gli ordini, o li respinge se escono dalle regole.</li>
+            <li>Il Preside chiude in <b>5 righe</b> e dà i voti: prima il ragionamento, poi la disciplina, per ultimo il risultato. Nessuno promette guadagni.</li>
+            <li>Ogni lunedì c'è il consiglio di classe; il primo lunedì del mese lo scrutinio, con le pagelle. Se la riunione del mattino non riesce, alle 13:17 parte il recupero.</li>
+            <li>Ogni sera alle 20:41 il motore controlla se dalla mattina è successo qualcosa di grosso: con un allarme c'è una riunione straordinaria, breve. Ogni domenica alle 11:13 c'è la palestra: 20 casi dal passato per ognuno dei quattro agenti con un portafoglio.</li>
+          </ul>
+        </div>
+        <div class="sheet">
+          <h3>I limiti onesti</h3>
+          <ul>
+            <li><b>Gli agenti non sono coscienti</b> e non imparano da soli: ricordano solo quello che è scritto nei quaderni e nei verbali.</li>
+            <li><b>Il paper trading non è il conto vero:</b> mancano lo slittamento dei crolli veri, gli ordini non eseguiti e il rischio dell'exchange.</li>
+            <li>Ogni previsione ha una probabilità e una scadenza, e il motore la verifica sulla chiusura giornaliera vera. Così si misura quanto ognuno si sbaglia.</li>
+            <li>I soldi sono finti: nessun ordine arriva a un exchange. Solo dopo 365 giorni di semaforo verde di fila si può pensare a una piccola prova con soldi veri, e la decisione resta solo tua.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">Prezzi, funding e open interest dei contratti perpetui di BingX, letti senza chiavi. Nessun denaro vero passa da questa scuola.</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="campus/core.js"></script>
+<script src="campus/render.js"></script>
+<script src="campus/world.js"></script>
+<script src="campus/people.js"></script>
+<script src="campus/life.js"></script>
+<script src="campus/ui.js"></script>
+<script src="campus/gioco.js"></script>
+<script>window.Campus && Campus.gioco && Campus.gioco.start();</script>
+<script>
+(() => {
+  "use strict";
+  const CAPITAL = 10000;
+  const MEETING = "06:47";
+  const RECOVERY = "13:17", RECOVERY2 = "18:17";
+  const RECOVERY_MIN = 13 * 60 + 17, RECOVERY2_MIN = 18 * 60 + 17;
+  const TRADERS = ["falco", "tartaruga", "spazzino", "ragioniere"];
+  const GRADED = ["falco", "tartaruga", "spazzino", "ragioniere", "guardiano", "cronista", "scettico"];
+  const CAST = ["preside", ...GRADED];
+  const WHO = {
+    preside: { name: "Preside", line: "Dirige la riunione e dà i voti. Allo scrutinio decide quanto rischio può prendere ognuno." },
+    falco: { name: "Falco", line: "Le rotture di volume sulle candele a 4 ore: il desk dei perpetui." },
+    tartaruga: { name: "Tartaruga", line: "Il trend lento, da 1 a 16 settimane. Paziente, quasi noiosa." },
+    spazzino: { name: "Spazzino", line: "Compra le vendite forzate: RSI a 2 periodi nel verso del trend." },
+    ragioniere: { name: "Ragioniere", line: "Il carry sul funding, neutrale in dollari: prezzo, funding e costi separati." },
+    guardiano: { name: "Guardiano", line: "Il rischio: esposizione, allarmi e riduzioni scritte prima." },
+    cronista: { name: "Cronista", line: "Calendario, notizie, politica e biblioteca. Separa il fatto dall'opinione." },
+    scettico: { name: "Scettico", line: "Il revisore: al massimo 2 domande al giorno, ognuna con un numero." },
+  };
+  const NAMES = { preside: "Preside", falco: "Falco", tartaruga: "Tartaruga", spazzino: "Spazzino", ragioniere: "Ragioniere", guardiano: "Guardiano", cronista: "Cronista", scettico: "Scettico", motore: "Motore" };
+  const COINS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "AVAX", "TRX", "LINK", "DOT", "MATIC", "LTC", "BCH", "ATOM", "UNI", "ETC", "XLM", "NEAR", "FIL", "APT", "ARB", "OP", "INJ", "SEI", "SUI", "TIA", "ICP", "HBAR", "AAVE", "RNDR", "FTM", "IMX", "STX", "RUNE", "ORDI", "WLD"];
+  const KIND = { accoglienza: "accoglienza, senza ordini", riunione: "riunione", consiglio: "consiglio di classe", scrutinio: "scrutinio con le pagelle", fine: "ultimo giorno, il bilancio" };
+  const KMARK = { accoglienza: "A", consiglio: "C", scrutinio: "S", fine: "F" };
+  const RIGHE = ["Cosa abbiamo imparato", "Le previsioni nel registro", "Le ipotesi per la lista d'esame", "La richiesta al Guardiano", "La domanda per domani"];
+  const SERA_RIGHE = ["Cosa è successo", "Cosa si è deciso", "Cosa guardare domattina"];
+
+  const S = { programma: null, classe: null, giudizio: null, regole: null, live: null, sera: null, memoria: {}, verbali: {}, palestre: {}, gymSel: null, ricerche: {}, resSel: null, got: {}, errors: {},
+              revisioni: {}, chain: { state: "loading" },
+              selected: null, picked: false, slow: false, unavailable: false, coinSort: { key: "rank", dir: 1 } };
+  let db = null;
+  const $ = (id) => document.getElementById(id);
+  // the campus kernel (campus/core.js); without it the rest of the page still works
+  const CP = window.Campus && window.Campus.core && typeof window.Campus.boot === "function" ? window.Campus : null;
+  const cp = (fn) => { if (CP) { try { fn(CP); } catch (e) { console.warn("Scuola Cripto: campus", e); } } };
+  function bootCampus() {
+    window.CampusGlue = { select: (date) => selectDay(date, { pin: date !== defaultDay() }) };
+    if (!CP) { $("campus-live").textContent = "Il campus non si è caricato: il resto della scuola è qui sotto."; return; }
+    const rm = matchMedia("(prefers-reduced-motion: reduce)");
+    cp((C) => C.boot({ canvas: $("campus-canvas"), overlay: $("campus-overlay"), uiRoot: $("campus-section"), db: null, sample: null, reduceMotion: rm.matches }));
+    if (!CP.ui) $("campus-live").textContent = "Il campus non si è caricato del tutto: il resto della scuola è qui sotto.";
+    // the owner can turn Reduce Motion on or off while the page is open
+    const onRm = () => cp((C) => { if (C.ctx) C.ctx.reduceMotion = rm.matches; });
+    if (rm.addEventListener) rm.addEventListener("change", onRm); else if (rm.addListener) rm.addListener(onRm);
+  }
+  const arr = (v) => Array.isArray(v) ? v : [];
+  const obj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  const full = (v) => obj(v) && Object.keys(v).length ? v : null;
+
+  // ---- formatting: numbers the Italian way ------------------------------------------------
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const isNum = (v) => typeof v === "number" && Number.isFinite(v);
+  const toNum = (v) => isNum(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+  const NFS = {};
+  const nf = (a, b) => NFS[a + ":" + b] || (NFS[a + ":" + b] = new Intl.NumberFormat("it-IT", { minimumFractionDigits: a, maximumFractionDigits: b, useGrouping: "always" }));
+  const QF = new Intl.NumberFormat("it-IT", { maximumSignificantDigits: 4, useGrouping: "always" });
+  function fmt(v, d = 2, sign = false) {
+    if (!isNum(v)) return "—";
+    const r = Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v;
+    return (r > 0 && sign ? "+" : r < 0 ? "−" : "") + nf(d, d).format(Math.abs(r));
+  }
+  const small = (v) => { const n = toNum(v); return n === null ? "—" : (n < 0 ? "−" : "") + nf(0, 2).format(Math.abs(n)); };
+  const usd = (v, sign) => isNum(v) ? fmt(v, 2, sign) + " USDT" : "—";
+  const pct = (v, d = 2, sign = true) => isNum(v) ? fmt(v, d, sign) + "%" : "—";
+  const pdig = (p) => p >= 10000 ? 1 : p >= 100 ? 2 : p >= 1 ? 3 : p >= 0.1 ? 4 : 5;
+  const price = (v) => { const n = toNum(v); return n === null ? "—" : fmt(n, pdig(Math.abs(n))); };
+  const level = (v) => { const n = toNum(v); return n === null ? esc(v ?? "—") : (n < 0 ? "−" : "") + nf(0, pdig(Math.abs(n))).format(Math.abs(n)); };
+  const qty = (v) => isNum(v) ? QF.format(v) : "—";
+  const tone = (v) => isNum(v) && v > 0 ? "up" : isNum(v) && v < 0 ? "down" : "";
+  const prob = (v) => { const n = toNum(v); return n === null ? "—" : Math.round(n * 100) + "%"; };
+  const cap = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
+  const lowerFirst = (s) => /^[A-ZÀ-Ý][a-zà-ÿ]/.test(s) ? s[0].toLowerCase() + s.slice(1) : s;
+  const listIt = (xs) => xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " e " + xs[xs.length - 1];
+  const sign = (side) => side === "short" ? -1 : 1;
+  const side = (s) => `<span class="side ${s === "short" ? "short" : "long"}">${esc(s || "?")}</span>`;
+  const whoOf = (id) => String(id || "").split("-")[0];
+  const whom = (w) => `<span class="whom k-${esc(w)}"><i class="dot" aria-hidden="true"></i>${esc(NAMES[w] || w)}</span>`;
+
+  // ---- dates: the meeting runs on Rome's clock, the engine writes UTC -----------------------
+  const romeParts = (d) => Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(d).map((p) => [p.type, p.value]));
+  const romeToday = () => { const p = romeParts(new Date()); return { date: `${p.year}-${p.month}-${p.day}`, minutes: +p.hour * 60 + +p.minute }; };
+  const isoDay = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : "";
+  const dayDate = (iso) => new Date(iso + "T12:00:00Z");
+  const longDay = (iso) => isoDay(iso) ? new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(dayDate(isoDay(iso))) : "";
+  const dm = (iso) => isoDay(String(iso || "")) ? `${String(iso).slice(8, 10)}/${String(iso).slice(5, 7)}` : "";
+  function utc(s) {
+    if (!s) return null;
+    let t = String(s).trim().replace(/\s*UTC$/i, "").replace(" ", "T");
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(t)) t += "Z";
+    const d = new Date(t);
+    return isNaN(d) ? null : d;
+  }
+  // the engine wrote some of Falco's rule times in 1970: those are not shown
+  const goodTime = (s) => { const d = utc(s); return d && d.getUTCFullYear() >= 2000 ? d : null; };
+  const romeTime = (s) => { const d = goodTime(s); return d ? new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" }).format(d) : ""; };
+  const whenTxt = (s) => romeTime(s) || String(s || "");
+  const romeClock = (s) => { const d = goodTime(s); return d ? new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" }).format(d) : ""; };
+  const addDays = (iso, n) => { const d = dayDate(iso); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const dmy = (iso) => isoDay(String(iso || "")) ? `${String(iso).slice(8, 10)}/${String(iso).slice(5, 7)}/${String(iso).slice(0, 4)}` : "";
+  // a day, with the hour when the engine wrote one (Falco's 4-hour candles)
+  const stamp = (s) => {
+    const d = goodTime(s);
+    if (!d) return "";
+    return /\d{2}:\d{2}/.test(String(s)) && !/(?:T|\s)00:00(:00)?\s*$/.test(String(s))
+      ? new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" }).format(d)
+      : dm(isoDay(String(s)));
+  };
+
+  // ---- markdown, sanitized -----------------------------------------------------------------
+  let mdReady = false;
+  function md(text, opts) {
+    const src = Array.isArray(text) ? text.map((x) => "- " + x).join("\n") : String(text ?? "").trim();
+    if (!src) return "";
+    if (window.marked && window.DOMPurify) {
+      if (!mdReady) {
+        window.DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+          if (node.tagName === "A") {
+            const href = node.getAttribute("href") || "";
+            if (!/^https:\/\//i.test(href)) node.removeAttribute("href");
+            node.setAttribute("target", "_blank");
+            node.setAttribute("rel", "noopener noreferrer");
+          }
+        });
+        mdReady = true;
+      }
+      const html = window.marked.parse(src, { mangle: false, headerIds: false, breaks: !!(opts && opts.breaks) });
+      return window.DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "ul", "ol", "li", "a", "blockquote", "code", "h1", "h2", "h3", "h4", "table", "thead", "tbody", "tr", "th", "td", "hr"],
+        ALLOWED_ATTR: ["href", "title"],
+      });
+    }
+    // the formatting library did not load: bold, italics, lists and https links only
+    const inline = (t) => esc(t)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+      .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    return src.split(/\n{2,}/).map((block) => {
+      const lines = block.split("\n");
+      if (lines.every((l) => /^\s*[-*]\s+/.test(l))) return "<ul>" + lines.map((l) => "<li>" + inline(l.replace(/^\s*[-*]\s+/, "")) + "</li>").join("") + "</ul>";
+      if (lines.every((l) => /^\s*\d+[.)]\s+/.test(l))) return "<ol>" + lines.map((l) => "<li>" + inline(l.replace(/^\s*\d+[.)]\s+/, "")) + "</li>").join("") + "</ol>";
+      return "<p>" + lines.map(inline).join("<br>") + "</p>";
+    }).join("");
+  }
+  function plain(text, max = 240) {
+    const t = String(Array.isArray(text) ? text.join(" ") : text ?? "")
+      .split("\n")
+      .filter((l) => !/^\s*\|/.test(l) && !/^\s*-{3,}\s*$/.test(l))
+      .join(" ")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[*_`#>]+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (t.length <= max) return t;
+    const cut = t.slice(0, max);
+    const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
+    return end > max * 0.45 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, "") + "…";
+  }
+  const yesNo = (v) => v === true ? "sì" : v === false ? "no" : v;
+  const keyName = (k) => cap(String(k).replace(/_/g, " "));
+  function valTxt(v) {
+    if (v == null || v === "") return "—";
+    if (typeof v === "boolean") return yesNo(v);
+    if (isNum(v)) return small(v);
+    if (Array.isArray(v)) return v.map(valTxt).join(", ");
+    if (typeof v === "object") return Object.entries(v).map(([k, x]) => `${NAMES[k] || keyName(k)}: ${valTxt(x)}`).join(" · ");
+    return String(v);
+  }
+  function kvLine(o) {
+    if (!obj(o)) return esc(valTxt(o));
+    const lead = o.nome || o.titolo || (o.agente && (NAMES[o.agente] || o.agente)) || "";
+    const rest = Object.entries(o).filter(([k, v]) => !["nome", "titolo", "agente"].includes(k) && v != null && v !== "");
+    return (lead ? `<b>${esc(lead)}</b>${rest.length ? " · " : ""}` : "") + rest.map(([k, v]) => `<span class="muted">${esc(keyName(k))}:</span> ${esc(valTxt(v))}`).join(" · ");
+  }
+  function anyBlock(v, breaks) {
+    if (v == null || v === "") return "";
+    if (Array.isArray(v)) return `<ul class="lines">${v.map((x) => `<li>${obj(x) ? kvLine(x) : esc(valTxt(x))}</li>`).join("")}</ul>`;
+    if (obj(v)) return `<p class="lines">${kvLine(v)}</p>`;
+    return `<div class="prose">${md(String(v), { breaks })}</div>`;
+  }
+  // the Guardiano's alarms name the wallets by their keys, with English decimals
+  const WALLET_KEY = /\b(falco|tartaruga|spazzino|ragioniere)_(giudizio|regole)\b/g;
+  // ...and the evening check writes "-7.4%" and "del Spazzino": Italian minus signs, decimals and articles
+  const human = (s) => String(s ?? "").replace(WALLET_KEY, (m, a, k) => `${NAMES[a]} ${k === "giudizio" ? "a giudizio" : "a regole"}`).replace(/(\d)\.(\d)/g, "$1,$2")
+    .replace(/(^|[\s(:;])-(?=\d)/g, "$1−").replace(/\bdel Spazzino\b/g, "dello Spazzino").replace(/\bdel Tartaruga\b/g, "della Tartaruga");
+  function alarmItem(s, kind) {
+    const t = human(s);
+    const m = t.match(/^([A-ZÀ-Ü]{3,}):\s*(.*)$/s);
+    const label = m ? m[1] : kind === "note" ? "nota" : "allarme";
+    return `<li><span class="tag ${kind === "note" ? "" : "alarm"}">${esc(label)}</span><span>${esc(cap(m ? m[2] : t))}</span></li>`;
+  }
+
+  // ---- the school's calendar ----------------------------------------------------------------
+  const days = () => arr(S.programma && S.programma.giorni);
+  const weeks = () => arr(S.programma && S.programma.settimane);
+  const held = () => arr(S.classe && S.classe.giorni).filter((g) => g && isoDay(g.data));
+  const heldMap = () => Object.fromEntries(held().map((g) => [g.data, g]));
+  const dayOf = (date) => days().find((g) => g.data === date);
+  function defaultDay() {
+    const done = held();
+    if (done.length) return done.slice().sort((a, b) => a.data < b.data ? -1 : 1).pop().data;
+    const all = days();
+    if (!all.length) return null;
+    const today = romeToday().date;
+    return (all.find((g) => g.data === today) || (today < all[0].data ? all[0] : all[all.length - 1])).data;
+  }
+  const liveTitle = (L, running) => L.fase === "palestra" ? (running ? "Palestra in corso" : "La palestra · in diretta")
+    : L.fase === "sera" ? (running ? "Riunione della sera in corso" : "La sera · in diretta")
+      : running ? "Riunione in corso" : `Riunione ${L.giorno ?? ""} · in diretta`;
+  // the evening check: classe/sera, written every evening at 20:41
+  function eveningOf() {
+    const E = obj(S.sera);
+    if (!E) return null;
+    const err = typeof E.error === "string" ? E.error : typeof E.errore === "string" ? E.errore : "";
+    const day = isoDay(String(E.data || "")) || isoDay(String(E.ora || ""));
+    const today = romeToday().date;
+    const when = (day === today ? "" : day === addDays(today, -1) ? "ieri " : day ? dm(day) + " " : "") + (romeClock(E.ora) || "");
+    return { E, err, day, when: when.trim(), alarm: E.allarme === true, motivi: arr(E.motivi).filter(Boolean), n: obj(E.numeri) || {} };
+  }
+  function eveningRows(n) {
+    const coins = obj(n.monete_oltre_10pct) || {}, wal = obj(n.portafogli_pct) || {};
+    return [
+      ["BTC dalla mattina", isNum(n.btc_pct) ? `<span class="num ${tone(n.btc_pct)}">${pct(n.btc_pct)}</span>` : "—"],
+      ["Monete oltre il 10%", Object.keys(coins).length ? Object.entries(coins).map(([c, v]) => `${esc(c)} <span class="num ${tone(toNum(v))}">${pct(toNum(v), 1)}</span>`).join(", ") : "nessuna"],
+      ["Portafogli a giudizio dalla riunione", Object.keys(wal).length ? Object.entries(wal).map(([w, v]) => `${NAMES[w] ? whom(w) : esc(w)} <span class="num ${tone(toNum(v))}">${pct(toNum(v))}</span>`).join(" · ") : "—"],
+      ["Open interest dalla mattina", isNum(n.open_interest_pct) ? `<span class="num ${tone(n.open_interest_pct)}">${pct(n.open_interest_pct)}</span>` : "non misurato"],
+      ["Prezzi della mattina", esc(romeTime(n.prezzi_della_mattina) || "—")],
+    ];
+  }
+  function eveningBlock() {
+    const ev = eveningOf();
+    if (!ev) return "";
+    return `<div class="sheet evening"><h3>Ultimo controllo della sera</h3>
+      <p>${esc(cap(longDay(ev.day)))}${romeClock(ev.E.ora) ? ` alle ${esc(romeClock(ev.E.ora))}` : ""} · ${ev.err ? `<span class="tag alarm">non riuscito</span>` : ev.alarm ? `<span class="tag alarm">allarme</span> c'è stata una riunione straordinaria: è nel verbale del giorno` : `<span class="tag ok">tutto tranquillo</span>`}</p>
+      ${ev.err ? `<p class="muted">${esc(human(ev.err))}</p>` : ""}
+      ${ev.motivi.length ? `<ul class="alarms">${ev.motivi.map((x) => alarmItem(x, "alarm")).join("")}</ul>` : ""}
+      ${ev.err ? "" : `<dl class="kvs">${eveningRows(ev.n).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>`}
+      <p class="muted" style="font-size:.82rem">Ogni sera alle 20:41 il motore guarda se dalla riunione del mattino è successo qualcosa di grosso: BTC oltre il 7%, almeno 10 monete oltre il 10%, un portafoglio a giudizio giù del 4%, una CASCATA.</p>
+    </div>`;
+  }
+  function liveNow() {
+    const L = S.live;
+    if (!L || !L.ora || L.fase === "fine") return null;
+    const at = utc(L.ora);
+    if (!at) return null;
+    const age = Date.now() - at.getTime();
+    return age < 12 * 60000 && age > -10 * 60000 ? L : null;
+  }
+
+  // ---- status line ----------------------------------------------------------------------------
+  const chip = (html, cls = "", dot = false) => `<span class="chip ${cls}">${dot ? `<span class="live-dot" aria-hidden="true"></span>` : ""}<span>${html}</span></span>`;
+  function renderStatus() {
+    const el = $("status");
+    if (S.unavailable) {
+      el.innerHTML = chip("Apri questa pagina da claude.ai con il tuo account per vedere la scuola.", "warn");
+      return;
+    }
+    const out = [];
+    const all = days();
+    if (!all.length) {
+      out.push(chip(S.got.programma ? "Il programma della scuola non è ancora nel database: arriva con la riunione di accoglienza." : S.slow ? "I dati della scuola non arrivano ancora. Riprova tra poco." : "Carico i dati della scuola…"));
+    } else {
+      const now = romeToday(), first = all[0], last = all[all.length - 1];
+      const today = all.find((g) => g.data === now.date);
+      const done = heldMap();
+      if (now.date < first.data) {
+        out.push(chip(`<strong>La scuola apre ${esc(longDay(first.data))}</strong>, con la riunione di accoglienza della sera`));
+      } else if (now.date > last.data) {
+        out.push(chip(`<strong>Il trimestre è finito</strong> ${esc(longDay(last.data))}`));
+      } else if (today) {
+        const L = liveNow();
+        out.push(chip(`<strong>Giorno ${esc(today.giorno)} di ${esc(last.giorno)}</strong>${today.tipo !== "riunione" ? " · " + esc(KIND[today.tipo] || today.tipo) : ""}`));
+        out.push(chip(esc(cap(longDay(today.data)))));
+        if (L) out.push(chip(`<strong>${esc(liveTitle(L, true))}</strong>: guardala nel campus`, "", true));
+        if (done[today.data]) {
+          const next = all.find((g) => g.data > today.data);
+          out.push(chip(`Riunione di oggi fatta${next ? ` · la prossima è ${esc(longDay(next.data))} alle ${MEETING}` : ""}`));
+        } else if (L) {
+          // the live chip says it already
+        } else if (today.tipo === "accoglienza") {
+          out.push(chip("L'accoglienza è stasera: ognuno si presenta, senza ordini"));
+        } else if (now.minutes < 7 * 60) {
+          out.push(chip(`La riunione di oggi è alle <strong>${MEETING}</strong>`));
+        } else if (now.minutes < RECOVERY_MIN) {
+          // no live signal and no minutes: the page cannot tell a slow meeting from a failed one, so it does not guess
+          out.push(chip(`La riunione di oggi non è ancora nel registro: se è saltata, il recupero parte alle ${RECOVERY}`));
+        } else if (now.minutes < RECOVERY2_MIN) {
+          out.push(chip(`La riunione di oggi non è ancora nel registro: il secondo recupero parte alle ${RECOVERY2}`));
+        } else {
+          out.push(chip(`La riunione di oggi non è nel registro, nemmeno dopo i recuperi delle ${RECOVERY} e delle ${RECOVERY2}`, "warn"));
+        }
+      }
+    }
+    if (S.classe && S.classe.avviso) out.push(chip(`<b>Avviso</b> ${esc(S.classe.avviso)}`, "warn"));
+    const ev = eveningOf();
+    if (ev) {
+      out.push(ev.err ? chip(`<b>Controllo della sera</b> ${esc(ev.when)}: non riuscito`, "warn")
+        : ev.alarm ? chip(`<b>Allarme della sera</b> · ${esc(ev.when)} · ${esc(ev.motivi.map(human).join("; ") || "vedi il verbale")}`, "warn")
+          : chip(`Controllo della sera · ${esc(ev.when)} · tutto tranquillo${isNum(ev.n.btc_pct) ? ` · BTC ${pct(ev.n.btc_pct)} dalla mattina` : ""}`));
+    }
+    const upd = S.classe && romeTime(S.classe.aggiornato);
+    if (upd) out.push(chip(`Aggiornato il ${esc(upd)}`));
+    el.innerHTML = out.join("");
+  }
+
+  // ---- register -------------------------------------------------------------------------------
+  function renderRegister() {
+    const el = $("registro");
+    const all = days();
+    if (!all.length) {
+      el.innerHTML = `<p class="muted">${S.unavailable ? "Il registro compare quando apri la pagina da claude.ai." : S.got.programma ? "Il programma della scuola non è ancora nel database." : "Il registro compare qui appena i dati arrivano."}</p>`;
+      return;
+    }
+    const active = document.activeElement;
+    const focused = active && el.contains(active) ? active.dataset.date : null;
+    const done = heldMap(), today = romeToday().date;
+    const list = weeks().length ? weeks() : [...new Set(all.map((g) => g.settimana))].map((n) => ({ settimana: n }));
+    const rows = list.map((w) => {
+      const mine = all.filter((g) => g.settimana === w.settimana);
+      if (!mine.length) return "";
+      const firstCol = ((dayDate(mine[0].data).getUTCDay() + 6) % 7) + 1;
+      const cells = mine.map((g, i) => {
+        const h = done[g.data];
+        const partial = h && h.stato && h.stato !== "completo";
+        const cls = ["day", KIND[g.tipo] ? "t-" + g.tipo : "", h ? "done" : "", partial ? "partial" : "", g.data === today ? "today" : ""].filter(Boolean).join(" ");
+        const style = i === 0 && firstCol > 1 ? ` style="grid-column-start:${firstCol}"` : "";
+        const caps = h && obj(h.capitali) ? Object.values(h.capitali).filter(obj).map((c) => toNum(c.giudizio) - toNum(c.regole)).filter(isNum) : [];
+        const label = `Giorno ${g.giorno}, ${longDay(g.data)}: ${KIND[g.tipo] || g.tipo}${h ? (partial ? ", svolta ma incompleta" : ", svolta") : ""}${h && h.titolo ? ". " + h.titolo : ""}${caps.length ? `. Giudizio meno regole: ${fmt(caps.reduce((a, b) => a + b, 0), 2, true)} USDT` : ""}`;
+        return `<button type="button" class="${esc(cls)}"${style} data-date="${esc(g.data)}" aria-pressed="${g.data === S.selected}" aria-label="${esc(label)}" title="${esc(label)}"><span class="n">${esc(g.giorno)}</span><span class="d">${esc(dm(g.data))}</span>${KMARK[g.tipo] ? `<span class="k" aria-hidden="true">${KMARK[g.tipo]}</span>` : ""}</button>`;
+      }).join("");
+      const cast = arr(w.protagonisti).map((k) => NAMES[k] || k);
+      return `<div class="week"><p class="week-name"><b>Settimana ${esc(w.settimana)}</b>${esc(w.tema || "")}${cast.length && cast.length < 8 ? `<span class="muted"> · con ${esc(listIt(cast))}</span>` : ""}</p><div class="days">${cells}</div></div>`;
+    }).join("");
+    el.innerHTML = `<div class="week week-head" aria-hidden="true"><span></span><div class="days">${["lun", "mar", "mer", "gio", "ven", "sab", "dom"].map((d) => `<span class="wd">${d}</span>`).join("")}</div></div>` + rows;
+    if (focused) { const b = el.querySelector(`[data-date="${focused}"]`); if (b) b.focus({ preventScroll: true }); }
+  }
+  $("registro").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-date]");
+    if (!b) return;
+    selectDay(b.dataset.date);
+    $("verbale").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  });
+  function selectDay(date, o = {}) {
+    S.selected = date;
+    S.picked = o.pin !== false;
+    watchVerbale(date);
+    render();
+    cp((C) => C.life && C.life.replay && C.life.replay(date, { autostart: o.autostart !== false }));
+  }
+
+  // ---- the wallets: the rule against the judgment ------------------------------------------------
+  const sortDates = (a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+  const rulesPoints = (r) => Object.entries((r && r.curve) || {}).filter(([d, v]) => isoDay(d) && isNum(v)).map(([date, value]) => ({ date, value })).sort(sortDates);
+  const judgPoints = (w) => arr(w && w.equity).filter((e) => e && isoDay(e.date) && isNum(e.value)).map((e) => ({ date: e.date, value: e.value })).sort(sortDates);
+  function judgEquity(w, prices) {
+    if (!w) return null;
+    if (isNum(w.cash)) {
+      return w.cash + arr(w.positions).reduce((a, p) => {
+        const now = isNum(prices[p.symbol]) ? prices[p.symbol] : p.entry;
+        return a + (isNum(p.units) && isNum(p.entry) && isNum(now) ? sign(p.side) * p.units * (now - p.entry) : 0);
+      }, 0);
+    }
+    const e = judgPoints(w);
+    return e.length ? e[e.length - 1].value : null;
+  }
+  function twinsOf(n) {
+    const w = S.giudizio && S.giudizio.wallets && S.giudizio.wallets[n] || null;
+    const r = S.regole && S.regole.portafogli && S.regole.portafogli[n] || null;
+    const prices = (S.giudizio && S.giudizio.prices) || {};
+    const rp = rulesPoints(r), jp = judgPoints(w);
+    const rules = rp.length ? rp[rp.length - 1].value : null;
+    const judg = judgEquity(w, prices);
+    return { n, w, r, rp, jp, rules, judg, gap: isNum(rules) && isNum(judg) ? judg - rules : null, prices };
+  }
+  function limitToday(w) {
+    const base = isNum(w && w.max_risk_pct) ? Math.min(2, w.max_risk_pct) : 2;
+    let top = base, why = base < 2 ? "deciso dal Preside allo scrutinio" : "";
+    const m = S.giudizio && S.giudizio.market;
+    if (m && (m.panic || m.fragile) && m.day === new Date().toISOString().slice(0, 10) && top > 1) {
+      top = 1;
+      why = m.panic ? "giorno di panico di BTC" : "stato FRAGILE";
+    }
+    return { top, why };
+  }
+  function renderWallets() {
+    const el = $("wallets"), fundEl = $("fund");
+    const at = S.giudizio && romeTime(S.giudizio.prices_at);
+    $("wallets-at").textContent = at ? `Prezzi di BingX del ${at}` : "";
+    if (S.unavailable) {
+      fundEl.innerHTML = `<p class="muted">I portafogli compaiono quando apri la pagina da claude.ai.</p>`;
+      el.innerHTML = "";
+      return;
+    }
+    const loading = !S.got.giudizio || !S.got.regole;
+    const T = TRADERS.map(twinsOf);
+    const vals = T.flatMap((t) => [t.rules, t.judg]);
+    const started = vals.some(isNum);
+    if (!started) {
+      const first = days().find((g) => g.operazioni) || null;
+      fundEl.innerHTML = `<p class="muted">${loading ? (S.slow ? "I portafogli non arrivano ancora." : "Carico i portafogli…") : `Gli otto portafogli partono insieme${first ? " " + esc(longDay(first.data)) : ""}, con 10.000 USDT finti ciascuno: qui compaiono il totale della scuola e, per ogni agente, la regola contro il giudizio.`}</p>`;
+    } else {
+      const total = vals.reduce((a, v) => a + (isNum(v) ? v : CAPITAL), 0);
+      const start = CAPITAL * vals.length;
+      const gaps = T.map((t) => t.gap).filter(isNum);
+      const gapSum = gaps.reduce((a, b) => a + b, 0);
+      const best = T.filter((t) => isNum(t.gap)).sort((a, b) => b.gap - a.gap);
+      fundEl.innerHTML = `
+        <div class="fig"><h4>Il fondo della scuola, 8 portafogli</h4><span class="v">${fmt(total, 2)} <small>USDT</small></span><p><span class="num ${tone(total - start)}">${pct((total / start - 1) * 100)}</span> sugli ${fmt(start, 0)} iniziali</p></div>
+        <div class="fig"><h4>Tutto il giudizio contro tutte le regole</h4><span class="v ${tone(gapSum)}">${fmt(gapSum, 2, true)} <small>USDT</small></span><p>${gaps.length ? (gapSum > 0.5 ? "Insieme, i quattro giudizi fanno meglio delle regole." : gapSum < -0.5 ? "Insieme, i quattro giudizi fanno peggio delle regole." : "Per ora giudizio e regole sono pari.") : ""}</p></div>
+        ${(() => { const B = obj(S.semaforo) && obj(S.semaforo.benchmark) && obj(S.semaforo.benchmark.btc_tenuto); return B && isNum(toNum(B.rendimento_pct)) ? `<div class="fig"><h4>Chi avesse tenuto BTC</h4><span class="v ${tone(toNum(B.rendimento_pct))}">${pct(toNum(B.rendimento_pct))}</span><p>dall'inizio, con un calo massimo del ${pct(toNum(B.calo_massimo_pct), 2, false)}; i contanti fanno 0%</p></div>` : ""; })()}
+        ${best.length ? `<div class="fig"><h4>Chi aggiunge di più</h4><span class="v" style="font-size:1.15rem">${whom(best[0].n)} <span class="num ${tone(best[0].gap)}">${fmt(best[0].gap, 0, true)}</span></span><p>chi toglie di più: ${whom(best[best.length - 1].n)} <span class="num ${tone(best[best.length - 1].gap)}">${fmt(best[best.length - 1].gap, 0, true)}</span></p></div>` : ""}`;
+    }
+    chartW = chartWidth();
+    btcBench = btcPoints();
+    el.innerHTML = T.map((t) => walletCard(t, started)).join("");
+    for (const t of T) {
+      const fig = el.querySelector(`[data-chart="${t.n}"]`);
+      if (fig && charts[t.n]) bindTwinChart(fig, charts[t.n]);
+    }
+  }
+  function walletCard(t, started) {
+    const { n, w, r, rp, jp, rules, judg, gap, prices } = t;
+    const rv = isNum(rules) ? rules : CAPITAL, jv = isNum(judg) ? judg : CAPITAL;
+    const verdict = !isNum(gap) ? (!started ? "La differenza compare con la prima riunione." : !isNum(rules) ? "Il motore rifà la regola dalla prima riunione: la differenza compare allora." : "Il portafoglio a giudizio non è ancora nel motore.")
+      : Math.abs(gap) < 0.5 ? "Per ora giudizio e regola sono pari."
+        : gap > 0 ? "Il suo giudizio fa meglio della sua regola."
+          : "Il suo giudizio fa peggio della sua regola: la cosa onesta sarebbe seguirla.";
+    const lim = limitToday(w);
+    const npos = arr(w && w.positions).length;
+    return `<article class="wallet k-${n}" aria-label="${esc(NAMES[n])}">
+      <div class="who"><i class="key" aria-hidden="true"></i><div><h3>${esc(NAMES[n])}</h3><p>${esc(WHO[n].line)}</p></div></div>
+      <div class="gapfig"><h4>Giudizio meno regola</h4><span class="gap ${tone(gap)}">${isNum(gap) ? fmt(gap, 2, true) : "0,00"} <small>USDT</small></span><p>${esc(verdict)}</p></div>
+      <div class="twins">
+        <div class="twin rules"><h4>A regole</h4><span class="v">${fmt(rv, 2)}</span><span class="s num ${tone(rv - CAPITAL)}">${pct((rv / CAPITAL - 1) * 100)} da 10.000</span></div>
+        <div class="twin"><h4>A giudizio</h4><span class="v">${fmt(jv, 2)}</span><span class="s num ${tone(jv - CAPITAL)}">${pct((jv / CAPITAL - 1) * 100)} da 10.000</span></div>
+      </div>
+      <figure class="block" style="margin:0" data-chart="${n}">
+        <div class="chart-legend"><span><i class="ln rules"></i>a regole</span><span><i class="ln"></i>a giudizio</span>${btcBench.length ? `<span><i class="ln btc"></i>BTC tenuto</span>` : ""}<span class="muted">la riga piena: i 10.000 di partenza, come i contanti</span></div>
+        ${twinChart(n, rp, jp, chartW, btcBench)}
+      </figure>
+      <div class="block"><h4>Posizioni aperte a giudizio (${npos} su 4)</h4>${judgTable(w, prices)}</div>
+      <div class="block"><h4>Posizioni aperte a regole (${arr(r && r.open).length})</h4>${rulesTable(n, r, prices)}</div>
+      <div class="two-col">
+        <div class="block"><h4>Ultime chiuse a giudizio</h4>${judgClosed(w)}</div>
+        <div class="block"><h4>Ultime chiuse a regole</h4>${rulesClosed(n, r)}</div>
+      </div>
+      ${r ? `<div class="block"><h4>La regola oggi</h4>${ruleToday(n, r)}</div>` : ""}
+      <div class="facts"><span>Rischio massimo a posizione <b>${small(lim.top)}%</b>${lim.why ? ` <span class="muted">(${esc(lim.why)})</span>` : ""}</span>${w && isNum(w.funding) ? `<span>${w.funding < 0 ? "Funding incassato" : "Funding pagato"} <b>${fmt(Math.abs(w.funding), 2)}</b></span>` : ""}${w && isNum(w.costs) ? `<span>Costi <b>${fmt(w.costs, 2)}</b></span>` : ""}</div>
+    </article>`;
+  }
+  function judgTable(w, prices) {
+    const ps = arr(w && w.positions);
+    if (!ps.length) return `<p class="muted">Nessuna posizione aperta.</p>`;
+    return `<div class="table-scroll"><table class="tight"><thead><tr><th>Id</th><th>Moneta</th><th>Lato</th><th class="num">Entrata</th><th class="num">Stop</th><th class="num">Target</th><th class="num">Unità</th><th class="num">Ora</th><th class="num" title="Ai prezzi di ora, senza costi e funding">Risultato</th></tr></thead><tbody>${ps.map((p) => {
+      const now = isNum(prices[p.symbol]) ? prices[p.symbol] : null;
+      const pnl = isNum(now) && isNum(p.units) && isNum(p.entry) ? sign(p.side) * p.units * (now - p.entry) : null;
+      return `<tr><td class="muted id">${esc(p.id)}</td><td><b>${esc(p.symbol)}</b></td><td>${side(p.side)}</td><td class="num">${price(p.entry)}</td><td class="num">${price(p.stop)}</td><td class="num">${isNum(p.target) ? price(p.target) : "—"}</td><td class="num">${qty(p.units)}</td><td class="num">${price(now)}</td><td class="num ${tone(pnl)}">${fmt(pnl, 2, true)}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
+  }
+  function rulesTable(n, r, prices) {
+    const os = arr(r && r.open);
+    if (!r) return `<p class="muted">Il motore rifà questo portafoglio con la prima riunione.</p>`;
+    if (!os.length) return `<p class="muted">${n === "tartaruga" ? "Nessuna moneta in portafoglio: la regola sta fuori." : "Nessuna posizione aperta."}</p>`;
+    const hasEntry = os.some((o) => isNum(o.entry)), hasStop = os.some((o) => isNum(o.stop));
+    return `<div class="table-scroll"><table class="tight"><thead><tr><th>Moneta</th><th>Lato</th>${hasEntry ? `<th class="num">Entrata</th>` : ""}${hasStop ? `<th class="num">Stop</th>` : ""}<th class="num">Quantità</th><th class="num">Ora</th>${hasEntry ? `<th class="num" title="Ai prezzi di ora, senza costi e funding">Risultato</th>` : ""}<th>Dal</th></tr></thead><tbody>${os.map((o) => {
+      const now = isNum(prices[o.symbol]) ? prices[o.symbol] : isNum(o.last) ? o.last : null;
+      const pnl = isNum(now) && isNum(o.qty) && isNum(o.entry) ? sign(o.side) * o.qty * (now - o.entry) : null;
+      const since = stamp(o.since) || "—";
+      return `<tr><td><b>${esc(o.symbol)}</b></td><td>${side(o.side)}</td>${hasEntry ? `<td class="num">${price(o.entry)}</td>` : ""}${hasStop ? `<td class="num">${price(o.stop)}</td>` : ""}<td class="num">${qty(o.qty)}</td><td class="num">${price(now)}</td>${hasEntry ? `<td class="num ${tone(pnl)}">${fmt(pnl, 2, true)}</td>` : ""}<td class="muted">${esc(since)}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
+  }
+  const shortReason = (s) => String(s || "").replace(/^chiusa dall'agente:.*$/s, "chiusa dall'agente");
+  function judgClosed(w) {
+    const cs = arr(w && w.closed).slice(-3).reverse();
+    if (!cs.length) return `<p class="muted">Nessuna operazione chiusa.</p>`;
+    return `<ul class="lines">${cs.map((t) => `<li>${side(t.side)} <b>${esc(t.symbol)}</b> · ${esc(shortReason(t.exit_reason))} · <span class="num ${tone(t.pnl)}">${fmt(t.pnl, 2, true)}</span>${isNum(t.r) ? ` <span class="muted num">(${fmt(t.r, 2, true)} R)</span>` : ""}${goodTime(t.closed) ? ` <span class="muted">· ${esc(dm(t.closed))}</span>` : ""}</li>`).join("")}</ul>`;
+  }
+  function rulesClosed(n, r) {
+    const ts = arr(r && r.trades).slice(-3).reverse();
+    if (!ts.length) return `<p class="muted">${n === "tartaruga" ? "La regola della Tartaruga sposta i pesi un po' ogni giorno: non tiene un elenco di operazioni." : "Nessuna operazione chiusa."}</p>`;
+    return `<ul class="lines">${ts.map((t) => {
+      const when = isoDay(t.exit_day) ? dm(t.exit_day) : typeof t.exit === "string" ? stamp(t.exit) : "";
+      const prices = isNum(t.entry) && isNum(t.exit) ? ` · <span class="num">${price(t.entry)} → ${price(t.exit)}</span>` : "";
+      return `<li>${side(t.side)} <b>${esc(t.symbol)}</b>${prices} · <span class="num ${tone(t.pnl)}">${fmt(t.pnl, 2, true)}</span>${isNum(t.r) ? ` <span class="muted num">(${fmt(t.r, 2, true)} R)</span>` : ""}${t.reason ? ` <span class="muted">· ${esc(t.reason)}</span>` : ""}${when ? ` <span class="muted">· ${esc(when)}</span>` : ""}</li>`;
+    }).join("")}</ul>`;
+  }
+  const coinList = (o) => Object.entries(obj(o) || {}).map(([c, v]) => `${esc(c)} <span class="num">${isNum(v) ? fmt(v, Math.abs(v) < 10 ? 1 : 0, true) : esc(v)}</span>`).join(", ");
+  function ruleToday(n, r) {
+    const out = [];
+    if (n === "tartaruga" && obj(r.segnali)) {
+      const s = r.segnali;
+      out.push(`Monete con il trend positivo: <b>${esc(s.positivi ?? "—")} su ${esc(s.monete ?? "—")}</b>`);
+      if (obj(s.piu_forti)) out.push(`Le più forti: ${Object.entries(s.piu_forti).map(([c, v]) => `${esc(c)} <span class="num">${fmt(toNum(v), 2, true)}</span>`).join(", ")}`);
+      if (obj(s.piu_deboli)) out.push(`Le più deboli: ${Object.entries(s.piu_deboli).map(([c, v]) => `${esc(c)} <span class="num">${fmt(toNum(v), 2, true)}</span>`).join(", ")}`);
+    }
+    if (n === "spazzino") {
+      const s = obj(r.segnali) || {};
+      const k = Object.keys(s);
+      out.push(k.length ? `Ordini per domani: ${k.map((c) => `<b>${esc(c)}</b> (${esc(typeof s[c] === "string" ? s[c] : valTxt(s[c]))})`).join(", ")}` : "Per domani nessun segnale.");
+    }
+    if (n === "ragioniere") {
+      const c = obj(r.classifica);
+      if (c) out.push(`Lunedì entrerebbe long su ${coinList(c.long) || "—"} e short su ${coinList(c.short) || "—"} <span class="muted">(funding in % l'anno)</span>`);
+      const s = obj(r.segnali) || {};
+      if (Object.keys(s).length) out.push(`Ribilanciamento pronto per lunedì: ${Object.entries(s).map(([coin, v]) => `${esc(coin)} <span class="num ${tone(toNum(v))}">${fmt(toNum(v), 0, true)}</span>`).join(", ")} <span class="muted">(USDT, + long e − short)</span>`);
+    }
+    if (obj(r.parti)) {
+      const p = r.parti;
+      out.push(`Dall'inizio: prezzo <span class="num ${tone(p.prezzo)}">${fmt(p.prezzo, 2, true)}</span> · funding <span class="num ${tone(p.funding)}">${fmt(p.funding, 2, true)}</span> · costi <span class="num ${tone(p.costi)}">${fmt(p.costi, 2, true)}</span>`);
+    }
+    if (n === "tartaruga" && (isNum(r.costi) || isNum(r.funding))) out.push(`Costi <span class="num">${fmt(r.costi, 2)}</span> · funding <span class="num">${fmt(r.funding, 2)}</span>${isNum(r.esposizione_media) ? ` · esposizione media <span class="num">${pct(r.esposizione_media * 100, 1, false)}</span>` : ""}`);
+    if (isNum(r.n_trades)) out.push(`Operazioni chiuse dall'inizio: <b>${esc(r.n_trades)}</b>`);
+    return out.length ? `<ul class="lines">${out.map((x) => `<li>${x}</li>`).join("")}</ul>` : `<p class="muted">Nessun dettaglio dal motore.</p>`;
+  }
+
+  // ---- trust: the sealed register, the traffic lights, the monthly auditor ---------------------------
+  const short = (h) => String(h || "").slice(0, 12);
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const momentTxt = (m) => (m === "sera" ? "sera" : "mattina");
+  const dayMonth = (iso) => (isoDay(String(iso || "")) ? new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(dayDate(isoDay(String(iso)))) : "?");
+  const sealWhen = (e) => `del ${dayMonth(e && e.data)}, ${momentTxt(e && e.momento)}`;
+  const monthName = (m) => new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(m + "-15T12:00:00Z"));
+  // every fingerprint is SHA-256 of `precedente|testo`, the text hashed exactly as stored
+  async function verifyChain(reg) {
+    const entries = arr(reg && reg.giorni);
+    const subtle = window.crypto && window.crypto.subtle;
+    if (!subtle || typeof TextEncoder === "undefined") return { state: "nocrypto", n: entries.length, entries };
+    const enc = new TextEncoder();
+    let previous = "inizio";
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      const fail = { state: "broken", n: entries.length, entries, broken: i, at: obj(e) ? e : {} };
+      if (!obj(e) || typeof e.testo !== "string" || e.precedente !== previous) return fail;
+      const buf = await subtle.digest("SHA-256", enc.encode(`${previous}|${e.testo}`));
+      const hex = Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+      if (hex !== String(e.sigillo || "").toLowerCase()) return fail;
+      previous = e.sigillo;
+    }
+    return { state: "ok", n: entries.length, entries, broken: -1, last: entries.length ? previous : "" };
+  }
+  let chainFor;
+  function ensureChain() {
+    const reg = S.registro;
+    if (reg === chainFor) return;
+    chainFor = reg;
+    if (reg === undefined) { S.chain = { state: "loading" }; return; }
+    if (!obj(reg) || !arr(reg.giorni).length) { S.chain = { state: "empty", n: 0, entries: [] }; return; }
+    S.chain = { state: "checking", n: arr(reg.giorni).length };
+    verifyChain(reg).then(
+      (res) => { if (chainFor === reg) { S.chain = res; soon(); } },
+      () => { if (chainFor === reg) { S.chain = { state: "nocrypto", n: arr(reg.giorni).length, entries: arr(reg.giorni) }; soon(); } }
+    );
+  }
+  function renderTrust() {
+    const el = $("trust");
+    if (S.unavailable) { el.hidden = true; return; }
+    const c = S.chain || { state: "loading" };
+    el.hidden = false;
+    el.classList.toggle("broken", c.state === "broken");
+    el.innerHTML = c.state === "loading" ? `<b>Registro sigillato:</b> carico il registro…`
+      : c.state === "checking" ? `<b>Registro sigillato:</b> ricalcolo ${plural(c.n, "impronta", "impronte")}…`
+        : c.state === "empty" ? `<b>Registro sigillato:</b> la prima impronta arriva con la prima riunione sigillata.`
+          : c.state === "nocrypto" ? `<b>Registro sigillato:</b> ${plural(c.n, "riunione", "riunioni")} · questo browser non sa ricalcolare le impronte, quindi la catena non è stata ricontrollata.`
+            : c.state === "broken" ? `<b>Registro sigillato: catena rotta alla riunione ${esc(sealWhen(c.at))} ✗</b> · le impronte da lì in poi non tornano`
+              : `<b>Registro sigillato:</b> ${plural(c.n, "riunione", "riunioni")}, <span class="ok">catena integra ✓</span> · ultima impronta <span class="num" title="${esc(c.last)}">${esc(short(c.last))}…</span>`;
+  }
+  function sealEntry(date, moment) {
+    const entries = arr(S.registro && S.registro.giorni);
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (obj(entries[i]) && entries[i].data === date && (entries[i].momento || "mattina") === moment) return { e: entries[i], i };
+    }
+    return null;
+  }
+  function sealedList(testo) {
+    let t = null;
+    try { t = JSON.parse(testo); } catch (err) { t = null; }
+    if (!obj(t)) return `<p class="muted">Il testo sigillato non si legge.</p>`;
+    const orders = obj(t.ordini) || {};
+    const fills = arr(t.esecuzioni).filter(obj);
+    const preds = arr(t.previsioni).filter(obj);
+    const caps = obj(t.capitali);
+    const who = Object.keys(orders).filter((w) => NAMES[w]);
+    const fillTxt = (f) => [f.event, f.side, f.symbol || f.id].filter(Boolean).join(" ") + (f.event === "aperta" && isNum(f.entry) ? ` a ${price(f.entry)}` : "")
+      + (isNum(f.exit) ? ` a ${price(f.exit)}` : "") + (isNum(f.pnl) ? `, ${usd(f.pnl, true)}` : "") + (f.reason ? `: ${human(f.reason)}` : "");
+    return `<div class="block"><p class="muted" style="font-size:.84rem">Sigillato con i prezzi del ${esc(romeTime(t.ora) || "—")}. Il testo esatto è nel registro, e chiunque può ricalcolarne l'impronta.</p>
+      <h4>Gli ordini</h4>${who.length ? `<ul class="lines">${who.map((w) => `<li>${whom(w)} ${arr(orders[w]).length ? esc(arr(orders[w]).map(orderText).join(" · ")) : `<span class="muted">nessun ordine</span>`}</li>`).join("")}</ul>` : `<p class="muted">Nessun ordine.</p>`}
+      <h4>Cosa ha eseguito il motore</h4>${fills.length ? `<ul class="lines">${fills.map((f) => `<li>${NAMES[f.wallet] ? whom(f.wallet) + " " : ""}${esc(fillTxt(f))}</li>`).join("")}</ul>` : `<p class="muted">Nessuna esecuzione.</p>`}
+      ${t.momento === "sera" ? "" : `<h4>Le previsioni</h4>${preds.length ? `<ul class="lines">${preds.map((x) => `<li>${NAMES[whoOf(x.id)] ? whom(whoOf(x.id)) + " " : ""}${esc(predText(x))}</li>`).join("")}</ul>` : `<p class="muted">Nessuna previsione.</p>`}`}
+      ${caps ? `<h4>I capitali</h4><ul class="lines">${TRADERS.filter((n) => obj(caps[n])).map((n) => `<li>${whom(n)} a regole <span class="num">${fmt(toNum(caps[n].regole), 2)}</span> · a giudizio <span class="num">${fmt(toNum(caps[n].giudizio), 2)}</span></li>`).join("")}</ul>` : ""}
+    </div>`;
+  }
+  function sealBlock(reg, date, moment) {
+    reg = obj(reg);
+    if (!reg || !reg.sigillo) return "";
+    const found = sealEntry(date, moment);
+    const c = S.chain || { state: "loading" };
+    let status, bad = false;
+    if (c.state === "loading" || c.state === "checking") status = `<span class="muted">ricalcolo la catena…</span>`;
+    else if (!found) { status = `<span class="ko">✗ non è nel registro</span>`; bad = true; }
+    else if (found.e.sigillo !== reg.sigillo) { status = `<span class="ko">✗ diversa da quella del registro</span>`; bad = true; }
+    else if (c.state === "broken" && found.i >= c.broken) { status = `<span class="ko">✗ ${found.i === c.broken ? "la catena si rompe proprio qui" : `la catena è rotta prima, alla riunione ${esc(sealWhen(c.at))}`}</span>`; bad = true; }
+    else if (c.state === "ok" || c.state === "broken") status = `<span class="ok">✓ ricalcolata: torna con la catena</span>`;
+    else status = `<span class="muted">non ricontrollata in questo browser</span>`;
+    return `<div class="seal${bad ? " bad" : ""}"><p><b>Il sigillo ${moment === "sera" ? "della sera" : "della riunione"}</b> · impronta <span class="num" title="${esc(reg.sigillo)}">${esc(short(reg.sigillo))}…</span> · ${status}</p>${found ? `<details data-k="seal-${esc(date)}-${moment}"><summary>Cosa è stato sigillato</summary>${sealedList(found.e.testo)}<p class="fp">${esc(found.e.sigillo)}</p></details>` : ""}</div>`;
+  }
+  function registerCard() {
+    const c = S.chain || { state: "loading" };
+    const entries = arr(c.entries || (S.registro && S.registro.giorni)).filter(obj);
+    const head = c.state === "ok" ? `<p><span class="up" style="font-weight:600">Catena integra ✓</span> · ${plural(c.n, "riunione sigillata", "riunioni sigillate")}</p>`
+      : c.state === "broken" ? `<div class="seal bad"><p><b>Catena rotta alla riunione ${esc(sealWhen(c.at))} ✗</b></p><p>Le impronte da lì in poi non tornano: qualcosa nel passato della scuola è stato cambiato dopo il sigillo.</p></div>`
+        : c.state === "empty" ? `<p class="muted">Nessuna riunione sigillata ancora.</p>`
+          : c.state === "nocrypto" ? `<p class="muted">Questo browser non sa ricalcolare le impronte.</p>` : `<p class="muted">Ricalcolo la catena…</p>`;
+    const last = entries.slice(-5).reverse();
+    return `<article class="sheet"><h3>Il registro sigillato</h3>${head}
+      ${last.length ? `<ul class="checklist">${last.map((e) => { const i = entries.indexOf(e); const bad = c.state === "broken" && i >= c.broken; const ok = c.state === "ok" || (c.state === "broken" && i < c.broken); return `<li class="${bad ? "ko" : ok ? "ok" : ""}"><span class="mark">${bad ? "✗" : ok ? "✓" : "·"}</span><span>${esc(cap(dayMonth(e.data)))}, ${esc(momentTxt(e.momento))} · <span class="fp">${esc(short(e.sigillo))}…</span></span></li>`; }).join("")}</ul>` : ""}
+      ${c.state === "ok" && c.last ? `<div class="block"><h4>L'ultima impronta, per intero</h4><p class="fp">${esc(c.last)}</p></div>` : ""}
+      <p class="muted" style="font-size:.84rem">Dopo ogni riunione il motore sigilla le decisioni appena prese: ordini, esecuzioni, previsioni con le probabilità, capitali. Ogni impronta contiene quella di prima, quindi cambiare il passato romperebbe la catena. Questa pagina ricalcola tutte le impronte ogni volta che si apre; ogni mese il revisore manda l'ultima sul tuo telefono, come ricevuta.</p>
+    </article>`;
+  }
+  function auditMonths() {
+    const out = [];
+    const now = romeToday().date;
+    let y = 2026, m = 11;
+    const cy = +now.slice(0, 4), cm = +now.slice(5, 7);
+    do { out.push(`${y}-${String(m).padStart(2, "0")}`); m += 1; if (m > 12) { m = 1; y += 1; } } while (y < cy || (y === cy && m <= cm));
+    return out;
+  }
+  const auditWatched = new Set();
+  function watchAudits() {
+    if (!db) return;
+    for (const m of auditMonths()) {
+      if (auditWatched.has(m)) continue;
+      auditWatched.add(m);
+      db.doc("revisione/" + m).onSnapshot(
+        (snap) => { S.revisioni[m] = snap.exists ? snap.data() : null; soon(); },
+        () => { S.revisioni[m] = null; soon(); }
+      );
+    }
+  }
+  function auditCard() {
+    const months = auditMonths();
+    const have = months.filter((m) => obj(S.revisioni[m]));
+    if (!have.length) {
+      const loading = months.some((m) => S.revisioni[m] === undefined);
+      return `<article class="sheet"><h3>Revisione esterna</h3><p>${loading ? "Carico la revisione…" : romeToday().date < "2026-12-02" ? "La prima revisione è il 2 dicembre." : "La revisione del mese non è ancora arrivata."}</p><p class="muted" style="font-size:.84rem">Il 2 di ogni mese un revisore esterno, che non partecipa alle riunioni e non si fida di niente di quello che la scuola scrive, rifà tutti i conti dai dati grezzi di BingX e dice se tornano.</p></article>`;
+    }
+    const m = have[have.length - 1], R = S.revisioni[m];
+    const checks = arr(R.controlli).filter(obj);
+    const problems = isNum(toNum(R.problemi)) ? toNum(R.problemi) : checks.filter((c) => c.esito !== "ok").length;
+    const entries = arr(S.chain && S.chain.entries);
+    const inChain = R.ultimo_sigillo && S.chain && ["ok", "broken"].includes(S.chain.state) ? entries.some((e) => obj(e) && e.sigillo === R.ultimo_sigillo) : null;
+    return `<article class="sheet"><h3>Revisione esterna · ${esc(monthName(m))}</h3>
+      <p class="muted" style="font-size:.86rem">Fatta il ${esc(romeTime(R.ora) || dayMonth(R.data))}. Rifà i conti dai dati grezzi di BingX e non si fida di niente di quello che la scuola scrive.</p>
+      ${R.stato && R.stato !== "completo" ? `<p class="notice">Questa revisione non è stata completata.</p>` : ""}
+      <p><b>${plural(checks.length, "controllo", "controlli")}, ${plural(problems, "problema", "problemi")}</b></p>
+      <ul class="checklist">${checks.map((c) => `<li class="${c.esito === "ok" ? "ok" : "ko"}"><span class="mark">${c.esito === "ok" ? "✓" : "✗"}</span><span>${esc(cap(c.controllo))}${c.esito !== "ok" && arr(c.dettagli).length ? `<ul class="lines">${arr(c.dettagli).map((x) => `<li>${obj(x) ? kvLine(x) : esc(valTxt(x))}</li>`).join("")}</ul>` : ""}</span></li>`).join("")}</ul>
+      ${R.ultimo_sigillo ? `<p style="font-size:.86rem">L'ultima impronta che ha controllato: <span class="num" title="${esc(R.ultimo_sigillo)}">${esc(short(R.ultimo_sigillo))}…</span>${isNum(toNum(R.sigilli)) ? `, su ${plural(toNum(R.sigilli), "riunione sigillata", "riunioni sigillate")}` : ""}${inChain === true ? ` · <span class="up">✓ è nella catena di oggi</span>` : inChain === false ? ` · <span class="down">✗ non è nella catena di oggi</span>` : ""}</p>` : ""}
+      ${R.commento ? `<div class="block"><h4>Il commento del revisore</h4><div class="prose">${md(R.commento)}</div></div>` : ""}
+    </article>`;
+  }
+  // the traffic lights
+  function criteriaOf(F) {
+    const k = (F && obj(F.criteri)) || {};
+    return { days: toNum(k.giorni_minimi) ?? 180, trades: toNum(k.operazioni_minime) ?? 100, drop: toNum(k.calo_massimo_pct) ?? 20, ready: toNum(k.giorni_verdi_per_una_prova_reale) ?? 365 };
+  }
+  const lamp = (c) => `<span class="lamp" aria-hidden="true"><i class="l-r${c === "rosso" ? " on" : ""}"></i><i class="l-y${c === "giallo" ? " on" : ""}"></i><i class="l-g${c === "verde" ? " on" : ""}"></i></span>`;
+  const meter = (value, of, green) => `<span class="meter${green ? " green" : ""}"><i style="width:${((isNum(value) ? Math.max(0, Math.min(1, value / of)) : 0) * 100).toFixed(1)}%"></i></span>`;
+  function lightCard(kind, L, K, btc) {
+    if (!obj(L)) return `<div class="light c-grigio"><div class="light-head">${lamp("")}<b>nessun dato</b><span class="muted">${esc(kind)}</span></div></div>`;
+    const c = ["grigio", "rosso", "giallo", "verde"].includes(L.colore) ? L.colore : "grigio";
+    const days = toNum(L.giorni), trades = toNum(L.operazioni), streak = toNum(L.giorni_verdi) || 0;
+    const btcRc = btc ? toNum(btc.rendimento_su_calo) : null;
+    const rc = toNum(L.rendimento_su_calo);
+    const checks = [
+      [(days ?? 0) >= K.days || (trades ?? 0) >= K.trades, `campione completo: ${K.days} giorni o ${K.trades} operazioni`],
+      [isNum(L.rendimento_pct) && L.rendimento_pct > 0, `guadagna più dei contanti: ${pct(L.rendimento_pct)}`],
+      [isNum(L.annuo_basso90_pct) && L.annuo_basso90_pct > 0, `si distingue dal caso: l'anno, nel caso peggiore al 90%, fa ${pct(L.annuo_basso90_pct)}`],
+      [isNum(L.calo_massimo_pct) && L.calo_massimo_pct <= K.drop, `cala al massimo del ${small(K.drop)}%: il suo calo massimo è ${pct(L.calo_massimo_pct, 2, false)}`],
+      [isNum(rc) && (!isNum(btcRc) || rc > btcRc), `per unità di calo rende più di BTC tenuto: ${fmt(rc, 2)}${isNum(btcRc) ? ` contro ${fmt(btcRc, 2)}` : ""}`],
+    ];
+    const money = L.pronto_per_una_prova_reale
+      ? `<p style="font-size:.84rem"><b>${streak} giorni di verde di fila.</b> Secondo i criteri si può pensare a una piccola prova con soldi veri; la decisione resta solo tua.</p>`
+      : `<span>${streak > 0 ? `verde da ${plural(streak, "giorno", "giorni")} di fila` : "mai verde finora"} · ne servono ${K.ready}</span>${meter(streak, K.ready, true)}`;
+    return `<div class="light c-${c}">
+      <div class="light-head">${lamp(c)}<b>${esc(c === "grigio" ? "grigio, troppo presto" : c)}</b><span class="muted">${esc(kind)}</span></div>
+      <ul class="reasons">${arr(L.motivi).map((x) => `<li>${esc(cap(human(x)))}</li>`).join("")}</ul>
+      <div class="meters">
+        <div><span>giorni di dati: <b class="num">${esc(days ?? "—")}</b> su ${K.days}</span>${meter(days, K.days)}</div>
+        <div><span>operazioni chiuse: <b class="num">${esc(trades ?? "—")}</b> su ${K.trades}</span>${meter(trades, K.trades)}</div>
+      </div>
+      <p class="crit-h">I criteri del verde, sui numeri di oggi</p>
+      <ul class="crit" aria-label="I criteri del verde, sui numeri di oggi">${checks.map(([ok, t]) => `<li><span class="${ok ? "y" : "n"}">${ok ? "✓" : "○"}</span><span>${esc(t)}</span></li>`).join("")}</ul>
+      <div class="meters"><div>${money}</div></div>
+    </div>`;
+  }
+  function intervalBar(g) {
+    const iv = arr(g.intervallo90_al_giorno).map(toNum), mean = toNum(g.al_giorno);
+    if (iv.length !== 2 || !iv.every(isNum) || !isNum(mean)) return "";
+    const m = Math.max(Math.abs(iv[0]), Math.abs(iv[1]), Math.abs(mean), 0.01) * 1.15;
+    const W = 320, x = (v) => 12 + ((v + m) / (2 * m)) * (W - 24);
+    const col = g.verdetto === "aggiunge" ? "var(--gain)" : g.verdetto === "toglie" ? "var(--loss)" : "var(--ink-2)";
+    return `<svg class="gauge" viewBox="0 0 ${W} 34" role="img" aria-label="${esc(`Al 90% tra ${fmt(iv[0], 2, true)} e ${fmt(iv[1], 2, true)} USDT al giorno`)}">
+      <line x1="${x(0).toFixed(1)}" x2="${x(0).toFixed(1)}" y1="3" y2="23" stroke="var(--ink-2)" stroke-width="1.2"/>
+      <line x1="${x(iv[0]).toFixed(1)}" x2="${x(iv[1]).toFixed(1)}" y1="13" y2="13" stroke="${col}" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="${x(mean).toFixed(1)}" cy="13" r="5" fill="${col}" stroke="var(--sheet)" stroke-width="2"/>
+      <text x="${x(0).toFixed(1)}" y="32" text-anchor="middle">0</text>
+    </svg>`;
+  }
+  function verdictBlock(g) {
+    if (!obj(g)) return `<p class="muted">Il confronto tra giudizio e regola compare quando ci sono abbastanza giorni.</p>`;
+    const v = ["aggiunge", "toglie"].includes(g.verdetto) ? g.verdetto : "non si sa ancora";
+    const iv = arr(g.intervallo90_al_giorno).map(toNum);
+    const line = v === "aggiunge" ? "Il suo giudizio aggiunge alla regola: al 90% il guadagno al giorno sta tutto sopra lo zero."
+      : v === "toglie" ? "Il suo giudizio toglie alla regola: al 90% sta tutto sotto lo zero. La cosa onesta è seguire la regola."
+        : "Non si sa ancora: al 90% l'intervallo contiene lo zero, quindi la differenza può essere fortuna.";
+    return `<div class="block"><h4>Il giudizio contro la regola</h4>
+      <p><span class="verdict-chip ${v === "non si sa ancora" ? "" : v}">${esc(v)}</span> <span class="num ${tone(toNum(g.differenza))}">${fmt(toNum(g.differenza), 2, true)} USDT</span> <span class="muted">in ${esc(g.giorni ?? "—")} giorni</span></p>
+      ${isNum(toNum(g.al_giorno)) ? `<p class="muted" style="font-size:.84rem">In media ${fmt(toNum(g.al_giorno), 2, true)} USDT al giorno${iv.length === 2 && iv.every(isNum) ? `; al 90% tra ${fmt(iv[0], 2, true)} e ${fmt(iv[1], 2, true)}` : ""}.</p>` : ""}
+      ${intervalBar(g)}
+      <p style="font-size:.86rem">${esc(line)}</p>
+    </div>`;
+  }
+  function criteriaCard(K) {
+    return `<article class="sheet"><h3>I criteri, scritti prima di ogni risultato</h3>
+      <ul class="reasons" style="font-size:.88rem;gap:6px">
+        <li><b>Grigio:</b> troppo presto, meno di ${K.days} giorni di dati e meno di ${K.trades} operazioni chiuse.</li>
+        <li><b>Rosso:</b> un calo oltre il ${small(K.drop)}% dal massimo, o una perdita con il campione completo.</li>
+        <li><b>Verde:</b> con il campione completo guadagna più dei contanti, il guadagno si distingue dal caso al 90%, cala al massimo del ${small(K.drop)}% e per unità di calo rende più di BTC tenuto.</li>
+        <li><b>Giallo:</b> tutto il resto.</li>
+      </ul>
+      <p style="font-size:.88rem">Solo dopo ${K.ready} giorni di verde di fila, il «veterano» della biblioteca, si può pensare a una piccola prova con soldi veri. La decisione resta solo tua: il semaforo non promette niente.</p>
+    </article>`;
+  }
+  function benchCard(F) {
+    const B = obj(F.benchmark) || {}, btc = obj(B.btc_tenuto), cash = obj(B.contanti) || {};
+    return `<article class="sheet"><h3>I termini di paragone</h3>
+      ${btc ? `<dl class="kvs small"><div><dt>BTC tenuto dall'inizio</dt><dd><span class="num ${tone(toNum(btc.rendimento_pct))}">${pct(toNum(btc.rendimento_pct))}</span>, calo massimo <span class="num">${pct(toNum(btc.calo_massimo_pct), 2, false)}</span>, rendimento su calo <span class="num">${fmt(toNum(btc.rendimento_su_calo), 2)}</span>${isNum(toNum(btc.giorni)) ? ` <span class="muted">(${esc(btc.giorni)} giorni)</span>` : ""}</dd></div>
+        <div><dt>I contanti</dt><dd><span class="num">${pct(toNum(cash.rendimento_pct) ?? 0)}</span>, nessun calo</dd></div></dl>` : `<p class="muted">I termini di paragone arrivano con il semaforo.</p>`}
+      <p class="muted" style="font-size:.84rem">Nei grafici dei portafogli BTC tenuto è la linea a puntini, e i contanti sono la riga dei 10.000 di partenza. Un portafoglio vale qualcosa solo se fa meglio di tutti e due, a parità di calo.</p>
+    </article>`;
+  }
+  function renderSemaforo() {
+    const el = $("semaforo"), atEl = $("semaforo-at");
+    atEl.textContent = "";
+    if (S.unavailable) { el.innerHTML = `<p class="muted">Il semaforo compare quando apri la pagina da claude.ai.</p>`; return; }
+    const F = obj(S.semaforo);
+    const K = criteriaOf(F);
+    const trust = `<h3 style="margin:18px 0 10px">Perché fidarsi dei risultati</h3><div class="trust-grid">${registerCard()}${auditCard()}</div>`;
+    if (!F || !obj(F.portafogli)) {
+      el.innerHTML = `<div class="calm"><p>${S.got.semaforo ? `Il semaforo si accende con la prima riunione del motore. Ogni portafoglio parte grigio: all'inizio è troppo presto per giudicare.` : "Carico il semaforo…"}</p></div><div class="trust-grid">${criteriaCard(K)}</div>${trust}`;
+      return;
+    }
+    if (F.giorno) atEl.textContent = `Sui dati fino a ${longDay(F.giorno)}`;
+    const P = F.portafogli, G = obj(F.giudizio_contro_regola) || {};
+    const btc = obj(F.benchmark) && obj(F.benchmark.btc_tenuto);
+    const colours = Object.values(P).filter(obj).map((x) => x.colore);
+    const allGrey = colours.length > 0 && colours.every((c) => c === "grigio");
+    const intro = allGrey
+      ? `<div class="calm"><p><b>Per ora tutti i semafori sono grigi: è troppo presto.</b> Un portafoglio si giudica solo dopo ${K.days} giorni di dati o ${K.trades} operazioni chiuse. Il grigio non è un errore: vuol dire che non si sa ancora.</p><p>Solo dopo ${K.ready} giorni di verde di fila si può pensare a una piccola prova con soldi veri, e la decisione resta solo tua.</p></div>`
+      : `<p class="theme" style="margin-bottom:12px">Ogni portafoglio ha un colore, deciso da criteri scritti prima di ogni risultato. Solo dopo ${K.ready} giorni di verde di fila si può pensare a una piccola prova con soldi veri, e la decisione resta solo tua.</p>`;
+    const cards = TRADERS.map((n) => `<article class="wallet k-${n}" aria-label="${esc(NAMES[n])}: il semaforo"><div class="who"><i class="key" aria-hidden="true"></i><div><h3>${esc(NAMES[n])}</h3></div></div>
+      <div class="light-pair">${lightCard("a regole", P[`${n}_regole`], K, btc)}${lightCard("a giudizio", P[`${n}_giudizio`], K, btc)}</div>
+      ${verdictBlock(G[n])}</article>`).join("");
+    el.innerHTML = intro + `<div class="lights">${cards}</div><div class="trust-grid" style="margin-top:16px">${benchCard(F)}${criteriaCard(K)}</div>` + trust;
+  }
+  function btcPoints() {
+    const F = obj(S.semaforo), b = F && obj(F.benchmark) && obj(F.benchmark.btc_tenuto);
+    return Object.entries((b && obj(b.curva)) || {}).filter(([d, v]) => isoDay(d) && isNum(v)).map(([date, value]) => ({ date, value })).sort(sortDates);
+  }
+
+  // ---- the twin curves ------------------------------------------------------------------------
+  const charts = {};
+  let chartW = 520, resizeT = null, btcBench = [];
+  function chartWidth() {
+    const w = $("wallets").clientWidth;
+    if (!w) return 520;
+    const cols = matchMedia("(max-width: 900px)").matches ? 1 : 2;
+    const pad = matchMedia("(max-width: 560px)").matches ? 30 : 38;
+    return Math.max(280, Math.min(620, Math.round((w - (cols - 1) * 16) / cols - pad)));
+  }
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => { if (chartWidth() !== chartW) renderWallets(); }, 200);
+  });
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((f) => f * mag).find((s) => span / s <= n) || 10 * mag;
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
+    return out;
+  }
+  function twinChart(n, rp, jp, W = 520, bp = []) {
+    const dates = [...new Set([...rp, ...jp].map((p) => p.date))].sort();
+    if (dates.length < 2) {
+      charts[n] = null;
+      return `<p class="muted chart-empty">${dates.length ? `La curva compare dal secondo giorno: per ora c'è solo ${esc(longDay(dates[0]))}.` : "La curva parte con la prima riunione."}</p>`;
+    }
+    const H = 196, ml = 48, mr = 108, mt = 12, mb = 24;
+    const rmap = new Map(rp.map((p) => [p.date, p.value])), jmap = new Map(jp.map((p) => [p.date, p.value])), bmap = new Map(bp.map((p) => [p.date, p.value]));
+    const vals = [...rp, ...jp].map((p) => p.value).concat([CAPITAL], dates.map((d) => bmap.get(d)).filter(isNum));
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = Math.max((hi - lo) * 0.12, CAPITAL * 0.004);
+    lo -= pad; hi += pad;
+    const ticks = niceTicks(lo, hi, 3);
+    const x = (i) => ml + (dates.length === 1 ? (W - ml - mr) / 2 : i * (W - ml - mr) / (dates.length - 1));
+    const y = (v) => mt + (hi - v) * (H - mt - mb) / (hi - lo);
+    const grid = ticks.map((t) => `<line x1="${ml}" x2="${W - mr}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" stroke="var(--rule)" stroke-width="1"/><text x="${ml - 6}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end">${esc(fmt(t, 0))}</text>`).join("");
+    const base = `<line x1="${ml}" x2="${W - mr}" y1="${y(CAPITAL).toFixed(1)}" y2="${y(CAPITAL).toFixed(1)}" stroke="var(--ink-2)" stroke-width="1"/>`;
+    const xi = [0, dates.length - 1].filter((v, i, a) => a.indexOf(v) === i);
+    const xl = xi.map((i) => `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${dates.length === 1 ? "middle" : i === 0 ? "start" : "end"}">${esc(dm(dates[i]))}</text>`).join("");
+    const pathOf = (map) => {
+      let d = "", last = null;
+      dates.forEach((dt, i) => { const v = map.get(dt); if (isNum(v)) { d += `${d ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`; last = { x: x(i), y: y(v), v }; } });
+      return { d, last };
+    };
+    const R = pathOf(rmap), J = pathOf(jmap), Bt = pathOf(bmap);
+    const ends = [];
+    let marks = "";
+    if (Bt.d) { marks += `<path d="${Bt.d}" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="1.5 3.5" stroke-linecap="round"/><circle cx="${Bt.last.x.toFixed(1)}" cy="${Bt.last.y.toFixed(1)}" r="3.5" fill="var(--muted)" stroke="var(--sheet)" stroke-width="2"/>`; ends.push({ name: "BTC", ...Bt.last }); }
+    if (R.d) { marks += `<path d="${R.d}" fill="none" stroke="var(--ink-2)" stroke-width="1.8" stroke-dasharray="5 4" stroke-linejoin="round"/><circle cx="${R.last.x.toFixed(1)}" cy="${R.last.y.toFixed(1)}" r="4" fill="var(--ink-2)" stroke="var(--sheet)" stroke-width="2"/>`; ends.push({ name: "regole", ...R.last }); }
+    if (J.d) { marks += `<path d="${J.d}" fill="none" stroke="var(--who)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${J.last.x.toFixed(1)}" cy="${J.last.y.toFixed(1)}" r="4.5" fill="var(--who)" stroke="var(--sheet)" stroke-width="2"/>`; ends.push({ name: "giudizio", ...J.last }); }
+    ends.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) { const prev = ends[i - 1].ly ?? ends[i - 1].y; if ((ends[i].ly ?? ends[i].y) - prev < 14) ends[i].ly = prev + 14; }
+    const over = ends.length ? (ends[ends.length - 1].ly ?? ends[ends.length - 1].y) - (H - mb + 2) : 0;
+    if (over > 0) for (const e of ends) e.ly = (e.ly ?? e.y) - over;
+    const labels = ends.map((e) => {
+      const ly = e.ly ?? e.y;
+      const leader = Math.abs(ly - e.y) > 1 ? `<line x1="${(e.x + 6).toFixed(1)}" y1="${e.y.toFixed(1)}" x2="${W - mr + 2}" y2="${ly.toFixed(1)}" stroke="var(--rule)" stroke-width="1"/>` : "";
+      return `${leader}<text class="end" x="${W - mr + 6}" y="${(ly + 4).toFixed(1)}">${e.name} ${esc(fmt(e.v, 0))}</text>`;
+    }).join("");
+    charts[n] = { dates, rmap, jmap, bmap, x, W, mt, mb, H };
+    return `<div class="chart-box"><svg viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${esc(NAMES[n])}: il capitale a regole e a giudizio giorno per giorno, partenza 10.000 USDT${Bt.d ? ", con BTC tenuto per confronto" : ""}">
+      ${grid}${base}${xl}${marks}${labels}
+      <line class="cross" x1="0" x2="0" y1="${mt}" y2="${H - mb}" stroke="var(--ink-2)" stroke-width="1" visibility="hidden"/>
+      <rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="transparent"/>
+    </svg><div class="tip" hidden></div></div>`;
+  }
+  function bindTwinChart(fig, c) {
+    const svg = fig.querySelector("svg"), cross = fig.querySelector(".cross"), tip = fig.querySelector(".tip"), box = fig.querySelector(".chart-box");
+    if (!svg || !cross || !tip) return;
+    let at = null;
+    const row = (label, v, cls) => `<div class="t-row"><span>${label}</span><b class="${cls || ""}">${v}</b></div>`;
+    const show = (i) => {
+      at = i;
+      const cx = c.x(i), d = c.dates[i];
+      cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+      const rv = c.rmap.get(d), jv = c.jmap.get(d);
+      tip.innerHTML = `<div class="t-date">${esc(longDay(d))}</div>${row("A regole", fmt(rv, 2))}${row("A giudizio", fmt(jv, 2))}${row("Giudizio meno regola", isNum(rv) && isNum(jv) ? fmt(jv - rv, 2, true) : "—", isNum(rv) && isNum(jv) ? tone(jv - rv) : "")}${c.bmap && isNum(c.bmap.get(d)) ? row("BTC tenuto", fmt(c.bmap.get(d), 2)) : ""}`;
+      tip.hidden = false;
+      const r = svg.getBoundingClientRect(), scale = r.width / c.W;
+      const left = cx * scale + 12, maxLeft = box.clientWidth - tip.offsetWidth - 4;
+      tip.style.left = Math.max(4, left > maxLeft ? cx * scale - tip.offsetWidth - 12 : left) + "px";
+      tip.style.top = "4px";
+    };
+    const hide = () => { cross.setAttribute("visibility", "hidden"); tip.hidden = true; };
+    svg.addEventListener("pointermove", (e) => {
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * c.W / r.width;
+      let best = 0;
+      c.dates.forEach((d, i) => { if (Math.abs(c.x(i) - px) < Math.abs(c.x(best) - px)) best = i; });
+      show(best);
+    });
+    svg.addEventListener("pointerleave", hide);
+    svg.addEventListener("focus", () => show(at ?? c.dates.length - 1));
+    svg.addEventListener("blur", hide);
+    svg.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      show(Math.min(c.dates.length - 1, Math.max(0, (at ?? c.dates.length - 1) + (e.key === "ArrowRight" ? 1 : -1))));
+    });
+  }
+
+  // ---- the Guardiano's numbers, from the selected day's minutes ----------------------------------
+  function pill(name, v, txt) {
+    const cls = v === true ? "on" : v === false ? "off" : "na";
+    return `<span class="pill ${cls}"><b>${esc(name)}</b>${esc(txt || (v === true ? "sì" : v === false ? "no" : "non misurabile"))}</span>`;
+  }
+  function renderRisk() {
+    const el = $("rischio");
+    const sel = S.selected, g = dayOf(sel), d = sel ? S.verbali[sel] : undefined;
+    $("rischio-at").textContent = g ? `Dal verbale di ${longDay(g.data)}` : "";
+    const evening = S.unavailable ? "" : eveningBlock();
+    if (!g) { el.innerHTML = evening + `<p class="muted">${S.unavailable ? "I numeri del Guardiano compaiono quando apri la pagina da claude.ai." : "I numeri del Guardiano compaiono con il programma della scuola."}</p>`; return; }
+    if (d === undefined) { el.innerHTML = evening + `<p class="muted">Carico i numeri del Guardiano…</p>`; return; }
+    const R = d && full(d.rischio), Q = d && full(d.quadro), M = Q && full(Q.mercato);
+    if (!R && !M) {
+      const future = g.data > romeToday().date;
+      el.innerHTML = evening + `<div class="sheet empty"><p>${d ? "In questo verbale il motore non ha scritto i numeri del rischio." : future ? `I numeri del Guardiano arrivano con la riunione di ${esc(longDay(g.data))}.` : "Per questo giorno non c'è il verbale, quindi nemmeno i numeri del Guardiano."}</p><p class="muted">Qui compaiono gli allarmi, il fondo della scuola, il rischio di ognuno degli 8 portafogli e lo stato del mercato.</p></div>`;
+      return;
+    }
+    const top = R && isNum(R.rischio_massimo_oggi) ? R.rischio_massimo_oggi : null;
+    const F = R && obj(R.fondo);
+    const alarms = arr(R && R.allarmi), notes = arr(R && R.note);
+    const fondo = F && isNum(F.capitale) ? `<div class="stat"><h4>Il fondo della scuola</h4><span class="v">${fmt(F.capitale, 2)} <small>USDT</small></span><p><span class="num ${tone(F.capitale - (F.iniziale || 80000))}">${pct((F.capitale / (F.iniziale || 80000) - 1) * 100)}</span> sugli ${fmt(F.iniziale || 80000, 0)} iniziali · esposizione lorda <span class="num">${pct(F.lorda_pct, 1, false)}</span> · netta pesata per il beta <span class="num">${pct(F.netta_beta_pct, 1)}</span></p></div>` : "";
+    const head = `<div class="risk-top">
+      <div class="stat"><h4>Rischio massimo di oggi</h4><span class="v ${top !== null && top < 2 ? "hot" : ""}">${top !== null ? small(top) + "%" : "—"}</span><p>${top !== null && top < 2 ? "Giorno di panico o stato FRAGILE: ogni nuova posizione a giudizio rischia al massimo l'1%." : "Ogni nuova posizione a giudizio rischia al massimo il 2% del portafoglio, costi compresi. Il Preside può abbassarlo per un agente."}</p></div>
+      ${fondo}
+      <div class="stat"><h4>Allarmi del Guardiano</h4><span class="v ${alarms.length ? "hot" : ""}">${alarms.length}</span><p>${alarms.length ? "Un allarme non è un divieto: chiede attenzione, con un numero." : "Nessun allarme in questo verbale."}${notes.length ? ` Note: ${notes.length}.` : ""}</p></div>
+    </div>`;
+    const alarmList = `<div class="sheet"><h3>Allarmi e note</h3>${alarms.length || notes.length ? `<ul class="alarms">${alarms.map((a) => alarmItem(a, "alarm")).join("")}${notes.map((a) => alarmItem(a, "note")).join("")}</ul>` : `<p class="muted">Nessun allarme e nessuna nota.</p>`}</div>`;
+    let market = "";
+    if (M) {
+      const b = obj(M.btc) || {};
+      const caldo = isNum(M.caldo_pct) ? M.caldo_pct > 0 : null;
+      const rows = [
+        ["BTC", `${price(b.chiusura)} alla chiusura di ieri · dalla media a 50 giorni <span class="num ${tone(b.da_media50_pct)}">${pct(b.da_media50_pct)}</span>, a 100 <span class="num ${tone(b.da_media100_pct)}">${pct(b.da_media100_pct)}</span>, a 200 <span class="num ${tone(b.da_media200_pct)}">${pct(b.da_media200_pct)}</span>`],
+        ["Volatilità di BTC", `${pct(b.vol20_annua_pct, 1, false)} l'anno, sugli ultimi 20 giorni${isNum(b.vol20_percentile_anno) ? ` · più alta del ${fmt(b.vol20_percentile_anno, 1)}% dei giorni dell'ultimo anno` : ""}`],
+        ["Funding in eccesso (CALDO)", isNum(M.caldo_pct) ? `<span class="num">${pct(M.caldo_pct, 4)}</span> ogni 8 ore rispetto alla base dello 0,01%${isNum(M.caldo_percentile_180g) ? ` · ${fmt(M.caldo_percentile_180g, 1)}° percentile dei 180 giorni` : ""}${isNum(M.freddo_giorni) && M.freddo_giorni > 0 ? ` · sotto zero da ${M.freddo_giorni} giorni` : ""}` : "non misurabile"],
+        ["Monete sopra la media a 50 giorni", isNum(M.sopra_media50_pct) ? `${pct(M.sopra_media50_pct, 1, false)} delle 36` : "—"],
+        ["Dispersione a 30 giorni", isNum(M.dispersione_30g_pct) ? pct(M.dispersione_30g_pct, 2, false) : "—"],
+        ["Open interest registrato", `${isNum(M.giorni_di_open_interest) ? M.giorni_di_open_interest : "—"} giorni dalla scuola (FRAGILE ne vuole 14)${isNum(M.oi_btc_14g_pct) ? ` · BTC in 14 giorni <span class="num">${pct(M.oi_btc_14g_pct)}</span>` : ""}`],
+      ];
+      market = `<div class="sheet"><h3>Il mercato</h3>
+        <div class="pills">${pill("PANICO", M.panico)}${pill("FRAGILE", M.fragile)}${pill("CASCATA", M.cascata)}${pill("CALDO", caldo, caldo === null ? "" : caldo ? "sì" : "no")}</div>
+        <dl class="kvs">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>
+        ${M.fragile === null || M.fragile === undefined ? `<p class="muted" style="font-size:.84rem">FRAGILE e CASCATA si misurano con l'open interest, che BingX non conserva: la scuola lo registra ogni mattina.</p>` : ""}
+      </div>`;
+    }
+    let table = "";
+    const P = R && obj(R.portafogli);
+    if (P) {
+      const keys = TRADERS.flatMap((n) => [`${n}_regole`, `${n}_giudizio`]).filter((k) => obj(P[k]));
+      table = `<div class="sheet"><h3>Il rischio di ogni portafoglio</h3><div class="table-scroll"><table class="tight risk-table"><thead><tr><th>Portafoglio</th><th class="num">Capitale</th><th class="num" title="Quanto è sotto il suo massimo">Calo dal massimo</th><th class="num" title="Valore delle posizioni sul capitale">Esposizione lorda</th><th class="num" title="Long meno short, pesati per il beta verso BTC">Netta (beta)</th><th class="num" title="Quanto si perde se tutti gli stop long scattano">Rischio long</th><th class="num" title="Quanto si perde se tutti gli stop short scattano">Rischio short</th><th class="num">Volatilità</th><th class="num">Posizioni</th></tr></thead><tbody>${keys.map((k) => {
+        const p = P[k], [n, kind] = k.split("_");
+        const hotDrop = isNum(p.calo_pct) && p.calo_pct <= -15;
+        const hotGross = kind === "giudizio" && isNum(p.lorda_pct) && p.lorda_pct > 250;
+        return `<tr><td>${whom(n)} <span class="muted">${kind === "giudizio" ? "a giudizio" : "a regole"}</span></td><td class="num">${fmt(p.capitale, 2)}</td><td class="num ${hotDrop ? "hot" : ""}">${pct(p.calo_pct)}</td><td class="num ${hotGross ? "hot" : ""}">${pct(p.lorda_pct, 1, false)}</td><td class="num">${pct(p.netta_beta_pct, 1)}</td><td class="num ${isNum(p.rischio_long_pct) && p.rischio_long_pct > 3 ? "hot" : ""}">${pct(p.rischio_long_pct, 2, false)}</td><td class="num ${isNum(p.rischio_short_pct) && p.rischio_short_pct > 3 ? "hot" : ""}">${pct(p.rischio_short_pct, 2, false)}</td><td class="num">${isNum(p.vol_annua_pct) ? pct(p.vol_annua_pct, 1, false) : "—"}</td><td class="num">${esc(p.posizioni ?? "—")}</td></tr>`;
+      }).join("")}</tbody></table></div><p class="muted" style="font-size:.82rem">In rosso quello che fa scattare un allarme: un calo oltre il 15%, più del 3% di rischio sugli stop di un lato solo (il tetto dell'esame E05), un portafoglio a giudizio oltre 2,5 volte il capitale.</p></div>`;
+    }
+    el.innerHTML = evening + head + `<div class="risk-grid">${alarmList}${market}</div>` + table;
+  }
+
+  // ---- self-awareness: the notebooks ----------------------------------------------------------------
+  const pctTxt = (x) => isNum(x) ? Math.round(x * 100) + "%" : "—";
+  function verdictOf(c) {
+    if (!c || !c.n) return "";
+    const over = c.eccesso_di_sicurezza;
+    if (!isNum(over)) return "";
+    return over > 0.05 ? `troppo sicuro di ${Math.round(over * 100)} punti` : over < -0.05 ? `troppo prudente di ${Math.round(-over * 100)} punti` : "ben calibrato";
+  }
+  function calibChart(c, other, mode) {
+    const has = (k) => k && k.n && arr(k.fasce).length;
+    if (!has(c) && !has(other)) return `<p class="muted">${mode === "pal" ? "Nessun caso valido in palestra." : "Nessuna previsione verificata ancora: il motore le controlla alla scadenza, sulla chiusura giornaliera vera."}</p>`;
+    const W = 260, H = 180, l = 36, r = 12, t = 10, b = 32;
+    const x = (v) => l + (v - 0.5) / 0.5 * (W - l - r), y = (v) => t + (1 - v) * (H - t - b);
+    const names = mode === "pal" ? ["in palestra", "vere"] : ["vere", "in palestra"];
+    const dotsOf = (k, hollow, name) => arr(k && k.fasce).filter((f) => isNum(f.detta) && isNum(f.avverata)).map((f) => `<circle cx="${x(Math.min(0.99, Math.max(0.5, f.detta))).toFixed(1)}" cy="${y(f.avverata).toFixed(1)}" r="${(4 + Math.sqrt(f.n || 1) * 1.6).toFixed(1)}" fill="${hollow ? "var(--sheet)" : "var(--who)"}" stroke="${hollow ? "var(--who)" : "var(--sheet)"}" stroke-width="2"${hollow ? ' stroke-dasharray="3 2"' : ""}><title>${esc(`${cap(name)}: dette al ${Math.round(f.detta * 100)}%, avverate ${Math.round(f.avverata * 100)}% su ${f.n}`)}</title></circle>`).join("");
+    const legend = has(c) && has(other) ? `<p class="calib-legend"><span><i class="ring fill"></i>${names[0]}</span><span><i class="ring"></i>${names[1]}</span></p>`
+      : !has(c) ? `<p class="calib-legend"><span><i class="ring"></i>${names[1]}: ${mode === "pal" ? "nessun caso valido in palestra" : "nessuna previsione vera verificata ancora"}</span></p>` : "";
+    return `<div class="calib"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Calibrazione: probabilità dichiarate contro previsioni avverate">
+      <line class="ax" x1="${l}" x2="${W - r}" y1="${y(0)}" y2="${y(0)}"/><line class="ax" x1="${l}" x2="${W - r}" y1="${y(0.5)}" y2="${y(0.5)}"/><line class="ax" x1="${l}" x2="${W - r}" y1="${y(1)}" y2="${y(1)}"/>
+      <line class="ideal" x1="${x(0.5)}" y1="${y(0.5)}" x2="${x(1)}" y2="${y(1)}"/>
+      <text x="${l - 5}" y="${y(0) + 3}" text-anchor="end">0%</text><text x="${l - 5}" y="${y(0.5) + 3}" text-anchor="end">50%</text><text x="${l - 5}" y="${y(1) + 3}" text-anchor="end">100%</text>
+      <text x="${x(0.5)}" y="${H - 15}" text-anchor="start">50%</text><text x="${x(0.75)}" y="${H - 15}" text-anchor="middle">75%</text><text x="${x(1)}" y="${H - 15}" text-anchor="end">99%</text>
+      <text x="${(l + W - r) / 2}" y="${H - 2}" text-anchor="middle">sicurezza dichiarata</text>
+      ${dotsOf(other, true, names[1])}${dotsOf(c, false, names[0])}</svg>${legend}<p class="muted calib-note">In alto quante volte ci ha preso. Sulla diagonale è onesto: dice 70% e ci prende 7 volte su 10.</p></div>`;
+  }
+  // keep the <details> people opened across re-renders
+  function keepOpen(el, html) {
+    const open = new Set([...el.querySelectorAll("details[open][data-k]")].map((d) => d.dataset.k));
+    el.innerHTML = html;
+    if (open.size) el.querySelectorAll("details[data-k]").forEach((d) => { if (open.has(d.dataset.k)) d.open = true; });
+  }
+  const gradePair = (v) => v && (isNum(toNum(v.ragionamento)) || isNum(toNum(v.disciplina))) ? `${esc(v.ragionamento ?? "—")} · ${esc(v.disciplina ?? "—")}` : "—";
+  function renderMinds() {
+    const el = $("minds"), sumEl = $("minds-sum");
+    if (S.unavailable) { sumEl.hidden = true; el.innerHTML = `<p class="muted">I quaderni compaiono quando apri la pagina da claude.ai.</p>`; return; }
+    sumEl.hidden = false;
+    const gaps = Object.fromEntries(TRADERS.map((n) => [n, twinsOf(n).gap]));
+    const rows = CAST.map((who) => {
+      const m = S.memoria[who];
+      const c = (m && obj(m.calibrazione)) || {};
+      const last = arr(m && m.autovoti).slice(-1)[0];
+      const gap = gaps[who];
+      return `<tr><td>${whom(who)}</td><td class="num">${who === "preside" ? "—" : esc(c.n || 0)}</td><td class="num">${pctTxt(c.sicurezza_media)}</td><td class="num">${pctTxt(c.successi)}</td><td class="num">${isNum(c.brier) ? fmt(c.brier, 3) : "—"}</td><td>${who === "preside" ? `<span class="muted">non fa previsioni</span>` : esc(verdictOf(c) || "—")}</td><td class="num">${last ? gradePair(last) : "—"}</td><td class="num">${last && last.preside ? gradePair(last.preside) : "—"}</td><td class="num ${tone(gap)}">${TRADERS.includes(who) ? (isNum(gap) ? fmt(gap, 0, true) : "—") : ""}</td></tr>`;
+    }).join("");
+    sumEl.innerHTML = `<h3>Gli otto a confronto</h3><div class="table-scroll"><table class="tight sum-table"><thead><tr><th>Chi</th><th class="num" title="Previsioni arrivate a scadenza e verificate">Verificate</th><th class="num">Sicuro in media</th><th class="num">Ci ha preso</th><th class="num" title="0 è perfetto, 0,25 vale tirare a indovinare">Brier</th><th>Calibrazione</th><th class="num" title="Ragionamento · disciplina">Ultimo autovoto</th><th class="num" title="Ragionamento · disciplina">Il Preside</th><th class="num" title="Capitale a giudizio meno capitale a regole, in USDT">Giudizio − regola</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    keepOpen(el, CAST.map((who) => mindCard(who, gaps[who])).join(""));
+  }
+  function mindCard(who, gap) {
+    const m = S.memoria[who];
+    const name = who === "preside" ? "Il Preside" : NAMES[who];
+    const head = (sub) => `<div class="who"><i class="key" aria-hidden="true"></i><div><h3>${esc(name)}</h3><p>${sub}</p></div></div>`;
+    if (m === undefined) return `<article class="mind k-${who}">${head(esc(WHO[who].line))}<p class="muted">Carico il quaderno…</p></article>`;
+    if (!m) return `<article class="mind k-${who}">${head(esc(WHO[who].line))}<p class="muted">Il quaderno non c'è ancora: si riempie dalla prossima riunione con le regole, gli errori che ripete, le previsioni con la loro probabilità e gli autovoti${who === "preside" ? " (il Preside non fa previsioni e non si dà voti)" : ""}.</p></article>`;
+    const c = obj(m.calibrazione) || {};
+    const verdict = verdictOf(c);
+    const gymCal = TRADERS.includes(who) && obj(m.palestra) && full(m.palestra.calibrazione) && m.palestra.calibrazione.n ? m.palestra.calibrazione : null;
+    const open = arr(m.previsioni).filter((x) => (x.stato || "aperta") === "aperta").slice(-4).reverse();
+    const done = arr(m.previsioni).filter((x) => x.stato === "verificata").slice(-3).reverse();
+    const rules = arr(m.regole).slice(-5).reverse();
+    const errs = arr(m.errori).slice().sort((a, b) => (b.volte || 1) - (a.volte || 1)).slice(0, 4);
+    const lessons = arr(m.lezioni).slice(-3).reverse();
+    const grades = arr(m.autovoti).slice(-5).reverse();
+    const upd = romeTime(m.aggiornato);
+    const calib = who === "preside" ? `<div class="block"><h4>Calibrazione</h4><p class="muted">Il Preside non fa previsioni: il suo quaderno tiene come insegna e le sue lezioni sbagliate.</p></div>`
+      : `<div class="block"><h4>Calibrazione${gymCal ? ", vera e in palestra" : ""}</h4><div class="calib-row">${calibChart(c, gymCal, "real")}<div class="kv"><span>Previsioni verificate <b>${esc(c.n || 0)}</b></span><span>Sicuro in media <b>${pctTxt(c.sicurezza_media)}</b></span><span>Ci ha preso <b>${pctTxt(c.successi)}</b></span><span>Brier <b>${isNum(c.brier) ? fmt(c.brier, 3) : "—"}</b> <span class="muted">(0 perfetto, 0,25 a caso)</span></span>${verdict ? `<p class="verdict"><b>${esc(cap(verdict))}</b></p>` : ""}${gymCal ? `<span>In palestra <b>${esc(gymCal.n)}</b> casi · sicuro <b>${pctTxt(gymCal.sicurezza_media)}</b> · giuste <b>${pctTxt(gymCal.successi)}</b> · Brier <b>${fmt(toNum(gymCal.brier), 3)}</b>${verdictOf(gymCal) ? ` · ${esc(verdictOf(gymCal))}` : ""}</span>` : ""}</div></div></div>`;
+    const gapBlock = TRADERS.includes(who) ? `<div class="block"><h4>Giudizio contro regola</h4><p><span class="num ${tone(gap)}" style="font-size:1.2rem">${isNum(gap) ? fmt(gap, 2, true) + " USDT" : "—"}</span> <span class="muted">${isNum(gap) ? (gap > 0.5 ? "il suo giudizio aggiunge alla regola" : gap < -0.5 ? "il suo giudizio toglie alla regola" : "pari") : "compare con la prima riunione"}</span></p></div>` : "";
+    const gradeTable = grades.length && who !== "preside" ? `<div class="block"><h4>Autovoto e voto del Preside</h4><div class="table-scroll"><table class="tight"><thead><tr><th>Giorno</th><th class="num">Si dà</th><th class="num">Il Preside</th><th class="num" title="Autovoto meno voto del Preside, sommando ragionamento e disciplina">Scarto</th></tr></thead><tbody>${grades.map((g) => {
+      const sR = toNum(g.ragionamento), sD = toNum(g.disciplina), p = obj(g.preside), pR = p ? toNum(p.ragionamento) : null, pD = p ? toNum(p.disciplina) : null;
+      const diff = [sR, sD, pR, pD].every((v) => v !== null) ? sR + sD - pR - pD : null;
+      return `<tr><td class="muted">${esc(dm(g.data))}</td><td class="num">${gradePair(g)}</td><td class="num">${p ? gradePair(p) : "—"}</td><td class="num ${diff !== null && diff >= 2 ? "self-up" : ""}">${diff === null ? "—" : diff > 0 ? "+" + diff : diff < 0 ? "−" + Math.abs(diff) : "0"}</td></tr>`;
+    }).join("")}</tbody></table></div><p class="muted" style="font-size:.8rem">ragionamento · disciplina, da 1 a 10. Uno scarto positivo vuol dire che si dà più del Preside.</p></div>` : "";
+    return `<article class="mind k-${who}" aria-label="${esc(name)}">
+      ${head(esc(upd ? "quaderno aggiornato il " + upd : WHO[who].line))}
+      ${calib}${gapBlock}${gradeTable}
+      ${errs.length ? `<div class="block"><h4>Errori che ripete</h4><ul>${errs.map((x) => `<li>${esc(x.testo)}${(x.volte || 1) > 1 ? ` <b>×${esc(x.volte)}</b>` : ""}${x.ultima ? ` <span class="muted">· l'ultima il ${esc(dm(x.ultima))}</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+      ${rules.length ? `<div class="block"><h4>${who === "preside" ? "Le sue regole per insegnare" : "Le regole che si è dato"}</h4><ul>${rules.map((x) => `<li>${esc(x.testo)}${x.dal ? ` <span class="muted">· dal ${esc(dm(x.dal))}</span>` : ""}${x.perche ? `<br><span class="muted">${esc(x.perche)}</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+      ${lessons.length ? `<div class="block"><h4>Ultime lezioni</h4><ul>${lessons.map((x) => `<li>${esc(x.testo)}${x.data ? ` <span class="muted">· ${esc(dm(x.data))}</span>` : ""}</li>`).join("")}</ul></div>` : ""}
+      ${done.length ? `<div class="block"><h4>Ultime previsioni verificate</h4><ul>${done.map((x) => `<li><span class="tag ${x.esito ? "ok" : "no"}">${x.esito ? "giusta" : "sbagliata"}</span> ${esc(x.mercato)} ${esc(x.direzione)} ${level(x.livello)} al ${prob(x.probabilita)} · chiusura <span class="num">${price(x.chiusura)}</span></li>`).join("")}</ul></div>` : ""}
+      ${open.length ? `<div class="block"><h4>Previsioni aperte</h4><ul>${open.map((x) => `<li>${esc(x.mercato)} ${esc(x.direzione)} ${level(x.livello)} entro il ${esc(dm(x.scadenza))} · <b>${prob(x.probabilita)}</b></li>`).join("")}</ul></div>` : ""}
+      ${m.chi_sono ? `<details data-k="chi-${who}"><summary>Chi sono, con le sue parole</summary><div class="prose">${md(m.chi_sono)}</div></details>` : ""}
+    </article>`;
+  }
+
+  // ---- the Sunday gym: twenty past cases each, judged on the seven days after ----------------------
+  const GYM_TRADE = { falco: "Il suo mestiere: le rotture.", tartaruga: "Il suo mestiere: i trend netti o appena girati.", spazzino: "Il suo mestiere: gli RSI(2) estremi.", ragioniere: "Il suo mestiere: il funding estremo." };
+  const isSunday = (g) => !!g && (g.giorno_settimana === "domenica" || (!!isoDay(g.data) && dayDate(g.data).getUTCDay() === 0));
+  const sundays = () => days().filter(isSunday).map((g) => g.data);
+  const gymWatched = new Set();
+  function watchGyms() {
+    if (!db) return;
+    for (const d of sundays()) {
+      if (gymWatched.has(d)) continue;
+      gymWatched.add(d);
+      const got = (v) => { S.palestre[d] = v; cp((C) => C.setDataIn("palestre", d, v)); soon(); };
+      db.doc("palestra/" + d).onSnapshot((snap) => got(snap.exists ? snap.data() : null), () => got(null));
+    }
+  }
+  function brierBar(b) {
+    if (!isNum(b)) return "";
+    const W = 360, l = 8, r = 8, top = 0.5;
+    const x = (v) => l + (Math.min(top, Math.max(0, v)) / top) * (W - l - r);
+    return `<svg class="gauge" viewBox="0 0 ${W} 36" role="img" aria-label="${esc(`Brier ${fmt(b, 3)}: 0 è perfetto, 0,25 vale tirare a indovinare`)}">
+      <rect x="${l}" y="9" width="${W - l - r}" height="7" rx="3.5" fill="var(--wash)"/>
+      <rect x="${l}" y="9" width="${Math.max(3, x(b) - l).toFixed(1)}" height="7" rx="3.5" fill="${b < 0.25 ? "var(--gain)" : "var(--loss)"}"/>
+      <line x1="${x(0.25)}" x2="${x(0.25)}" y1="4" y2="21" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <text x="${l}" y="32">0 perfetto</text><text x="${x(0.25)}" y="32" text-anchor="middle">0,25 a caso</text><text x="${W - r}" y="32" text-anchor="end">0,5</text>
+    </svg>`;
+  }
+  function caseAnswer(c) {
+    if (!c.valida) return `<span class="muted">${esc(c.motivo || "non valida")}</span>`;
+    const plan = c.azione && c.azione !== "niente" ? `${c.azione}, stop ${small(c.stop_pct)}%${c.target_pct != null && c.target_pct !== "" ? `, target ${small(c.target_pct)}%` : ""}` : "niente";
+    return `<span class="${c.giusta ? "up" : "down"}">${c.direzione === "su" ? "su" : "giù"} ${prob(c.probabilita)}</span> · ${esc(plan)}`;
+  }
+  function casesTable(n, casi, R) {
+    if (!casi.length) return "";
+    return `<details class="cases" data-k="casi-${n}"><summary>I ${casi.length} casi svelati, uno per uno</summary><div class="table-scroll"><table class="tight sum-table"><thead><tr><th>Caso</th><th>Moneta</th><th>Giorno</th><th>Tipo</th><th>La risposta</th><th class="num" title="Come è andato il prezzo nei 7 giorni dopo">7 giorni dopo</th><th class="num">Brier</th><th class="num" title="Il piano, in R: il risultato diviso il rischio, costi compresi">R</th><th class="num" title="La sua regola scritta, semplificata, sullo stesso caso">La regola</th></tr></thead><tbody>${casi.map((c) => {
+      const rr = obj(c.regola) || {};
+      const mark = c.caso === R.migliore ? ` <span class="tag ok">il migliore</span>` : c.caso === R.peggiore ? ` <span class="tag no">il peggiore</span>` : "";
+      return `<tr><td>${esc(c.caso)}${mark}</td><td><b>${esc(c.moneta)}</b></td><td class="muted">${esc(dmy(c.giorno))}</td><td>${esc(c.tipo)}</td><td>${caseAnswer(c)}</td><td class="num ${tone(toNum(c.var_7g_dopo_pct))}">${pct(toNum(c.var_7g_dopo_pct))}</td><td class="num">${c.valida ? fmt(toNum(c.brier), 3) : "—"}</td><td class="num ${tone(toNum(c.r))}" title="${esc(c.uscita || "")}">${c.valida && c.azione !== "niente" ? fmt(toNum(c.r), 2, true) : "—"}</td><td class="num ${tone(toNum(rr.r))}" title="${esc(rr.uscita || "")}">${rr.azione && rr.azione !== "niente" ? `${esc(rr.azione)} ${fmt(toNum(rr.r), 2, true)}` : "—"}</td></tr>`;
+    }).join("")}</tbody></table></div></details>`;
+  }
+  function gymCard(n, A) {
+    A = obj(A) || {};
+    const R = obj(A.riassunto) || {};
+    const casi = arr(A.casi).filter(obj);
+    const head = `<div class="who"><i class="key" aria-hidden="true"></i><div><h3>${esc(NAMES[n])}</h3><p>${esc(GYM_TRADE[n])}</p></div></div>`;
+    if (!Object.keys(R).length) return `<article class="mind k-${n}">${head}<p class="muted">${casi.length ? "Il motore non ha scritto il riassunto di questa palestra." : "In questa palestra non ci sono sue risposte valide."}</p>${casesTable(n, casi, R)}</article>`;
+    const b = toNum(R.brier), M = obj(R.mestiere) || {}, C = obj(R.a_caso) || {};
+    const rt = toNum(R.r_totale), rr = toNum(R.r_totale_regola);
+    const diff = isNum(rt) && isNum(rr) ? rt - rr : null;
+    const mem = S.memoria[n];
+    const gymCal = (mem && obj(mem.palestra) && full(mem.palestra.calibrazione)) || full(R.calibrazione);
+    const realCal = mem && full(mem.calibrazione);
+    const calLine = (label, c) => c && c.n ? `<span>${label}: <b>${esc(c.n)}</b> previsioni · sicuro <b>${pctTxt(c.sicurezza_media)}</b> · giuste <b>${pctTxt(c.successi)}</b> · Brier <b>${fmt(toNum(c.brier), 3)}</b></span>` : `<span>${label}: <span class="muted">nessuna ancora</span></span>`;
+    const rule = obj(A.nuova_regola);
+    const fig = (label, value, note, cls = "") => `<div><h4>${label}</h4><span class="v ${cls}">${value}</span>${note ? `<p>${note}</p>` : ""}</div>`;
+    return `<article class="mind k-${n}" aria-label="${esc(NAMES[n])} in palestra">
+      ${head}
+      <div class="figs">
+        ${fig("Brier", isNum(b) ? fmt(b, 3) : "—", isNum(b) ? (b < 0.25 ? "meglio di chi tira a indovinare" : b > 0.25 ? "peggio di chi tira a indovinare" : "come tirare a indovinare") : "", isNum(b) && b !== 0.25 ? (b < 0.25 ? "up" : "down") : "")}
+        ${fig("Giuste", isNum(R.giuste_pct) ? fmt(R.giuste_pct, 0) + "%" : "—", `${esc(R.valide ?? "—")} risposte valide su ${esc(R.n ?? "—")}`)}
+        ${fig("Operazioni", esc(R.operazioni ?? "—"), isNum(R.r_medio) ? `R medio ${fmt(R.r_medio, 2, true)}` : "")}
+        ${fig("R totale", isNum(rt) ? fmt(rt, 2, true) : "—", "costi compresi, senza funding", tone(rt))}
+      </div>
+      ${brierBar(b)}
+      <div class="block"><h4>Il giudizio contro la sua regola, sugli stessi casi</h4>
+        <div class="vs"><div><span class="muted">il suo giudizio</span><span class="v ${tone(rt)}">${fmt(rt, 2, true)} R</span><span class="muted">${esc(R.operazioni ?? 0)} operazioni</span></div><div class="rule"><span class="muted">la sua regola, semplificata</span><span class="v ${tone(rr)}">${fmt(rr, 2, true)} R</span><span class="muted">${esc(R.operazioni_regola ?? 0)} operazioni</span></div></div>
+        ${isNum(diff) ? `<p class="verdict">${Math.abs(diff) < 0.005 ? "Pari con la regola." : diff > 0 ? `Il giudizio fa meglio della regola di ${fmt(diff, 2)} R.` : `La regola fa meglio del giudizio di ${fmt(-diff, 2)} R.`}</p>` : ""}
+      </div>
+      <div class="block"><h4>Il suo mestiere contro i casi a caso</h4><div class="table-scroll"><table class="tight sum-table"><thead><tr><th>Casi</th><th class="num">Brier</th><th class="num">Giuste</th><th class="num">Operazioni</th><th class="num">R</th><th class="num">R regola</th></tr></thead><tbody>${[["Il mestiere", M], ["A caso", C]].map(([k, x]) => `<tr><td>${k} <span class="muted">(${esc(x.n ?? "—")})</span></td><td class="num">${fmt(toNum(x.brier), 3)}</td><td class="num">${isNum(x.giuste_pct) ? fmt(x.giuste_pct, 0) + "%" : "—"}</td><td class="num">${esc(x.operazioni ?? "—")}</td><td class="num ${tone(toNum(x.r_totale))}">${fmt(toNum(x.r_totale), 2, true)}</td><td class="num ${tone(toNum(x.r_totale_regola))}">${fmt(toNum(x.r_totale_regola), 2, true)}</td></tr>`).join("")}</tbody></table></div></div>
+      <div class="block"><h4>Calibrazione, in palestra e vera</h4><div class="calib-row">${calibChart(gymCal, realCal, "pal")}<div class="kv">${calLine("In palestra", gymCal)}${calLine("Vere", realCal)}${gymCal && gymCal.n && verdictOf(gymCal) ? `<p class="verdict">In palestra è <b>${esc(verdictOf(gymCal))}</b>.</p>` : ""}</div></div></div>
+      ${A.prima ? `<div class="block"><h4>Prima di sapere com'è andata</h4><p class="thought">${esc(A.prima)}</p></div>` : ""}
+      ${A.lezione ? `<div class="block"><h4>La lezione</h4><p class="read">${esc(A.lezione)}</p></div>` : ""}
+      <div class="block"><h4>La regola nuova</h4>${rule && rule.testo ? `<p class="read"><b>${esc(rule.testo)}</b></p>${rule.perche ? `<p class="muted" style="font-size:.88rem">${esc(rule.perche)}</p>` : ""}` : `<p class="muted">Nessuna: una regola nuova vuole almeno 5 casi che la sostengano.</p>`}</div>
+      ${A.errore ? `<div class="block"><h4>L'errore più istruttivo</h4><p class="read">${esc(A.errore)}</p></div>` : ""}
+      ${reflection(A)}${selfGrade(A)}
+      ${casesTable(n, casi, R)}
+    </article>`;
+  }
+  function renderGym() {
+    const el = $("palestra"), atEl = $("palestra-at");
+    atEl.textContent = "";
+    if (S.unavailable) { el.innerHTML = `<p class="muted">La palestra compare quando apri la pagina da claude.ai.</p>`; return; }
+    const all = sundays();
+    if (!all.length) { el.innerHTML = `<p class="muted">${S.got.programma ? "La palestra compare con il programma della scuola." : "Carico la palestra…"}</p>`; return; }
+    const today = romeToday().date;
+    const have = all.filter((d) => obj(S.palestre[d]));
+    if (!have.length) {
+      const waiting = all.some((d) => d <= today && S.palestre[d] === undefined);
+      const next = all.find((d) => d >= today);
+      el.innerHTML = waiting ? `<p class="muted">Carico la palestra…</p>` : `<div class="sheet empty"><p>${next ? `La ${next === all[0] ? "prima " : ""}palestra è ${esc(longDay(next))} alle 11:13.` : "Nessuna palestra è stata salvata."}</p><p class="muted">Ogni domenica Falco, Tartaruga, Spazzino e Ragioniere ricevono 20 casi veri dal passato, senza moneta e senza data: 10 del loro mestiere e 10 a caso. Dicono dove sarà il prezzo tra 7 giorni, con una probabilità e un piano, e il motore li giudica subito, anche contro la loro regola scritta.</p></div>`;
+      return;
+    }
+    const date = S.gymSel && have.includes(S.gymSel) ? S.gymSel : have[have.length - 1];
+    const P = S.palestre[date];
+    atEl.textContent = P.scritto ? `Salvata il ${romeTime(P.scritto)}` : "";
+    const pick = have.length > 1 ? `<div class="gym-days" role="group" aria-label="Le palestre">${have.map((d) => `<button type="button" data-gym="${esc(d)}" aria-pressed="${d === date}">${esc(dm(d))}</button>`).join("")}</div>` : "";
+    const notice = P.avviso || (P.stato && P.stato !== "completo") ? `<p class="notice" style="margin-bottom:12px">${esc(P.avviso || "Questa palestra non è stata completata.")}</p>` : "";
+    const Sc = obj(P.scettico) || {};
+    keepOpen(el, `${pick}<p class="theme" style="margin-bottom:12px"><b>${esc(cap(longDay(date)))}.</b> 20 casi dal passato per ognuno, giudicati sui ${esc(P.orizzonte_giorni || 7)} giorni dopo. Un Brier di 0,25 vale dire sempre 50%: sopra, l'agente ha fatto peggio di chi non sa niente.</p>${notice}
+      <div class="gyms">${TRADERS.map((n) => gymCard(n, P.agenti && P.agenti[n])).join("")}</div>
+      ${Sc.testo || Sc.domanda_per_il_consiglio ? `<article class="sheet k-scettico" style="margin-top:16px"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Lo Scettico controlla</h3></div>${Sc.testo ? `<div class="prose">${md(Sc.testo)}</div>` : ""}${Sc.domanda_per_il_consiglio ? `<div class="block"><h4>La domanda per il consiglio di lunedì</h4><p class="read">${esc(Sc.domanda_per_il_consiglio)}</p></div>` : ""}</article>` : ""}`);
+  }
+  $("palestra").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-gym]");
+    if (!b) return;
+    S.gymSel = b.dataset.gym;
+    renderGym();
+  });
+
+  // ---- the Sunday research: one question each, chosen by the agent, checked by the Scettico --------
+  const RESEARCHERS = ["falco", "tartaruga", "spazzino", "ragioniere", "guardiano", "cronista"];
+  const RESEARCH_TIME = "16:23";
+  const SOURCE_KIND = { studio: "studio", dati: "dati", articolo: "articolo", opinione: "opinione" };
+  const CHECK = { regge: ["regge", "ok"], "non regge": ["non regge", "no"], "non verificabile": ["non verificabile", ""] };
+  const resWatched = new Set();
+  function watchResearch() {
+    if (!db) return;
+    for (const d of sundays()) {
+      if (resWatched.has(d)) continue;
+      resWatched.add(d);
+      const got = (v) => { S.ricerche[d] = v; soon(); };
+      db.doc("ricerca/" + d).onSnapshot((snap) => got(snap.exists ? snap.data() : null), () => got(null));
+    }
+  }
+  // a source is a link only if it is a plain https address; anything else is shown as text
+  const safeUrl = (u) => typeof u === "string" && /^https:\/\/[^\s"'<>`]+$/.test(u) ? u : null;
+  function sourceLine(f) {
+    if (!obj(f)) return "";
+    const u = safeUrl(f.url), title = esc(f.titolo || f.url || "fonte"), kind = SOURCE_KIND[f.tipo];
+    return `<li>${kind ? `<span class="lab${kind === "opinione" ? " lab-interpretazione" : ""}">${kind}</span> ` : ""}${u ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}${f.data ? ` <span class="muted">· ${esc(f.data)}</span>` : ""}</li>`;
+  }
+  function researchCard(n, A) {
+    const head = `<div class="who k-${n}"><i class="key" aria-hidden="true"></i><div><h3>${esc(NAMES[n])}</h3></div></div>`;
+    if (!obj(A)) return `<article class="mind k-${n}">${head}<p class="muted">Questa settimana non ha una ricerca valida.</p></article>`;
+    const H = obj(A.ipotesi), fonti = arr(A.fonti).map(sourceLine).join("");
+    return `<article class="mind k-${n}" aria-label="La ricerca di ${esc(NAMES[n])}">${head}
+      <div class="block"><h4>La domanda che si è fatto</h4><p class="read">${esc(A.domanda || "—")}</p>${A.perche ? `<p class="muted" style="font-size:.88rem">${esc(A.perche)}</p>` : ""}</div>
+      <div class="block"><h4>La sua conclusione</h4><p class="read">${esc(A.conclusione || "—")}</p>
+        <div class="facts"><span>Quanto ci crede <b>${prob(A.fiducia)}</b></span>${toNum(A.scartate) ? `<span>Fonti scartate <b>${esc(small(A.scartate))}</b></span>` : ""}</div>
+        ${A.smentita ? `<p class="muted" style="font-size:.88rem">Cambierebbe idea se: ${esc(lowerFirst(String(A.smentita)))}</p>` : ""}</div>
+      ${A.stato_d_animo ? `<p class="thought">«${esc(A.stato_d_animo)}»</p>` : ""}
+      ${H ? `<div class="block"><h4>L'ipotesi per la lista d'esame</h4><div class="hyp"><b>${esc(H.nome || "Senza nome")}</b><span>${esc(H.regola || "")}</span>${H.smentita ? `<span class="muted">La boccia: ${esc(lowerFirst(String(H.smentita)))}</span>` : ""}</div></div>` : ""}
+      ${A.trovato ? `<details data-k="res-${n}"><summary>Cosa ha trovato</summary><div class="prose">${md(A.trovato)}</div></details>` : ""}
+      ${fonti ? `<div class="block"><h4>Le fonti</h4><ul class="lines">${fonti}</ul></div>` : ""}
+    </article>`;
+  }
+  function renderResearch() {
+    const el = $("ricerca"), atEl = $("ricerca-at");
+    atEl.textContent = "";
+    if (S.unavailable) { el.innerHTML = `<p class="muted">La ricerca compare quando apri la pagina da claude.ai.</p>`; return; }
+    const all = sundays();
+    if (!all.length) { el.innerHTML = `<p class="muted">${S.got.programma ? "La ricerca compare con il programma della scuola." : "Carico la ricerca…"}</p>`; return; }
+    const have = all.filter((d) => obj(S.ricerche[d]));
+    if (!have.length) {
+      const today = romeToday().date;
+      const waiting = all.some((d) => d <= today && S.ricerche[d] === undefined);
+      el.innerHTML = waiting ? `<p class="muted">Carico la ricerca…</p>` : `<div class="sheet empty"><p>Nessuna ricerca è stata salvata.</p><p class="muted">La domenica alle ${RESEARCH_TIME}, quando l'attività è accesa, sei agenti studiano sul web una domanda scelta da loro, scrivono la loro conclusione e lo Scettico ne controlla una alla fonte. Una ricerca può cambiare la testa di un agente e proporre un'ipotesi da esaminare: non cambia mai le regole né i limiti di rischio.</p></div>`;
+      return;
+    }
+    const date = S.resSel && have.includes(S.resSel) ? S.resSel : have[have.length - 1];
+    const P = S.ricerche[date], Sc = obj(P.scettico) || {}, V = obj(Sc.verifica), lines = arr(P.preside).filter((x) => typeof x === "string" && x);
+    atEl.textContent = P.scritto ? `Salvata il ${romeTime(P.scritto)}` : "";
+    const pick = have.length > 1 ? `<div class="gym-days" role="group" aria-label="Le ricerche">${have.map((d) => `<button type="button" data-res="${esc(d)}" aria-pressed="${d === date}">${esc(dm(d))}</button>`).join("")}</div>` : "";
+    const notice = P.avviso || (P.stato && P.stato !== "completo") ? `<p class="notice" style="margin-bottom:12px">${esc(P.avviso || "Questa ricerca non è stata completata.")}</p>` : "";
+    const check = V ? CHECK[V.esito] || [String(V.esito || "?"), ""] : null;
+    keepOpen(el, `${pick}<p class="theme" style="margin-bottom:12px"><b>${esc(cap(longDay(date)))}.</b> Ognuno ha scelto la sua domanda e ha lavorato da solo. Le conclusioni sono degli agenti: valgono quanto le loro fonti, e un'ipotesi diventa una regola solo dopo un esame sui dati passati.</p>${notice}
+      ${lines.length ? `<article class="sheet k-preside" style="margin-bottom:16px"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Le righe del Preside</h3></div><ul class="lines">${lines.map((x) => `<li class="read">${esc(x)}</li>`).join("")}</ul></article>` : ""}
+      <div class="minds">${RESEARCHERS.map((n) => researchCard(n, P.agenti && P.agenti[n])).join("")}</div>
+      ${Sc.testo || V ? `<article class="sheet k-scettico" style="margin-top:16px"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Lo Scettico controlla</h3></div>${Sc.testo ? `<div class="prose">${md(Sc.testo)}</div>` : ""}${V ? `<div class="block"><h4>La verifica alla fonte</h4><p class="event"><span class="tag ${check[1]}">${esc(check[0])}</span><span>${whom(V.chi)}: ${esc(V.affermazione || "")}</span></p>${V.nota ? `<p class="muted" style="font-size:.88rem">${esc(V.nota)}</p>` : ""}</div>` : ""}${Sc.domanda_per_il_consiglio ? `<div class="block"><h4>La domanda per il consiglio</h4><p class="read">${esc(Sc.domanda_per_il_consiglio)}</p></div>` : ""}</article>` : ""}`);
+  }
+  $("ricerca").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-res]");
+    if (!b) return;
+    S.resSel = b.dataset.res;
+    renderResearch();
+  });
+
+  // ---- the minutes of the selected day -------------------------------------------------------------
+  function eventLine(ev) {
+    if (!obj(ev)) return "";
+    const o = obj(ev.order) || {};
+    if (ev.event === "aperta") {
+      return `<span class="tag ok">aperta</span><span>${side(ev.side)} <b>${esc(ev.symbol)}</b> a <span class="num">${price(ev.entry)}</span>, stop <span class="num">${price(ev.stop)}</span>${isNum(ev.target) ? `, target <span class="num">${price(ev.target)}</span>` : ""}, rischio <span class="num">${usd(ev.risk_usd)}</span>${isNum(ev.risk_pct) ? ` <span class="muted">(${small(ev.risk_pct)}%)</span>` : ""}${ev.id ? ` <span class="muted">· ${esc(ev.id)}</span>` : ""}</span>`;
+    }
+    if (ev.event === "chiusa") {
+      const parts = [isNum(ev.price_pnl) ? `prezzo ${fmt(ev.price_pnl, 2, true)}` : "", isNum(ev.costs) ? `costi ${fmt(ev.costs, 2)}` : "", isNum(ev.funding) && ev.funding !== 0 ? `funding ${fmt(ev.funding, 2)}` : ""].filter(Boolean).join(", ");
+      return `<span class="tag">chiusa</span><span>${side(ev.side)} <b>${esc(ev.symbol)}</b> a <span class="num">${price(ev.exit)}</span>, ${esc(shortReason(ev.exit_reason))}: <span class="num ${tone(ev.pnl)}">${usd(ev.pnl, true)}</span>${isNum(ev.r) ? ` <span class="muted num">(${fmt(ev.r, 2, true)} R)</span>` : ""}${parts ? ` <span class="muted">· ${esc(parts)}</span>` : ""}</span>`;
+    }
+    const what = [o.side, o.symbol ? String(o.symbol).toUpperCase() : o.id].filter(Boolean).join(" ");
+    return `<span class="tag no">respinto</span><span>${esc(what)}${what ? ": " : ""}${esc(human(ev.reason))}</span>`;
+  }
+  const shortEvent = (e) => {
+    const o = obj(e.order) || {};
+    if (e.event === "aperta") return `aperta: ${e.side} ${e.symbol} a ${price(e.entry)}`;
+    if (e.event === "chiusa") return `chiusa: ${e.side || ""} ${e.symbol}, ${shortReason(e.exit_reason)}, ${usd(e.pnl, true)}`;
+    return `respinto: ${[o.side, o.symbol || o.id].filter(Boolean).join(" ")}: ${human(e.reason || "")}`;
+  };
+  function matchOrders(who, orders, events) {
+    const pool = events.filter((e) => obj(e) && e.wallet === who).map((e) => ({ e, used: false }));
+    const out = orders.map((o) => {
+      if (!obj(o)) return { o, e: null };
+      const sym = String(o.symbol || "").toUpperCase();
+      const hit = pool.find((x) => {
+        if (x.used) return false;
+        const eo = obj(x.e.order) || {};
+        if (o.action === "close") return x.e.id === o.id || eo.id === o.id;
+        return (x.e.event === "aperta" && x.e.symbol === sym) || (x.e.event === "respinto" && String(eo.symbol || "").toUpperCase() === sym && eo.action !== "close");
+      });
+      if (hit) hit.used = true;
+      return { o, e: hit ? hit.e : null };
+    });
+    return { out, rest: pool.filter((x) => !x.used).map((x) => x.e) };
+  }
+  function orderLine(o, e, executed, bare) {
+    if (!obj(o)) return "";
+    const head = o.action === "close" ? `Chiude <b>${esc(o.id)}</b>`
+      : `${side(o.side)} <b>${esc(String(o.symbol || "").toUpperCase())}</b> · stop <span class="num">${level(o.stop)}</span>${o.target != null && o.target !== "" ? ` · target <span class="num">${level(o.target)}</span>` : ""} · rischio <span class="num">${small(toNum(o.risk_pct) ?? 1)}%</span>`;
+    return `<div class="order"><span>${head}</span>${o.reason ? `<span class="why">${esc(o.reason)}</span>` : ""}${bare ? "" : `<div class="event">${e ? eventLine(e) : `<span class="tag">nessun esito</span><span class="muted">${executed ? "il motore non ha registrato questo ordine" : "il motore non ha eseguito ordini"}</span>`}</div>`}</div>`;
+  }
+  function predMain(p) {
+    if (!obj(p)) return "";
+    return `<p class="pred"><b>${esc(p.mercato)} ${esc(p.direzione)} ${level(p.livello)}</b>${p.scadenza ? ` <span class="muted">entro il ${esc(dm(p.scadenza))}</span>` : ""} <span class="prob">${prob(p.probabilita)}</span></p>${p.perche ? `<p class="muted" style="font-size:.88rem">${esc(p.perche)}</p>` : ""}`;
+  }
+  function predsBlock(list, title = "Previsioni") {
+    const ps = arr(list).filter(obj);
+    if (!ps.length) return "";
+    return `<div class="block"><h4>${esc(title)}</h4><ul class="preds">${ps.map((p) => `<li><b>${esc(p.mercato)} ${esc(p.direzione)} ${level(p.livello)}</b>${p.scadenza ? ` entro il ${esc(dm(p.scadenza))}` : ""} · <b>${prob(p.probabilita)}</b>${p.perche ? ` · <span class="muted">${esc(p.perche)}</span>` : ""}</li>`).join("")}</ul></div>`;
+  }
+  const reflection = (a) => a && a.riflessione ? `<div class="block"><h4>Riflessione</h4><p class="thought">${esc(a.riflessione)}</p></div>` : "";
+  function gradeMarks(v, self) {
+    if (!obj(v)) return "";
+    const names = { ragionamento: "Ragionamento", disciplina: "Disciplina", risultato: "Risultato", consapevolezza: "Consapevolezza" };
+    return `<div class="voti${self ? " self" : ""}">${Object.keys(names).filter((k) => isNum(toNum(v[k]))).map((k) => `<span class="voto"><i aria-hidden="true">${esc(v[k])}</i>${names[k]}<span class="sr"> ${esc(v[k])} su 10</span></span>`).join("")}</div>`;
+  }
+  const selfGrade = (a) => a && obj(a.autovoto) ? `<div class="block"><h4>Si dà, prima del Preside</h4>${gradeMarks(a.autovoto, true)}</div>` : "";
+  const chiSono = (a) => a && a.chi_sono ? `<details><summary>Chi sono, con le sue parole</summary><div class="prose">${md(a.chi_sono)}</div></details>` : "";
+  function newsItem(nw) {
+    if (!obj(nw)) return "";
+    const lab = String(nw.etichetta || "").toLowerCase();
+    const url = /^https:\/\//i.test(nw.url || "") ? nw.url : "";
+    let host = "";
+    try { host = url ? new URL(url).hostname.replace(/^www\./, "") : ""; } catch (e) { host = ""; }
+    const src = nw.fonte || host;
+    return `<li class="news-item"><div class="news-meta"><span class="lab lab-${esc(lab)}">${esc(lab || "notizia")}</span>${nw.classe ? `<span class="lab lab-classe">${esc(nw.classe)}</span>` : ""}${nw.ora ? `<span class="muted num" title="${esc(nw.ora)}">${esc(whenTxt(nw.ora))}</span>` : ""}</div><p>${esc(nw.testo)}</p><p class="src">${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(src || url)}</a>` : esc(src || "fonte non indicata")}</p></li>`;
+  }
+  function hypotheses(list) {
+    const xs = arr(list).filter(Boolean);
+    return `<div class="hyps">${xs.map((h) => obj(h) ? `<div class="hyp"><b>${esc(h.nome || "Ipotesi")}</b><dl class="kvs small">${[["La regola", h.regola], ["I dati che servono", h.dati], ["Cosa la smentirebbe", h.smentita]].filter(([, v]) => v != null && v !== "").map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(valTxt(v))}</dd></div>`).join("")}</dl></div>` : `<div class="hyp">${esc(valTxt(h))}</div>`).join("")}</div>`;
+  }
+  function autopsies(list) {
+    const Q = [["Era nelle regole?", ["nelle_regole"]], ["Era dentro l'atteso?", ["atteso", "dentro_atteso"]], ["C'era un errore di dati o di codice?", ["errore", "errore_di_dati_o_codice"]]];
+    const known = new Set(["chi", "agente", "operazione", ...Q.flatMap(([, ks]) => ks)]);
+    return `<div class="hyps">${arr(list).filter(Boolean).map((a) => {
+      if (!obj(a)) return `<div class="hyp">${esc(valTxt(a))}</div>`;
+      const who = a.chi || a.agente;
+      const extra = Object.entries(a).filter(([k, v]) => !known.has(k) && v != null && v !== "");
+      return `<div class="hyp"><p>${who && NAMES[who] ? whom(who) : ""}${a.operazione ? ` <b>${esc(a.operazione)}</b>` : ""}</p><dl class="kvs small">${Q.map(([label, ks]) => { const k = ks.find((x) => a[x] != null && a[x] !== ""); return k ? `<div><dt>${label}</dt><dd>${esc(valTxt(a[k]))}</dd></div>` : ""; }).join("")}${extra.map(([k, v]) => `<div><dt>${esc(keyName(k))}</dt><dd>${esc(valTxt(v))}</dd></div>`).join("")}</dl></div>`;
+    }).join("")}</div>`;
+  }
+  function contiBlock(c) {
+    if (!c) return "";
+    if (!obj(c)) return `<div class="block"><h4>I conti rifatti a mano</h4>${anyBlock(c, true)}</div>`;
+    const verdict = c.tornano === true ? `<span class="tag ok">i conti tornano</span>` : c.tornano === false ? `<span class="tag no">i conti non tornano</span>` : "";
+    return `<div class="block"><h4>I conti rifatti a mano${c.operazione ? ": " + esc(c.operazione) : ""}</h4>${verdict ? `<p>${verdict}</p>` : ""}${c.testo ? `<div class="prose">${md(c.testo, { breaks: true })}</div>` : ""}</div>`;
+  }
+  function briefingCard(b, d) {
+    if (!obj(b)) return `<article class="sheet k-cronista"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Il briefing del Cronista</h3></div><p class="muted">Il briefing non è nel verbale.</p></article>`;
+    const cal = arr(b.calendario).filter(obj), news = arr(b.notizie).filter(obj);
+    const ipotesi = arr(b.ipotesi).filter(Boolean);
+    const lettura = obj(b.lettura);
+    return `<article class="sheet k-cronista"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Il briefing del Cronista</h3><span class="turn">prima i fatti, poi le opinioni</span></div>
+      ${chiSono(b)}
+      ${b.testo ? `<div class="prose">${md(b.testo)}</div>` : ""}
+      <div class="v-grid">
+        <div class="block"><h4>Calendario</h4>${cal.length ? `<ul class="cal">${cal.map((c) => `<li><span class="num when" title="${esc(c.quando)}">${esc(whenTxt(c.quando))}</span><span>${esc(c.evento)}</span></li>`).join("")}</ul>` : `<p class="muted">Niente in calendario.</p>`}</div>
+        <div class="block"><h4>Le notizie</h4>${news.length ? `<ol class="news">${news.map(newsItem).join("")}</ol>` : `<p class="muted">Nessuna notizia.</p>`}</div>
+      </div>
+      ${b.ora_delle_notizie ? `<div class="block"><h4>L'ora delle notizie</h4><div class="prose">${md(b.ora_delle_notizie)}</div></div>` : ""}
+      ${lettura ? `<div class="block"><h4>La lettura dalla biblioteca${lettura.titolo ? ": " + esc(lettura.titolo) : ""}</h4><div class="prose">${md(lettura.testo)}</div></div>` : ""}
+      ${ipotesi.length ? `<div class="block"><h4>Ipotesi nuove per la lista d'esame</h4>${hypotheses(ipotesi)}</div>` : ""}
+      ${predsBlock(b.previsioni)}${reflection(b)}${selfGrade(b)}
+    </article>`;
+  }
+  function positionCard(who, a, d) {
+    a = obj(a) || {};
+    const orders = arr(a.ordini);
+    const before = Array.isArray(a.ordini_iniziali) ? a.ordini_iniziali.filter(obj) : null;
+    const changed = !!before && JSON.stringify(before) !== JSON.stringify(orders);
+    const events = arr(d.eventi_ordini);
+    const { out, rest } = matchOrders(who, orders, events);
+    const preds = arr(a.previsioni).filter(obj);
+    const welcome = d.tipo === "accoglienza";
+    const empty = !Object.keys(a).length;
+    return `<article class="sheet k-${who}" aria-label="${esc(NAMES[who])}"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>${esc(NAMES[who])}</h3><span class="turn">${esc(WHO[who].line)}</span></div>
+      ${empty ? `<p class="muted">La sua posizione non è nel verbale.</p>` : ""}
+      ${chiSono(a)}
+      ${a.regola ? `<div class="block"><h4>La regola</h4><p class="read">${esc(a.regola)}</p></div>` : ""}
+      ${preds.length ? `<div class="block"><h4>Previsione principale</h4>${predMain(preds[0])}</div>` : ""}
+      ${preds.length > 1 ? predsBlock(preds.slice(1), "Altre previsioni") : ""}
+      ${a.cambierei_idea_se ? `<div class="block"><h4>Cambierei idea se</h4><p class="read">${esc(a.cambierei_idea_se)}</p></div>` : ""}
+      ${a.intervento ? `<div class="block"><h4>Intervento</h4><div class="prose">${md(a.intervento)}</div></div>` : ""}
+      ${empty ? "" : `<div class="block"><h4>Ordini a giudizio${changed ? ", cambiati dopo la domanda dello Scettico" : ""}</h4>${orders.length ? out.map(({ o, e }) => orderLine(o, e, events.length > 0)).join("") : `<p class="muted">${welcome ? "All'accoglienza non si danno ordini." : changed ? "Nessun ordine: dopo la domanda li ha ritirati." : "Nessun ordine: oggi resta fermo."}</p>`}${rest.length ? `<h4 style="margin-top:6px">Altri esiti del motore</h4>${rest.map((e) => `<div class="event">${eventLine(e)}</div>`).join("")}` : ""}</div>`}
+      ${changed ? `<div class="block struck"><h4>Prima della domanda</h4>${before.length ? before.map((o) => orderLine(o, null, false, true)).join("") : `<p>Nessun ordine.</p>`}</div>` : ""}
+      ${a.settimana ? `<div class="block"><h4>La sua settimana</h4>${anyBlock(a.settimana, true)}</div>` : ""}
+      ${reflection(a)}${selfGrade(a)}
+    </article>`;
+  }
+  function guardianCard(G, d) {
+    G = obj(G) || {};
+    const al = arr(G.allarmi).length ? arr(G.allarmi) : arr(d.rischio && d.rischio.allarmi);
+    return `<article class="sheet k-guardiano"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Il Guardiano</h3><span class="turn">il bollettino del rischio</span></div>
+      ${chiSono(G)}
+      ${G.bollettino ? `<div class="prose">${md(G.bollettino, { breaks: true })}</div>` : `<p class="muted">Nessun bollettino scritto.</p>`}
+      <div class="block"><h4>Allarmi</h4>${al.length ? `<ul class="alarms">${al.map((x) => alarmItem(x, "alarm")).join("")}</ul>` : `<p class="muted">Nessun allarme.</p>`}</div>
+      ${G.settimana ? `<div class="block"><h4>I gemelli della settimana</h4>${anyBlock(G.settimana, true)}</div>` : ""}
+      ${predsBlock(G.previsioni)}${reflection(G)}${selfGrade(G)}
+    </article>`;
+  }
+  function skepticCard(Sc) {
+    Sc = obj(Sc) || {};
+    const qs = arr(Sc.domande).filter(obj);
+    return `<article class="sheet k-scettico"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Lo Scettico</h3><span class="turn">al massimo 2 domande, con un numero</span></div>
+      ${chiSono(Sc)}
+      ${qs.length ? `<ol class="qa">${qs.map((q, i) => `<li><h4>Domanda ${i + 1} · a ${esc(NAMES[q.a] || q.a || "?")}</h4><p class="q">${esc(q.testo)}</p>${q.risposta ? `<div class="a k-${esc(q.a)}"><h4>Risponde ${whom(q.a)}</h4><div class="prose">${md(q.risposta)}</div></div>` : `<p class="muted">Nessuna risposta registrata.</p>`}</li>`).join("")}</ol>` : `<p class="muted">Oggi nessuna domanda.</p>`}
+      ${Sc.contrario ? `<div class="block"><h4>Il contrario</h4><div class="prose">${md(Sc.contrario)}</div></div>` : ""}
+      ${contiBlock(Sc.conti)}
+      ${predsBlock(Sc.previsioni)}${reflection(Sc)}${selfGrade(Sc)}
+    </article>`;
+  }
+  function selfOf(d, who) {
+    if (who === "cronista") return obj(d.briefing) && obj(d.briefing.autovoto);
+    if (who === "scettico") return obj(d.scettico) && obj(d.scettico.autovoto);
+    return obj(d.posizioni) && obj(d.posizioni[who]) && obj(d.posizioni[who].autovoto);
+  }
+  const grade = (v, self) => isNum(toNum(v)) ? `<i class="grade${self ? " self" : ""}">${esc(v)}</i>` : `<span class="muted">—</span>`;
+  function gradesTable(voti, d, keys = ["ragionamento", "disciplina"], withSelf = true) {
+    const names = { ragionamento: "Ragionamento", disciplina: "Disciplina", risultato: "Risultato", consapevolezza: "Consapevolezza" };
+    const who = GRADED.filter((w) => obj(voti[w]));
+    if (!who.length) return "";
+    return `<div class="table-scroll"><table class="grades"><thead><tr><th>Chi</th>${keys.map((k) => `<th class="num">${names[k]}</th>`).join("")}${withSelf ? `<th class="num" title="Ragionamento · disciplina, dati prima del voto del Preside">Si dava</th>` : ""}</tr></thead><tbody>${who.map((w) => {
+      const v = voti[w], s = withSelf ? selfOf(d, w) : null;
+      return `<tr><td>${whom(w)}</td>${keys.map((k) => `<td class="num">${grade(v[k])}</td>`).join("")}${withSelf ? `<td class="num">${s ? `${grade(s.ragionamento, true)} ${grade(s.disciplina, true)}` : `<span class="muted">—</span>`}</td>` : ""}</tr>`;
+    }).join("")}</tbody></table></div>`;
+  }
+  function closingCard(d) {
+    const C = obj(d.chiusura) || {};
+    const righe = arr(C.righe).filter(Boolean);
+    const voti = obj(C.voti);
+    if (!righe.length && !voti && !C.consapevolezza && !d.riflessione_preside) return "";
+    return `<article class="sheet judgement k-preside"><h3 class="pen">La chiusura del Preside</h3>
+      ${righe.length ? `<ol class="righe">${righe.map((r, i) => `<li><span class="r-k">${esc(RIGHE[i] || "Riga " + (i + 1))}</span><span class="r-t">${esc(r)}</span></li>`).join("")}</ol>` : ""}
+      ${voti ? `<div class="block"><h4>I voti di oggi, da 1 a 10</h4>${gradesTable(voti, d)}</div>` : ""}
+      ${C.consapevolezza ? `<div class="block"><h4>La consapevolezza</h4><div class="prose">${md(C.consapevolezza)}</div></div>` : ""}
+      ${d.riflessione_preside ? `<div class="block"><h4>Il Preside riflette</h4><p class="thought">${esc(d.riflessione_preside)}</p></div>` : ""}
+    </article>`;
+  }
+  function councilCard(c) {
+    if (!obj(c)) return "";
+    const ip = arr(c.ipotesi_accettate), au = arr(c.autopsie);
+    return `<article class="sheet judgement"><h3 class="pen">Il consiglio di classe</h3>
+      ${c.testo ? `<div class="prose">${md(c.testo)}</div>` : ""}
+      <div class="block"><h4>Ipotesi accettate per la lista d'esame</h4>${ip.length ? hypotheses(ip) : `<p class="muted">Nessuna questa settimana.</p>`}</div>
+      <div class="block"><h4>Le autopsie delle perdite</h4>${au.length ? autopsies(au) : `<p class="muted">Nessuna perdita oltre 2R, o oltre il 3% di un portafoglio in un giorno.</p>`}</div>
+    </article>`;
+  }
+  function pagellaTable(p) {
+    if (!obj(p)) return "";
+    return gradesTable(p, {}, ["ragionamento", "disciplina", "risultato", "consapevolezza"], false);
+  }
+  function scrutinyCard(s) {
+    if (!obj(s)) return "";
+    const lim = obj(s.limiti);
+    return `<article class="sheet judgement"><h3 class="pen">Lo scrutinio del mese</h3>
+      ${s.testo ? `<div class="prose">${md(s.testo)}</div>` : ""}
+      ${s.pagella ? `<div class="block"><h4>La pagella</h4>${pagellaTable(s.pagella)}</div>` : ""}
+      ${lim ? `<div class="block"><h4>Il rischio massimo a posizione, da domani</h4><div class="facts">${TRADERS.filter((n) => lim[n] != null).map((n) => `<span>${whom(n)} <b>${small(lim[n])}%</b></span>`).join("")}</div></div>` : ""}
+    </article>`;
+  }
+  function endCard(f) {
+    if (!obj(f)) return "";
+    const perAgent = Object.entries(f).filter(([k, v]) => !["testo", "pagella"].includes(k) && obj(v) && Object.keys(v).some((x) => NAMES[x]));
+    return `<article class="sheet judgement"><h3 class="pen">Il bilancio del trimestre</h3>
+      ${f.testo ? `<div class="prose">${md(f.testo)}</div>` : ""}
+      ${f.pagella ? `<div class="block"><h4>La pagella finale</h4>${pagellaTable(f.pagella)}</div>` : ""}
+      ${perAgent.map(([k, v]) => `<div class="block"><h4>${esc(["righe", "agenti", "imparato"].includes(k) ? "Cosa ha imparato ognuno, e cosa deve ancora imparare" : keyName(k))}</h4><ul class="lines">${Object.entries(v).map(([w, t]) => `<li>${whom(w)} ${esc(valTxt(t))}</li>`).join("")}</ul></div>`).join("")}
+    </article>`;
+  }
+  function eveningMeetingCard(E, date) {
+    E = full(E);
+    if (!E) return "";
+    const P = obj(E.posizioni) || {};
+    const events = arr(E.eventi_ordini).filter(obj);
+    const G = obj(P.guardiano) || {};
+    const R = full(E.rischio);
+    const lines = arr(E.chiusura).filter(Boolean);
+    const night = arr(E.eventi_notte).filter(obj);
+    const agent = (w) => {
+      const a = obj(P[w]);
+      if (!a) return "";
+      const orders = arr(a.ordini).filter(obj);
+      const { out, rest } = matchOrders(w, orders, events);
+      return `<div class="ev-agent k-${w}"><h4>${whom(w)}</h4>${a.intervento ? `<div class="prose">${md(a.intervento)}</div>` : ""}${orders.length ? out.map(({ o, e }) => orderLine(o, e, events.length > 0)).join("") : `<p class="muted">Nessun ordine stasera.</p>`}${rest.map((e) => `<div class="event">${eventLine(e)}</div>`).join("")}</div>`;
+    };
+    return `<article class="sheet k-guardiano"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>La riunione della sera</h3><span class="turn">${E.ora ? `alle ${esc(romeClock(E.ora))}, ` : ""}dopo l'allarme del controllo della sera</span></div>
+      ${arr(E.motivi).length ? `<ul class="alarms">${arr(E.motivi).map((x) => alarmItem(x, "alarm")).join("")}</ul>` : ""}
+      ${sealBlock(E.registro, date, "sera")}
+      ${full(E.numeri) ? `<dl class="kvs">${eveningRows(E.numeri).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>` : ""}
+      ${night.length ? `<div class="block"><h4>Dalla mattina: stop e target</h4>${night.map((e) => `<div class="event">${NAMES[e.wallet] ? whom(e.wallet) : ""}${eventLine(e)}</div>`).join("")}</div>` : ""}
+      <div class="v-grid">
+        ${Object.keys(G).length ? `<div class="ev-agent k-guardiano"><h4>${whom("guardiano")}</h4>${G.bollettino ? `<div class="prose">${md(G.bollettino, { breaks: true })}</div>` : ""}${arr(G.allarmi).length ? `<ul class="alarms">${arr(G.allarmi).map((x) => alarmItem(x, "alarm")).join("")}</ul>` : ""}</div>` : ""}
+        ${TRADERS.map(agent).join("")}
+      </div>
+      ${R && isNum(R.rischio_massimo_oggi) ? `<p class="muted" style="font-size:.86rem">Dopo la sera: rischio massimo per una nuova posizione <b>${small(R.rischio_massimo_oggi)}%</b>${arr(R.allarmi).length ? `, ${arr(R.allarmi).length} allarmi del Guardiano` : ""}.</p>` : ""}
+      ${lines.length ? `<div class="block"><h4>Il Preside chiude, in 3 righe</h4><ol class="righe">${lines.map((r, i) => `<li><span class="r-k">${esc(SERA_RIGHE[i] || "Riga " + (i + 1))}</span><span class="r-t">${esc(r)}</span></li>`).join("")}</ol></div>` : ""}
+    </article>`;
+  }
+  function capitalsCard(d) {
+    const c = obj(d.capitali);
+    if (!c) return "";
+    const rows = TRADERS.filter((n) => obj(c[n]));
+    if (!rows.length) return "";
+    return `<article class="sheet"><h3>I portafogli dopo la riunione</h3><div class="table-scroll"><table class="tight"><thead><tr><th>Chi</th><th class="num">A regole</th><th class="num">A giudizio</th><th class="num">Giudizio meno regola</th></tr></thead><tbody>${rows.map((n) => {
+      const r = toNum(c[n].regole), j = toNum(c[n].giudizio), g = r !== null && j !== null ? j - r : null;
+      return `<tr><td>${whom(n)}</td><td class="num">${fmt(r, 2)}</td><td class="num">${fmt(j, 2)}</td><td class="num ${tone(g)}">${fmt(g, 2, true)}</td></tr>`;
+    }).join("")}</tbody></table></div></article>`;
+  }
+  function verifiedCard(list) {
+    const xs = arr(list).filter(obj);
+    if (!xs.length) return "";
+    return `<article class="sheet"><h3>Previsioni verificate oggi</h3><div class="verified">${xs.map((x) => `<div class="event"><span class="tag ${x.esito ? "ok" : "no"}">${x.esito ? "giusta" : "sbagliata"}</span><span>${NAMES[whoOf(x.id)] ? whom(whoOf(x.id)) + " · " : ""}${esc(x.mercato)} ${esc(x.direzione)} ${level(x.livello)}${x.scadenza ? ` entro il ${esc(dm(x.scadenza))}` : ""} al ${prob(x.probabilita)}: chiusura <span class="num">${price(x.chiusura)}</span> · Brier <span class="num">${fmt(toNum(x.brier), 2)}</span></span></div>`).join("")}</div></article>`;
+  }
+  function nightCard(list) {
+    const xs = arr(list).filter(obj);
+    return `<article class="sheet k-motore"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Dalla notte</h3><span class="turn">stop, target e funding sulle candele orarie</span></div>${xs.length ? xs.map((e) => `<div class="event">${NAMES[e.wallet] ? whom(e.wallet) : ""}${eventLine(e)}</div>`).join("") : `<p class="muted">Nella notte nessuna posizione è arrivata allo stop o al target.</p>`}</article>`;
+  }
+  function renderVerbale() {
+    const el = $("verbale");
+    const sel = S.selected, g = dayOf(sel);
+    if (!g) {
+      el.innerHTML = `<div class="section-head"><h2 id="t-verbale">Il verbale</h2></div><p class="muted">${S.unavailable ? "Il verbale compare quando apri la pagina da claude.ai." : "Il verbale compare qui appena i dati arrivano."}</p>`;
+      return;
+    }
+    const week = weeks().find((w) => w.settimana === g.settimana);
+    const d = S.verbali[sel];
+    const myths = arr(g.miti).length ? arr(g.miti) : arr(week && week.miti);
+    const head = `<div class="section-head"><div class="v-head"><h2 id="t-verbale">Il verbale · giorno ${esc(g.giorno)}</h2><p class="when">${esc(cap(longDay(g.data)))} · ${esc(KIND[g.tipo] || g.tipo)} · settimana ${esc(g.settimana)}</p></div></div>
+      <div class="block" style="margin-bottom:14px">${d && d.titolo ? `<p class="v-title">${esc(d.titolo)}</p>` : ""}<p class="theme"><b>Il tema:</b> ${esc(d && d.tema || g.tema)}</p>${myths.length ? `<p class="theme"><b>I miti da smontare:</b> ${esc(myths.join("; "))}</p>` : ""}</div>`;
+    if (d === undefined) { el.innerHTML = head + `<p class="muted">Carico il verbale…</p>`; return; }
+    if (!d) {
+      const today = romeToday().date;
+      const future = g.data > today;
+      const msg = future ? `Questa riunione si terrà ${esc(longDay(g.data))}${g.tipo === "accoglienza" ? ", la sera" : ` alle ${MEETING}`}.`
+        : g.data === today ? "La riunione di oggi non è ancora finita: il verbale compare appena il Preside lo salva."
+          : heldMap()[g.data] ? "Il registro dice che questa riunione c'è stata, ma il suo verbale non è nel database." : "Il verbale di questo giorno non è stato scritto.";
+      el.innerHTML = head + `<div class="sheet empty"><p>${msg}</p><p class="muted">Qui compaiono il briefing del Cronista con le notizie, la posizione di ogni agente con la previsione e gli ordini, il bollettino del Guardiano, le domande dello Scettico con le risposte e la chiusura del Preside con i voti.</p></div>`;
+      return;
+    }
+    const P = obj(d.posizioni) || {};
+    const notice = d.avviso || d.stato === "incompleto" ? `<p class="notice">${esc(d.avviso || "Questa riunione non è stata completata.")}</p>` : "";
+    const meta = `<p class="muted" style="font-size:.84rem">${d.scritto ? `Verbale salvato il ${esc(romeTime(d.scritto))}` : ""}${d.mercati_ora ? ` · prezzi delle ${esc(romeTime(d.mercati_ora))}` : ""}</p>`;
+    const unmatched = arr(d.eventi_ordini).filter((e) => obj(e) && !TRADERS.includes(e.wallet));
+    const capitals = capitalsCard(d);
+    keepOpen(el, head + `<div class="v-stack">${notice}${meta}
+      ${sealBlock(d.registro, d.data, "mattina")}
+      ${capitals ? `<div class="v-grid">${nightCard(d.eventi_notte)}${capitals}</div>` : nightCard(d.eventi_notte)}
+      ${briefingCard(d.briefing, d)}
+      <div><h3 style="margin-bottom:10px">Le posizioni, scritte in privato</h3><div class="v-grid">${TRADERS.map((w) => positionCard(w, P[w], d)).join("")}</div></div>
+      <div class="v-grid">${guardianCard(P.guardiano, d)}${skepticCard(d.scettico)}</div>
+      ${unmatched.length ? `<article class="sheet"><h3>Altri esiti del motore</h3>${unmatched.map((e) => `<div class="event">${eventLine(e)}</div>`).join("")}</article>` : ""}
+      ${closingCard(d)}
+      ${councilCard(d.consiglio)}${scrutinyCard(d.scrutinio)}${endCard(d.fine)}
+      ${eveningMeetingCard(d.sera, d.data)}
+      ${verifiedCard(d.previsioni_verificate)}
+    </div>`);
+  }
+
+  // ---- the 36 coins --------------------------------------------------------------------------------
+  const pctTone = (v, d = 2) => `<span class="${tone(v)}">${pct(v, d)}</span>`;
+  const COLS = [
+    { k: "coin", label: "Moneta", get: (c, s) => s, show: (v) => `<b>${esc(v)}</b>`, text: true },
+    { k: "price", label: "Prezzo", title: "Il prezzo all'ora della riunione, o la chiusura di ieri", get: (c) => isNum(c.prezzo) ? c.prezzo : c.chiusura, show: price },
+    { k: "v1", label: "1 g", title: "Variazione in un giorno", get: (c) => c.var_pct && c.var_pct["1g"], show: pctTone },
+    { k: "v7", label: "7 g", title: "Variazione in 7 giorni", get: (c) => c.var_pct && c.var_pct["7g"], show: pctTone },
+    { k: "v30", label: "30 g", title: "Variazione in 30 giorni", get: (c) => c.var_pct && c.var_pct["30g"], show: pctTone },
+    { k: "m50", label: "Da media 50 g", title: "Distanza dalla media dei 50 giorni", get: (c) => c.da_media50_pct, show: pctTone },
+    { k: "rsi2", label: "RSI 2", title: "RSI a 2 periodi: sotto 10 o sopra 90 guarda lo Spazzino", get: (c) => c.rsi2, show: (v) => isNum(v) ? `<span class="${v < 10 ? "rsi-lo" : v > 90 ? "rsi-hi" : ""}">${fmt(v, 1)}</span>` : "—" },
+    { k: "fund", label: "Funding l'anno", title: "Il funding degli ultimi 7 giorni, portato a un anno", get: (c) => c.funding_annuo_pct, show: (v) => pctTone(v, 1) },
+    { k: "oi", label: "Open interest", title: "Milioni di dollari, registrato dalla scuola", get: (c) => c.oi_mln, show: (v) => isNum(v) ? fmt(v, 1) + " mln" : "—" },
+    { k: "vol", label: "Volatilità 20 g", title: "Volatilità degli ultimi 20 giorni, in un anno", get: (c) => c.vol20_annua_pct, show: (v) => pct(v, 1, false) },
+    { k: "rank", label: "Rango volume", title: "1 è la moneta con più volume nei 30 giorni", get: (c) => c.rango_volume, show: (v) => isNum(v) ? String(v) : "—" },
+    { k: "beta", label: "Beta BTC", title: "Quanto si muove quando BTC si muove dell'1%, sui 60 giorni", get: (c) => c.beta_btc, show: (v) => fmt(v, 2) },
+  ];
+  function renderCoins() {
+    const el = $("monete"), atEl = $("monete-at");
+    const d = S.verbali[S.selected];
+    const q = d && full(d.quadro) && full(d.quadro.monete);
+    const prices = (S.giudizio && S.giudizio.prices) || {};
+    if (!q) {
+      const have = COINS.filter((s) => isNum(prices[s]));
+      if (!have.length) {
+        atEl.textContent = "";
+        el.innerHTML = `<p class="muted">${S.unavailable ? "Le monete compaiono quando apri la pagina da claude.ai." : "Il quadro delle 36 monete compare con il verbale della riunione."}</p>`;
+        return;
+      }
+      atEl.textContent = S.giudizio.prices_at ? `Solo i prezzi, del ${romeTime(S.giudizio.prices_at)}` : "";
+      el.innerHTML = `<p class="muted" style="margin-bottom:8px">Per questo giorno non c'è il quadro completo: ecco gli ultimi prezzi del motore.</p><table class="tight"><thead><tr><th>Moneta</th><th class="num">Prezzo</th></tr></thead><tbody>${have.map((s) => `<tr><td><b>${esc(s)}</b></td><td class="num">${price(prices[s])}</td></tr>`).join("")}</tbody></table>`;
+      return;
+    }
+    atEl.textContent = d.quadro.giorno ? `Candele giornaliere fino a ${longDay(d.quadro.giorno)}${d.mercati_ora ? `, prezzi delle ${romeTime(d.mercati_ora)}` : ""}` : "";
+    const col = COLS.find((c) => c.k === S.coinSort.key) || COLS[10];
+    const rows = Object.entries(q).filter(([s, c]) => obj(c)).map(([s, c]) => ({ s, c, v: col.get(c, s) }));
+    rows.sort((a, b) => {
+      if (col.text) return a.s < b.s ? -S.coinSort.dir : a.s > b.s ? S.coinSort.dir : 0;
+      const x = toNum(a.v), y = toNum(b.v);
+      if (x === null && y === null) return 0;
+      if (x === null) return 1;
+      if (y === null) return -1;
+      return (x - y) * S.coinSort.dir;
+    });
+    el.innerHTML = `<table class="coins"><thead><tr>${COLS.map((c, i) => `<th class="${i ? "num" : ""}"${c.k === S.coinSort.key ? ` aria-sort="${S.coinSort.dir > 0 ? "ascending" : "descending"}"` : ""}${c.title ? ` title="${esc(c.title)}"` : ""}><button type="button" data-sort="${c.k}">${esc(c.label)}${c.k === S.coinSort.key ? (S.coinSort.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`).join("")}</tr></thead><tbody>${rows.map(({ s, c }) => `<tr>${COLS.map((k, i) => `<td class="${i ? "num" : ""}">${k.show(k.get(c, s))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+  $("monete").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-sort]");
+    if (!b) return;
+    const k = b.dataset.sort;
+    S.coinSort = S.coinSort.key === k ? { key: k, dir: -S.coinSort.dir } : { key: k, dir: k === "coin" || k === "rank" ? 1 : -1 };
+    renderCoins();
+    const again = $("monete").querySelector(`button[data-sort="${k}"]`);
+    if (again) again.focus({ preventScroll: true });
+  });
+
+  const orderText = (o) => !obj(o) ? "" : o.action === "close" ? `chiudo ${o.id}`
+    : `${o.side || ""} ${String(o.symbol || "").toUpperCase()}, stop ${level(o.stop)}${o.target != null && o.target !== "" ? ", target " + level(o.target) : ""}, rischio ${small(toNum(o.risk_pct) ?? 1)}%`;
+  const predText = (p) => `${p.mercato} ${p.direzione} ${level(p.livello)}${p.scadenza ? " entro il " + dm(p.scadenza) : ""}, al ${prob(p.probabilita)}`;
+
+  // ---- data ------------------------------------------------------------------------------------------
+  let pending = null;
+  function render() {
+    pending = null;
+    if (!S.picked) {
+      const want = defaultDay();
+      if (want && want !== S.selected) { S.selected = want; watchVerbale(want); }
+    }
+    watchGyms();
+    watchResearch();
+    watchAudits();
+    ensureChain();
+    for (const f of [renderStatus, renderTrust, renderRegister, renderWallets, renderSemaforo, renderRisk, renderMinds, renderGym, renderResearch, renderVerbale, renderCoins]) {
+      try { f(); } catch (e) { console.warn("Scuola Cripto:", f.name, e); }
+    }
+    cp((C) => { C.setData("selected", S.selected); C.setData("picked", S.picked); });
+  }
+  const soon = () => { if (!pending) pending = setTimeout(render, 30); };
+  // one subscription per meeting day: the day picked in the register and the last meeting held,
+  // which the campus keeps as "ultimo" even after the selection moves on
+  const vSubs = new Map();
+  function gotVerbale(date, v) {
+    S.verbali[date] = v;
+    cp((C) => { C.setDataIn("verbali", date, v); if (date === C.data.ultimoData) C.setData("ultimo", v); });
+    soon();
+  }
+  const DAYRE = /^\d{4}-\d{2}-\d{2}$/;
+  function watchVerbale(date) {
+    if (!db) return;
+    if (date && !vSubs.has(date)) {
+      let off = () => {};
+      try {
+        if (!DAYRE.test(date)) throw new Error("bad meeting date: " + date);
+        off = db.doc("riunione/" + date).onSnapshot((snap) => gotVerbale(date, snap.exists ? snap.data() : null), () => gotVerbale(date, null));
+      } catch (e) { console.warn("Scuola Cripto: verbale", e); setTimeout(() => gotVerbale(date, null), 0); }
+      vSubs.set(date, off);
+    }
+    const keep = new Set([S.selected, date, CP && CP.data.ultimoData]);
+    for (const [d, off] of vSubs) if (!keep.has(d)) { vSubs.delete(d); try { off(); } catch (e) { /* already closed */ } }
+  }
+  // the last meeting held, from classe/stato: the campus replays it and its agents quote it
+  function syncUltimo() {
+    if (!CP) return;
+    const last = CP.derive.held().filter((g) => DAYRE.test(g.data)).pop();
+    const date = last ? last.data : null;
+    if (date === CP.data.ultimoData && (date || CP.data.ultimo !== undefined)) return;
+    CP.setData("ultimoData", date);
+    CP.setData("ultimo", date ? S.verbali[date] : null);
+    if (date) watchVerbale(date);
+  }
+  const CK = { programma: "programma", classe: "classe", giudizio: "giudizio", regole: "regole", live: "live", sera: "sera", registro: "registro", semaforo: "semaforo" };
+  function watch(path, key) {
+    const got = (v) => { cp((C) => { C.setData(CK[key], v); if (key === "classe") syncUltimo(); }); soon(); };
+    db.doc(path).onSnapshot(
+      (snap) => { S[key] = snap.exists ? snap.data() : null; S.got[key] = true; got(S[key]); },
+      (err) => { S.errors[key] = err && err.code; S.got[key] = true; got(null); }
+    );
+  }
+  // the collections only the campus reads: the owner's proposals and the contests
+  function watchCollection(path, key) {
+    const map = (qs) => Object.fromEntries(arr(qs && qs.docs).filter((d) => d && d.exists).map((d) => [d.id, d.data()]));
+    const none = () => cp((C) => C.setDataMap(key, {}));
+    try { db.collection(path).onSnapshot((qs) => cp((C) => C.setDataMap(key, map(qs))), none); } catch (e) { none(); }
+  }
+  async function start() {
+    render();
+    const use = window.claude && typeof window.claude.use === "function" ? window.claude.use.bind(window.claude) : null;
+    const ask = (name) => { try { return use ? Promise.resolve(use(name)).catch(() => null) : Promise.resolve(null); } catch (e) { return Promise.resolve(null); } };
+    // «Fateli parlare» asks Claude through the sample capability; it may be missing (null)
+    ask("sample").then((sample) => cp((C) => C.attach({ sample: typeof sample === "function" ? sample : null })));
+    db = await ask("db");
+    cp((C) => C.attach({ db }));
+    if (!db) { S.unavailable = true; cp((C) => C.setData("unavailable", true)); render(); return; }
+    setTimeout(() => { if (!S.got.programma || !S.got.giudizio) { S.slow = true; render(); } }, 10000);
+    watch("classe/programma", "programma");
+    watch("classe/stato", "classe");
+    watch("motore/giudizio", "giudizio");
+    watch("motore/regole", "regole");
+    watch("live/ora", "live");
+    watch("classe/sera", "sera");
+    watch("classe/registro", "registro");
+    watch("classe/semaforo", "semaforo");
+    for (const who of CAST) {
+      const got = (v) => { S.memoria[who] = v; cp((C) => C.setDataIn("memoria", who, v)); soon(); };
+      db.doc("memoria/" + who).onSnapshot((snap) => got(snap.exists ? snap.data() : null), () => got(null));
+    }
+    if (typeof db.collection === "function") { watchCollection("proposte", "proposte"); watchCollection("gara", "gare"); }
+    else cp((C) => { C.setDataMap("proposte", {}); C.setDataMap("gare", {}); });
+  }
+  // ---- the campus: the modules in campus/*.js boot at once and read the same snapshots --------------
+  bootCampus();
+  start();
+})();
+</script>

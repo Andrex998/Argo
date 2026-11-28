@@ -1,0 +1,789 @@
+"""The desk: runs the agents in order and keeps the book.
+
+Scout -> Charts -> risk pre-check -> News, Sentiment -> Skeptic -> Chief ->
+risk gate -> Executor. Every step is written to the journal with its reason,
+and tagged with a `kind` so the dashboard can show it without parsing text.
+"""
+
+from __future__ import annotations
+
+import time
+import uuid
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from dataclasses import replace
+from datetime import UTC, datetime
+
+from pydantic import BaseModel
+
+from desk import leverage, risk
+from desk.agents import analysts, charts, scout
+from desk.agents.budget import AnalystBudget
+from desk.agents.llm import LLM, AgentUnavailable, Usage
+from desk.broker import Broker, BrokerError
+from desk.config import Settings
+from desk.market import Market, MarketError, MarketUnavailable
+from desk.models import Candidate, ChartPlan, PerpPosition, Position
+from desk.store import Store, Trade
+
+Echo = Callable[[float, str, str, str], None]
+
+EQUITY_INTERVAL = 300.0  # seconds between equity points while nothing changes
+GAP_SECONDS = 300.0  # a shadow left unchecked longer than this has the gap's prices read
+ORPHAN_SLACK = 60.0  # a shadow opened this long before its spot position belongs to an older one
+# How the journal says "open the trade": a long is bought, a short is sold first.
+OPENING = {"long": ("comprare", "si compra"), "short": ("aprire lo short", "si apre lo short")}
+
+
+class Desk:
+    def __init__(
+        self,
+        cfg: Settings,
+        market: Market,
+        broker: Broker,
+        store: Store,
+        llm: LLM | None = None,
+        clock: Callable[[], float] = time.time,
+        echo: Echo | None = None,
+        equity_interval: float = EQUITY_INTERVAL,
+    ):
+        self.cfg = cfg
+        self.market = market
+        self.broker = broker
+        self.store = store
+        self.llm = llm  # None runs the desk on rules alone
+        # How many markets the analysts may discuss per hour and per day. `desk run`
+        # gives both desks one shared budget; this one counts for this desk alone.
+        self.budget = AnalystBudget()
+        self.debates = 0  # markets the analysts discussed in this cycle
+        self.clock = clock
+        self.echo = echo
+        self.equity_interval = equity_interval
+        init_book(store, cfg)
+        self.shadows = self._shadow_books()
+        self._settle_orphans()
+
+    def say(self, agent: str, message: str, symbol: str = "", kind: str = "note", **facts) -> None:
+        """Write one journal entry. `facts` are the numbers behind the sentence."""
+        now = self.clock()
+        self.store.log(now, agent, symbol, message, {"kind": kind, **facts})
+        self.store.set("heartbeat", now)
+        if self.echo:
+            self.echo(now, agent, symbol, message)
+
+    @contextmanager
+    def _working(self, agent: str, task: str, symbol: str = "") -> Iterator[None]:
+        """Mark an agent as busy for as long as its slow step runs."""
+        busy = {"agent": agent, "task": task, "symbol": symbol, "since": self.clock()}
+        self.store.set_json("busy", busy)
+        try:
+            yield
+        finally:
+            self.store.set("busy", "")
+
+    def record_usage(self, usage: Usage) -> None:
+        self.store.add("llm_input_tokens", usage.input_tokens)
+        self.store.add("llm_output_tokens", usage.output_tokens)
+        self.store.add("llm_searches", usage.searches)
+        self.store.add("llm_cost", usage.cost)
+
+    # --- the book -------------------------------------------------------------
+
+    def book(self) -> risk.Book:
+        return value_book(self.store, self.market, self.clock())
+
+    def _pulse(self) -> None:
+        """Leave a sign of life and a point on the equity curve."""
+        now = self.clock()
+        self.store.set("heartbeat", now)
+        book = self.book()
+        if book.fresh:  # a stale price would draw a step that never happened
+            self.store.add_equity(now, book.equity, self.equity_interval)
+            prices = self.store.get_json("prices")
+            for shadow in self.shadows:
+                shadow.mark(prices, now)
+                self.store.save_leverage(shadow)
+
+    # --- exits ----------------------------------------------------------------
+
+    def monitor(self) -> None:
+        """Check every open position against its stop, trailing stop and time limit."""
+        for pos in self.store.positions():
+            try:
+                price = self.market.price(pos.symbol)
+            except MarketError as e:
+                self.say("EXECUTOR", f"prezzo non disponibile, riprovo: {e}", pos.symbol, "error")
+                continue
+            self._simulate(self._shadow_tick, pos, price)
+            stop_before, trailing_before = pos.stop, pos.highest >= pos.target
+            exit_ = risk.check_exit(
+                pos, open_=price, high=price, low=price, close=price, now=self.clock(), cfg=self.cfg
+            )
+            if exit_:
+                self.close(pos, price, exit_.reason)
+                continue
+            self.store.save_position(pos)  # the stop may have moved up
+            if not trailing_before and pos.highest >= pos.target:
+                self.say(
+                    "EXECUTOR",
+                    f"target raggiunto: da ora lo stop segue il prezzo, adesso a {pos.stop:g}",
+                    pos.symbol,
+                    "stop_moved",
+                    stop=pos.stop,
+                    mode="trailing",
+                )
+            elif stop_before <= pos.initial_stop < pos.stop:
+                self.say(
+                    "EXECUTOR",
+                    f"stop alzato a pareggio ({pos.stop:g}): questa operazione non può più perdere",
+                    pos.symbol,
+                    "stop_moved",
+                    stop=pos.stop,
+                    mode="breakeven",
+                )
+        self._pulse()
+
+    def close(self, pos: Position, ref_price: float, reason: str) -> None:
+        try:
+            fill = self.broker.sell(pos.symbol, pos.qty, ref_price)
+        except BrokerError as e:
+            self.say(
+                "EXECUTOR",
+                f"vendita fallita, riprovo al prossimo controllo: {e}",
+                pos.symbol,
+                "error",
+            )
+            return
+        now = self.clock()
+        pnl = fill.quote_delta - pos.cost
+        r_multiple = pnl / (pos.risk_per_unit * pos.qty)
+        self.store.add("cash", fill.quote_delta)
+        self.store.delete_position(pos.symbol)
+        self.store.add_trade(
+            Trade(
+                pos.symbol,
+                pos.qty,
+                pos.entry_price,
+                fill.price,
+                pos.entry_ts,
+                now,
+                pnl,
+                r_multiple,
+                reason,
+            )
+        )
+        if pnl < 0:
+            self.store.set_cooldown(pos.symbol, now + self.cfg.cooldown_hours * 3600)
+        self.say(
+            "EXECUTOR",
+            f"venduto a {fill.price:g} ({reason}): {pnl:+.2f} {self.cfg.quote}, {r_multiple:+.1f}R",
+            pos.symbol,
+            "sell",
+            price=fill.price,
+            reason=reason,
+            pnl=pnl,
+            r=r_multiple,
+        )
+        self._simulate(self._shadow_close, pos.symbol, fill.price)
+
+    def close_all(self, reason: str = "chiusura manuale") -> None:
+        for pos in self.store.positions():
+            try:
+                price = self.market.price(pos.symbol)
+            except MarketError as e:
+                self.say("EXECUTOR", f"chiusura non riuscita: {e}", pos.symbol, "error")
+                continue
+            # close-all runs while `desk run` is stopped: settle the shadows for that time first.
+            self._simulate(self._shadow_tick, pos, price)
+            self.close(pos, price, reason)
+        self._pulse()
+
+    # --- simulated leverage ----------------------------------------------------
+
+    def _shadow_books(self) -> list[leverage.Book]:
+        """Simulated leverage: shadows of the desk's own trades, never real orders."""
+        return self.store.leverage_books(self.cfg.leverage_levels, self.cfg.capital)
+
+    def _simulate(self, step: Callable[..., None], *args) -> None:
+        """Run one step of the leverage simulation. It may fail; the desk's stops may not."""
+        try:
+            step(*args)
+        except Exception as e:  # noqa: BLE001 - a simulation must never skip a real stop-loss
+            self.say("LEVA", f"simulazione della leva saltata per un errore: {e}", kind="error")
+
+    def _shadow_open(self, symbol: str, share: float, price: float, stop: float) -> None:
+        """Open the same long on every shadow book, at its own leverage."""
+        if not self.shadows:
+            return
+        if not leverage.allowed(symbol, self.cfg):
+            self.say(
+                "LEVA",
+                f"nessuna leva simulata: {leverage.base(symbol)} non è tra le monete ammesse "
+                "(le memecoin restano senza leva)",
+                symbol,
+                "leverage",
+                levels=[],
+            )
+            return
+        prices = self.store.get_json("prices")
+        opened = []
+        for shadow in self.shadows:
+            leg = shadow.open(symbol, share, price, self.clock(), self.cfg, prices)
+            if leg:
+                self.store.save_leverage(shadow)
+                opened.append((shadow.level, leg))
+        if not opened:
+            return
+        risky = [
+            f"x{level:g} a {leg.liquidation:g}" for level, leg in opened if leg.liquidation > stop
+        ]
+        note = (
+            f"; si liquiderebbero prima dello stop ({stop:g}): {', '.join(risky)}"
+            if risky
+            else f"; ogni liquidazione è sotto lo stop ({stop:g}), ma un crollo improvviso "
+            "o il PC spento possono liquidare lo stesso"
+        )
+        self.say(
+            "LEVA",
+            f"stessa posizione simulata a {', '.join(f'x{level:g}' for level, _ in opened)}{note}",
+            symbol,
+            "leverage",
+            levels=[level for level, _ in opened],
+            liquidation={f"{level:g}": leg.liquidation for level, leg in opened},
+        )
+
+    def _shadow_tick(self, pos: Position, price: float) -> None:
+        """Charge funding and liquidate any shadow the price has reached.
+
+        After a gap in the checks (PC asleep, desk stopped, no connection) the lowest price
+        traded during the gap counts as well: an exchange liquidates whether the desk is
+        watching or not, and the desk's stop could not have sold first.
+        """
+        now = self.clock()
+        gap_lows: dict[float, float | None] = {}
+        for shadow in self.shadows:
+            leg = shadow.legs.get(pos.symbol)
+            if not leg:
+                continue
+            if leg.liquidation > 0 and now - leg.funded_until > self._gap_seconds():
+                since = leg.funded_until or leg.opened
+                if since not in gap_lows:
+                    gap_lows[since] = self._lowest_since(pos.symbol, since)
+                low = gap_lows[since]
+                if low is not None and low <= leg.liquidation:
+                    self._liquidate(
+                        shadow, pos.symbol, f" mentre il desk non controllava (minimo {low:g})"
+                    )
+                    continue
+            shadow.accrue(pos.symbol, price, now, self.cfg)
+            if leverage.liquidated_first(leg, open_=price, low=price, stop=pos.stop):
+                self._liquidate(shadow, pos.symbol)
+                continue
+            self.store.save_leverage(shadow)
+
+    def _gap_seconds(self) -> float:
+        """How long without a check counts as a gap worth reading the prices of."""
+        return max(GAP_SECONDS, 3 * self.cfg.monitor_seconds)
+
+    def _lowest_since(self, symbol: str, since: float) -> float | None:
+        try:
+            return self.market.lowest_since(symbol, since)
+        except MarketError:
+            return None  # the price now is still checked; the gap stays unread
+
+    def _liquidate(self, shadow: leverage.Book, symbol: str, when: str = "") -> None:
+        leg = shadow.legs[symbol]
+        result = shadow.liquidate(symbol, self.clock())
+        self.store.add_leverage_result(result)
+        self.store.save_leverage(shadow)
+        self.say(
+            "LEVA",
+            f"x{shadow.level:g} liquidata a {leg.liquidation:g}{when}: persi "
+            f"{result.margin:.2f} {self.cfg.quote} di margine (simulazione)",
+            symbol,
+            "liquidation",
+            level=shadow.level,
+            pnl=result.pnl,
+        )
+
+    def _settle_orphans(self) -> None:
+        """Close the shadow positions the desk no longer holds.
+
+        A leg outlives its spot position when its level was switched off while the desk
+        sold (and maybe bought again), or when the desk stopped between a sale and the
+        shadows' close. It is closed where the desk sold, or at its own entry when no sale
+        is on record, so it can neither block nor take over a later trade on that symbol.
+        """
+        held = {p.symbol: p for p in self.store.positions()}
+        sales = None
+        for shadow in self.shadows:
+            for symbol, leg in list(shadow.legs.items()):
+                pos = held.get(symbol)
+                if pos and leg.opened >= pos.entry_ts - ORPHAN_SLACK:
+                    continue  # the shadow of the position the desk holds now
+                if sales is None:
+                    sales = self.store.trades()  # oldest first
+                sale = next(
+                    (t for t in sales if t.symbol == symbol and t.exit_ts >= leg.opened), None
+                )
+                price, when = (sale.exit_price, sale.exit_ts) if sale else (leg.entry, self.clock())
+                result = shadow.close(symbol, price, when, self.cfg)
+                self.store.add_leverage_result(result)
+                self.store.save_leverage(shadow)
+                self.say(
+                    "LEVA",
+                    f"x{shadow.level:g} chiusa a {price:g}: il desk non ha più questa posizione "
+                    f"({result.pnl:+.2f} {self.cfg.quote}, simulazione)",
+                    symbol,
+                    "leverage",
+                    level=shadow.level,
+                    pnl=result.pnl,
+                )
+
+    def _shadow_close(self, symbol: str, price: float) -> None:
+        """The desk sold: close the shadows still open, at the same price."""
+        now = self.clock()
+        closed = []
+        for shadow in self.shadows:
+            result = shadow.close(symbol, price, now, self.cfg)
+            if result:
+                self.store.add_leverage_result(result)
+                self.store.save_leverage(shadow)
+                closed.append(result)
+        if closed:
+            self.say(
+                "LEVA",
+                "con la leva: "
+                + ", ".join(f"x{r.level:g} {r.pnl:+.2f}" for r in closed)
+                + f" {self.cfg.quote} (simulazione)",
+                symbol,
+                "leverage",
+                results={f"{r.level:g}": r.pnl for r in closed},
+            )
+
+    # --- entries --------------------------------------------------------------
+
+    def cycle(self) -> bool:
+        """One full pass of the desk: manage exits, scan, debate, trade.
+
+        Returns False when the markets could not be scanned, so the caller can try
+        again within the same candle instead of waiting for the next one.
+        """
+        self.monitor()
+        self.debates = 0
+        scanned = self._look_for_entries()
+        self._pulse()
+        return scanned
+
+    def _look_for_entries(self) -> bool:
+        scan = self._scan()
+        if scan is None:
+            return False
+        if not scan.candidates:
+            return True
+
+        book = self.book()
+        if reason := risk.blocked(book, self.cfg) or self._market_falling():
+            self.say("RISK", f"nessuna nuova entrata: {reason}", kind="blocked")
+            return True
+
+        for candidate in scan.candidates:
+            symbol = candidate.symbol
+            now = self.clock()
+            plan = charts.plan(symbol, scan.candles[symbol], self.cfg)
+            if not plan.valid:
+                self.say("CHARTS", f"scartato: {'; '.join(plan.reasons)}", symbol, "plan_rejected")
+                continue
+            # Ask the gate before paying analysts for a trade it would refuse anyway.
+            precheck = risk.evaluate(plan, book, self.cfg, now)
+            if not precheck.approved:
+                self.say("RISK", f"respinto: {precheck.reasons[0]}", symbol, "risk_rejected")
+                continue
+            self.say(
+                "CHARTS",
+                f"trend {plan.trend}, RSI {plan.rsi:.0f} · entrata {plan.entry:g} · "
+                f"stop {plan.stop:g} (-{plan.stop_pct:.1f}%) · target {plan.target:g}",
+                symbol,
+                "plan",
+                trend=plan.trend,
+                rsi=plan.rsi,
+                entry=plan.entry,
+                stop=plan.stop,
+                stop_pct=plan.stop_pct,
+                target=plan.target,
+            )
+
+            debated = self.debates
+            size_factor = self._verdict(candidate, plan)
+            if self.debates != debated:  # minutes went by, and the stops were checked meanwhile
+                book, now = self.book(), self.clock()
+            if size_factor is None:
+                continue
+            if self.llm and (plan := self._repriced(plan)) is None:
+                continue
+
+            decision = risk.evaluate(plan, book, self.cfg, now, size_factor)
+            if not decision.approved:
+                self.say("RISK", f"respinto: {decision.reasons[0]}", symbol, "risk_rejected")
+                continue
+            note = f" ({'; '.join(decision.reasons)})" if decision.reasons else ""
+            self.say(
+                "RISK",
+                f"{decision.action}: {decision.notional:.2f} {self.cfg.quote}, "
+                f"{decision.notional / book.equity:.1%} del capitale{note}",
+                symbol,
+                "sized",
+                action=decision.action,
+                notional=decision.notional,
+                share=decision.notional / book.equity,
+            )
+            self._open(plan, decision, book.equity)
+            book = self.book()
+        return True
+
+    def _scan(self, judge: scout.Judge | None = None) -> scout.Scan | None:
+        """Scan the markets and tell the journal what stood out. None when they could not
+        be read, so the loop tries again within the same candle."""
+        try:
+            with self._working("SCOUT", "scansiona i mercati"):
+                scan = scout.scan(self.market, self.cfg, judge)
+        except MarketError as e:
+            self.say("SCOUT", f"scansione non riuscita, riprovo tra poco: {e}", kind="error")
+            return None
+        if scan.failed and not scan.scanned:
+            self.say(
+                "SCOUT",
+                f"scansione non riuscita, riprovo tra poco: {scan.failed} mercati non leggibili",
+                kind="error",
+            )
+            return None
+        flagged = [self._flagged(c) for c in scan.candidates]
+        skipped = (
+            f" ({scan.failed} non leggibili anche al secondo tentativo: "
+            f"{', '.join(list(scan.errors)[:6])}{' e altri' if scan.failed > 6 else ''})"
+            if scan.failed
+            else ""
+        )
+        self.say(
+            "SCOUT",
+            f"{scan.scanned} mercati analizzati{skipped}, {len(scan.candidates)} con volume "
+            f"anomalo: {', '.join(text for text, _ in flagged) or 'nessuno'}",
+            kind="scan",
+            scanned=scan.scanned,
+            failed=scan.failed,
+            unread=[{"symbol": s, "error": e} for s, e in scan.errors.items()],
+            flagged=[facts for _, facts in flagged],
+        )
+        return scan
+
+    def _flagged(self, candidate: Candidate) -> tuple[str, dict]:
+        """How the Scout names a flagged market in the journal, and the facts behind it."""
+        return f"{candidate.symbol} {candidate.rvol:.1f}x", {
+            "symbol": candidate.symbol,
+            "rvol": candidate.rvol,
+        }
+
+    def _market_falling(self) -> str:
+        """Why the wider market rules out new longs right now, or '' if it does not."""
+        if not self.cfg.regime_filter:
+            return ""
+        leader = f"BTC/{self.cfg.quote}"
+        try:
+            falling = charts.market_falling(self.market.candles(leader), self.cfg.regime_strict)
+        except MarketUnavailable as e:
+            # Unreachable is not "not falling": without the answer, no new longs.
+            return f"trend di {leader} non verificabile in questo momento ({e})"
+        except MarketError as e:
+            self.say("RISK", f"trend di {leader} non valutabile, filtro di mercato saltato: {e}")
+            return ""
+        if not falling:
+            return ""
+        return (
+            f"{leader} non in trend rialzista"
+            if self.cfg.regime_strict
+            else f"{leader} in trend ribassista"
+        )
+
+    def _verdict(self, candidate: Candidate, plan: ChartPlan) -> float | None:
+        """The analysts' say on a setup the risk gate would take: the size factor to trade
+        it at, or None to let it go. Without analysts every such setup trades at full size.
+
+        A market discussed within `reanalyze_hours` is not paid for again; the analysts
+        take at most `max_candidates` markets a cycle, and no more than the budget allows
+        per hour and per day."""
+        if not self.llm:
+            return 1.0
+        cfg, symbol, now = self.cfg, candidate.symbol, self.clock()
+        if now - self.store.reviewed_at(symbol) < cfg.reanalyze_hours * 3600:
+            self.say("DESK", "già discusso di recente, non lo rianalizzo", symbol, "skipped")
+            return None
+        if self.debates >= cfg.max_candidates:
+            self.say("DESK", "limite di analisi per ciclo raggiunto", symbol, "skipped")
+            return None
+        limits = (cfg.analyst_max_per_hour, cfg.analyst_max_per_day, cfg.market, symbol)
+        if busy := self.budget.claim(now, *limits):
+            self.say("DESK", f"non lo faccio analizzare: {busy}", symbol, "skipped")
+            return None
+        self.debates += 1
+        self.store.mark_reviewed(symbol, now)
+        return self._debate(candidate, plan, now)
+
+    def _repriced(self, plan: ChartPlan) -> ChartPlan | None:
+        """The plan moved to the price now. The analysts take minutes over a setup, and a
+        paper fill at the candle's close would not be what a real order gets after them.
+        Entry, stop and target shift together, so the risk per unit stays the same. None,
+        with the reason in the journal, when the price cannot be read or has moved more
+        than 1R meanwhile: the setup the analysts approved is no longer there."""
+        try:
+            price = self.market.price(plan.symbol)
+        except MarketError as e:
+            self.say(
+                "EXECUTOR",
+                f"prezzo non leggibile dopo l'analisi, entrata saltata: {e}",
+                plan.symbol,
+                "error",
+            )
+            return None
+        shift = price - plan.entry
+        if abs(shift) > plan.risk_per_unit:
+            self.say(
+                "RISK",
+                f"scartato: durante l'analisi il prezzo è passato da {plan.entry:g} a "
+                f"{price:g}, più di 1R",
+                plan.symbol,
+                "risk_rejected",
+            )
+            return None
+        return replace(plan, entry=price, stop=plan.stop + shift, target=plan.target + shift)
+
+    def _brief(self, candidate: Candidate, plan: ChartPlan, now: float) -> str:
+        """The facts every analyst starts from."""
+        return analysts.market_brief(candidate, plan, self.cfg, now)
+
+    def _debate(self, candidate: Candidate, plan: ChartPlan, now: float) -> float | None:
+        """Run the analysts on one setup. Returns the size factor when the Chief opens the
+        trade (BUY for a long, SHORT for a short) and the desk's rule lets that stand,
+        else None."""
+        symbol, side = candidate.symbol, plan.side
+        brief = self._brief(candidate, plan, now)
+
+        news = self._ask(
+            "NEWS",
+            "cerca cosa ha mosso il prezzo",
+            symbol,
+            lambda: analysts.news(self.llm, brief, self.cfg, side),
+        )
+        if news:
+            self.say(
+                "NEWS",
+                f"{news.impact}: {news.summary}",
+                symbol,
+                "news",
+                side=side,
+                **news.model_dump(),
+            )
+        mood = self._ask(
+            "SENTIMENT",
+            "legge cosa dice la gente",
+            symbol,
+            lambda: analysts.sentiment(self.llm, brief, self.cfg, side),
+        )
+        if mood:
+            crowd = "rischio hype" if side == "long" else "rischio rimbalzo"
+            self.say(
+                "SENTIMENT",
+                f"{mood.mood}, {crowd} {mood.hype_risk}: {mood.summary}",
+                symbol,
+                "sentiment",
+                side=side,
+                **mood.model_dump(),
+            )
+        reports = f"News report:\n{_dump(news)}\n\nSentiment report:\n{_dump(mood)}"
+
+        to_open, opens = OPENING[side]
+        objections = self._ask(
+            "SKEPTIC",
+            f"cerca tre motivi per non {to_open}",
+            symbol,
+            lambda: analysts.skeptic(self.llm, brief, reports, self.cfg, side),
+        )
+        if not objections:
+            self.say(
+                "CHIEF",
+                f"WAIT: senza il parere dello Skeptic non {opens}",
+                symbol,
+                "verdict",
+                decision="WAIT",
+                side=side,
+            )
+            return None
+        for number, objection in enumerate(objections.objections, start=1):
+            self.say(
+                "SKEPTIC",
+                f"{number}. [{objection.severity}] {objection.reason}",
+                symbol,
+                "objection",
+                number=number,
+                **objection.model_dump(),
+            )
+
+        verdict = self._ask(
+            "CHIEF",
+            "risponde alle obiezioni e decide",
+            symbol,
+            lambda: analysts.chief(self.llm, brief, reports, objections, self.cfg, side),
+        )
+        if not verdict:
+            return None
+        self.say(
+            "CHIEF",
+            f"{verdict.decision} (fiducia {verdict.confidence:.2f}, convinzione "
+            f"{verdict.conviction}): {verdict.summary}",
+            symbol,
+            "verdict",
+            side=side,
+            **verdict.model_dump(),
+        )
+        go = analysts.GO[side]
+        if verdict.decision != go:
+            return None
+        if reason := analysts.enforce(verdict, objections, self.cfg):
+            self.say(
+                "DESK",
+                f"{go} annullato: {reason}",
+                symbol,
+                "buy_cancelled",
+                decision=go,
+                side=side,
+            )
+            return None
+        return analysts.SIZE_FACTOR[verdict.conviction]
+
+    def _ask(self, agent: str, task: str, symbol: str, call: Callable[[], BaseModel]):
+        """One analyst's question. A question can take minutes, so the open positions are
+        checked first: a debate never leaves the stops unwatched for long. The last
+        failure stays on record until an analyst answers, for the dashboard and the page."""
+        self.monitor()
+        try:
+            with self._working(agent, task, symbol):
+                report = call()
+        except AgentUnavailable as e:
+            self.say(agent, f"non disponibile: {e}", symbol, "unavailable")
+            failure = {"ts": self.clock(), "agent": agent, "error": str(e)}
+            self.store.set_json("analysts_error", failure)
+            return None
+        self.store.set("analysts_error", "")
+        return report
+
+    def _open(self, plan: ChartPlan, decision: risk.RiskDecision, equity: float) -> None:
+        try:
+            fill = self.broker.buy(plan.symbol, decision.qty, plan.entry)
+        except BrokerError as e:
+            self.say("EXECUTOR", f"acquisto fallito: {e}", plan.symbol, "error")
+            return
+        # Keep the planned stop and target distances, anchored to the real fill price.
+        shift = fill.price - plan.entry
+        position = Position(
+            symbol=plan.symbol,
+            qty=fill.qty,
+            entry_price=fill.price,
+            entry_ts=self.clock(),
+            cost=-fill.quote_delta,
+            stop=plan.stop + shift,
+            initial_stop=plan.stop + shift,
+            target=plan.target + shift,
+            highest=fill.price,
+        )
+        self.store.add("cash", fill.quote_delta)
+        self.store.save_position(position)
+        self.say(
+            "EXECUTOR",
+            f"comprato {fill.qty:g} a {fill.price:g} · stop {position.stop:g} · "
+            f"target {position.target:g}",
+            plan.symbol,
+            "buy",
+            qty=fill.qty,
+            price=fill.price,
+            stop=position.stop,
+            target=position.target,
+        )
+        share = fill.qty * fill.price / equity
+        self._simulate(self._shadow_open, plan.symbol, share, fill.price, position.stop)
+
+
+def init_book(store: Store, cfg: Settings) -> None:
+    """Give a new desk its starting capital. Later runs keep the stored book."""
+    if not store.get("cash"):
+        store.set("cash", cfg.capital)
+        store.set("peak_equity", cfg.capital)
+        store.set("session", uuid.uuid4().hex)  # lets the dashboard notice a fresh book
+
+
+def value_book(store: Store, market: Market, now: float) -> risk.Book:
+    """Value the account now, rolling the trading day and the equity peak forward.
+
+    A price the exchange cannot give right now is taken from the last valuation. Such a
+    book is not fresh: it does not open a new trading day or raise the peak, since both
+    would then rest on a stale figure.
+    """
+    positions = store.positions()
+    prices, fresh = mark_prices(store, market, positions)
+    exposure = sum(p.qty * prices[p.symbol] for p in positions)
+    cash = store.get_float("cash")
+    return roll_book(store, now, cash, cash + exposure, exposure, positions, fresh)
+
+
+def mark_prices(
+    store: Store, market: Market, positions: list[Position] | list[PerpPosition]
+) -> tuple[dict[str, float], bool]:
+    """The price of every open position, and whether all of them came from the exchange.
+    A price it cannot give right now is taken from the last valuation."""
+    known = store.get_json("prices") if positions else {}
+    prices, fresh = {}, True
+    for p in positions:
+        try:
+            prices[p.symbol] = market.price(p.symbol)
+        except MarketError:
+            prices[p.symbol] = known.get(p.symbol, p.entry_price)
+            fresh = False
+    store.set_json("prices", prices)  # the dashboard values positions without the exchange
+    return prices, fresh
+
+
+def roll_book(
+    store: Store,
+    now: float,
+    cash: float,
+    equity: float,
+    exposure: float,
+    positions: list[Position] | list[PerpPosition],
+    fresh: bool,
+    margin: float = 0.0,
+) -> risk.Book:
+    """The account as the gate sees it. A fresh valuation opens a new trading day and
+    raises the equity peak; a stale one moves neither."""
+    peak = store.get_float("peak_equity")
+    if fresh:
+        today = datetime.fromtimestamp(now, UTC).date().isoformat()
+        if store.get("day") != today:
+            store.set("day", today)
+            store.set("day_start_equity", equity)
+        peak = max(peak, equity)
+        store.set("peak_equity", peak)
+
+    return risk.Book(
+        equity=equity,
+        cash=cash,
+        exposure=exposure,
+        open_symbols=frozenset(p.symbol for p in positions),
+        day_start_equity=store.get_float("day_start_equity"),
+        peak_equity=peak,
+        halted=store.get("halted"),
+        cooldowns=store.cooldowns(now),
+        fresh=fresh,
+        margin=margin,
+    )
+
+
+def _dump(report: BaseModel | None) -> str:
+    return report.model_dump_json(indent=2) if report else "unavailable"

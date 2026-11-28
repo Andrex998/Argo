@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARGO // DESK</title>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f4f4f1; --surface:#fcfcfb; --inset:#f1f0ec; --line:#e1e0d9; --axis:#c3c2b7;
+  --ink:#0b0b0b; --ink-2:#52514e; --mut:#898781;
+  --accent:#a85f00;
+  --good:#006300; --good-fill:#0ca30c; --warn:#8a5a00; --warn-fill:#fab219;
+  --crit:#b3262f; --crit-fill:#d03b3b;
+  --series:#2a78d6;
+  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4; --a6:#008300;
+  --a7:#6250d6; --a8:#e34948; --a0:#898781;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    color-scheme:dark;
+    --page:#0B0E11; --surface:#10151A; --inset:#0C1014; --line:#1E272F; --axis:#33404A;
+    --ink:#E8EDF2; --ink-2:#B9C2CB; --mut:#87929D;
+    --accent:#FFB454;
+    --good:#3ECF8E; --good-fill:#3ECF8E; --warn:#FFB454; --warn-fill:#FFB454;
+    --crit:#FF6B76; --crit-fill:#FF5A66;
+    --series:#3987e5;
+    --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#0ca30c;
+    --a7:#9085e9; --a8:#e66767; --a0:#5A6670;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45}
+.wrap{max-width:1280px;margin:0 auto;padding:16px 16px 48px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.mut{color:var(--mut)}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding-bottom:14px}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.01em}
+.brand i{font-style:normal;color:var(--accent)}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.badge{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--line);
+  border-radius:4px;color:var(--ink-2);white-space:nowrap}
+.badge.demo{background:var(--warn-fill);border-color:var(--warn-fill);color:#0b0b0b;font-weight:700}
+.badge.live{background:var(--crit-fill);border-color:var(--crit-fill);color:#fff;font-weight:700}
+.status{margin-left:auto;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--ink-2);align-items:center}
+.state{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
+.state .ic{width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font-size:10px;font-weight:800;color:#fff}
+.state.good .ic{background:var(--good-fill);color:#06210f}
+.state.warn .ic{background:var(--warn-fill);color:#0b0b0b}
+.state.crit .ic{background:var(--crit-fill)}
+.state.idle .ic{background:var(--a0)}
+.notice{display:none;border:1px solid var(--line);border-left:3px solid var(--warn-fill);background:var(--surface);
+  border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:var(--ink-2)}
+.notice.on{display:block}
+.notice code{font-family:var(--mono);background:var(--inset);padding:1px 5px;border-radius:3px;color:var(--ink)}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.card-h{display:flex;align-items:baseline;gap:8px;padding:12px 14px 0}
+.card-h h2{font-size:13px;font-weight:700}
+.card-h .sub{font-size:12px;color:var(--mut)}
+.card-h .right{margin-left:auto}
+.card-b{padding:10px 14px 14px}
+
+/* figures */
+.kpis{display:grid;grid-template-columns:minmax(260px,1.4fr) repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.tile{padding:12px 14px}
+.tile .lbl{font-size:12px;color:var(--mut)}
+.tile .val{font-size:22px;font-weight:650;margin-top:2px;letter-spacing:-.01em}
+.tile .foot{font-size:12px;color:var(--mut);margin-top:2px}
+.hero .val{font-size:52px;line-height:1.05;font-weight:700;letter-spacing:-.025em}
+.hero .unit{font-size:16px;font-weight:600;color:var(--mut);margin-left:6px;letter-spacing:0}
+.delta{font-weight:650;white-space:nowrap}
+.delta.up{color:var(--good)} .delta.down{color:var(--crit)} .delta.flat{color:var(--mut)}
+
+/* the floor: who is doing what */
+.floor{display:flex;align-items:stretch;overflow-x:auto;padding:12px 10px;scrollbar-width:thin}
+.agent{flex:1 0 128px;min-width:128px;border:1px solid transparent;border-radius:8px;padding:8px 8px 9px;
+  transition:border-color .3s,background .3s}
+.agent.on{border-color:var(--accent);background:var(--inset)}
+.agent-top{display:flex;align-items:center;gap:8px}
+.av{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:10.5px;
+  font-weight:800;letter-spacing:.02em;color:#fff;background:var(--a0)}
+.av.sm{width:22px;height:22px;border-radius:6px;font-size:9px}
+.agent .name{font-size:12px;font-weight:700;letter-spacing:.04em}
+.agent .role{font-size:11.5px;color:var(--mut);margin-top:5px;min-height:2.9em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.agent .now{font-size:11.5px;color:var(--ink-2);margin-top:4px;min-height:2.9em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.agent.busy .now{color:var(--ink);font-weight:600}
+.link{flex:0 0 16px;position:relative;align-self:flex-start;height:28px;margin-top:8px}
+.link::before{content:"";position:absolute;left:1px;right:1px;top:50%;height:1px;background:var(--axis)}
+.link::after{content:"";position:absolute;top:50%;left:0;width:6px;height:6px;margin-top:-3px;border-radius:50%;
+  background:var(--accent);opacity:0}
+.link.flow::after{animation:hop .7s ease-in-out 1}
+.link.flow.back::after{animation-direction:reverse}
+@keyframes hop{0%{left:0;opacity:0}20%{opacity:1}80%{opacity:1}100%{left:calc(100% - 6px);opacity:0}}
+.dots::after{content:"";display:inline-block;width:1.2em;text-align:left;animation:dots 1.2s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+
+/* layout */
+.main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:10px;margin-top:10px;align-items:start}
+.side{display:grid;gap:10px}
+
+/* conversation */
+.feed{height:min(72vh,760px);overflow-y:auto;padding:4px 14px 14px;border-top:1px solid var(--line);margin-top:10px}
+.cycle{display:flex;align-items:center;gap:10px;margin:16px 0 8px;font-size:11.5px;color:var(--mut);
+  letter-spacing:.06em;text-transform:uppercase}
+.cycle::before,.cycle::after{content:"";flex:1;height:1px;background:var(--line)}
+.thread{border:1px solid var(--line);border-radius:8px;margin:8px 0;background:var(--inset)}
+.thread-h{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.thread-h .sym{font-family:var(--mono);font-weight:700;font-size:13px}
+.thread-b{padding:2px 10px 6px}
+.msg{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;padding:7px 0}
+.msg + .msg{border-top:1px solid var(--line)}
+.feed > .msg{padding:7px 0;border-top:0}
+.msg.new{animation:rise .35s ease-out 1}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.msg-h .who{font-size:11.5px;font-weight:700;letter-spacing:.04em}
+.msg-h time{font-size:11px;color:var(--mut);font-family:var(--mono)}
+.msg-t{font-size:13.5px;color:var(--ink);overflow-wrap:anywhere}
+.msg-x{font-size:12.5px;color:var(--ink-2);margin-top:3px;overflow-wrap:anywhere}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:650;padding:1px 7px;border-radius:999px;
+  border:1px solid var(--line);color:var(--ink-2);white-space:nowrap;vertical-align:1px}
+.chip.good{color:var(--good);border-color:color-mix(in srgb,var(--good-fill) 45%,transparent)}
+.chip.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn-fill) 55%,transparent)}
+.chip.crit{color:var(--crit);border-color:color-mix(in srgb,var(--crit-fill) 50%,transparent)}
+.chip.solid{color:#fff;border-color:transparent}
+.chip.solid.good{background:var(--good-fill);color:#06210f}
+.chip.solid.warn{background:var(--warn-fill);color:#0b0b0b}
+.chip.solid.crit{background:var(--crit-fill)}
+.chip.solid.idle{background:var(--a0)}
+.levels{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:4px;font-size:12.5px;color:var(--ink-2)}
+.levels b{color:var(--ink);font-weight:650;font-family:var(--mono)}
+.reply{margin-top:6px;padding-left:10px;border-left:2px solid var(--line)}
+.reply .q{font-size:12px;color:var(--mut)}
+.typing{font-size:12.5px;color:var(--ink-2);font-style:italic}
+.more{position:sticky;bottom:6px;display:none;margin:6px auto 0;padding:5px 12px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:650;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.more.on{display:block}
+.empty{padding:28px 8px;text-align:center;color:var(--mut);font-size:13px}
+
+/* chart */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:210px;touch-action:pan-y}
+.chart text{font-family:var(--sans);font-size:11px;fill:var(--mut)}
+.chart .end{fill:var(--ink);font-weight:650;font-size:12px}
+.tip{position:absolute;top:6px;pointer-events:none;background:var(--surface);border:1px solid var(--line);
+  border-radius:6px;padding:5px 8px;font-size:12px;white-space:nowrap;display:none;box-shadow:0 2px 10px rgba(0,0,0,.16)}
+.tip b{display:block;font-size:13px}
+.linkbtn{border:0;background:none;font-size:12px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:right;padding:5px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:650;color:var(--mut);font-size:11.5px}
+.tablebox{max-height:210px;overflow-y:auto}
+
+/* positions and limits */
+.pos + .pos{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.pos-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pos-h b{font-family:var(--mono);font-size:13px}
+.pos-x{font-size:12px;margin-top:2px}
+.range{position:relative;height:18px;margin-top:8px}
+.range .track{position:absolute;left:0;right:0;top:7px;height:4px;border-radius:2px;background:var(--line)}
+.range .gain{position:absolute;top:7px;height:4px;border-radius:2px}
+.range .tick{position:absolute;top:2px;width:2px;height:14px;background:var(--ink-2);margin-left:-1px}
+.range .tick.stop{background:var(--crit-fill)}
+.range .dot{position:absolute;top:3px;width:12px;height:12px;margin-left:-6px;border-radius:50%;
+  border:2px solid var(--surface);background:var(--ink)}
+.range-l{position:relative;height:17px;font-size:11.5px;color:var(--mut);margin-top:3px;font-family:var(--mono)}
+.range-l span{position:absolute;top:0;white-space:nowrap}
+.meter{margin-top:10px}
+.meter:first-child{margin-top:0}
+.meter-h{display:flex;justify-content:space-between;font-size:12.5px;gap:8px}
+.meter-h span:last-child{color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{height:6px;border-radius:3px;margin-top:5px;overflow:hidden;background:color-mix(in srgb,var(--fill) 22%,var(--surface))}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--fill)}
+.rowline{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.rowline:last-child{border-bottom:0}
+.rowline .sym{font-family:var(--mono);font-weight:700}
+.rowline .why{color:var(--mut);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+footer{margin-top:18px;font-size:12px;color:var(--mut);max-width:80ch}
+
+@media (max-width:980px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hero{grid-column:1/-1}
+  .main{grid-template-columns:minmax(0,1fr)}
+  .status{margin-left:0;width:100%}
+}
+@media (max-width:520px){
+  .wrap{padding:12px 12px 40px}
+  .hero .val{font-size:44px}
+  .feed{height:64vh}
+}
+@media (prefers-reduced-motion:reduce){
+  .msg.new,.link.flow::after,.dots::after{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand">ARGO<i>//</i>DESK</div>
+  <div class="badges" id="badges"></div>
+  <div class="status">
+    <span class="state idle" id="state"><span class="ic">·</span><span>In attesa del desk</span></span>
+    <span id="cycleIn"></span>
+  </div>
+</header>
+
+<div class="notice" id="notice"></div>
+
+<section class="kpis" aria-label="Conto">
+  <div class="card tile hero">
+    <div class="lbl">Equity</div>
+    <div class="val"><span id="equity">—</span><span class="unit" id="quote"></span></div>
+    <div class="foot"><span class="delta flat" id="total">—</span> <span id="totalNote"></span></div>
+  </div>
+  <div class="card tile"><div class="lbl">Oggi</div><div class="val"><span class="delta flat" id="today">—</span></div><div class="foot" id="todayNote">dall'inizio della giornata (UTC)</div></div>
+  <div class="card tile"><div class="lbl">Calo dal picco</div><div class="val" id="dd">—</div><div class="foot" id="ddNote"></div></div>
+  <div class="card tile"><div class="lbl">Operazioni chiuse</div><div class="val" id="trades">—</div><div class="foot" id="tradesNote"></div></div>
+  <div class="card tile"><div class="lbl" id="llmLbl">Spesa analisti</div><div class="val" id="llm">—</div><div class="foot" id="llmNote"></div></div>
+</section>
+
+<section class="card" aria-label="Agenti">
+  <div class="floor" id="floor"></div>
+</section>
+
+<div class="main">
+  <section class="card">
+    <div class="card-h"><h2>Conversazione</h2><span class="sub" id="feedSub">chi dice cosa, in diretta</span></div>
+    <div class="feed" id="feed" role="log" aria-live="polite" aria-label="Conversazione tra gli agenti">
+      <div class="empty" id="feedEmpty">Ancora nessun messaggio. Gli agenti parlano a ogni chiusura di candela.</div>
+      <button class="more" id="more" type="button">Nuovi messaggi ↓</button>
+    </div>
+  </section>
+
+  <div class="side">
+    <section class="card">
+      <div class="card-h"><h2>Andamento dell'equity</h2><button class="linkbtn right" id="tableBtn" type="button" aria-pressed="false">Tabella</button></div>
+      <div class="card-b">
+        <div class="chart" id="chart"><svg id="plot" role="img" tabindex="0" aria-label="Andamento dell'equity"></svg><div class="tip" id="tip"></div></div>
+        <div class="tablebox" id="tablebox" hidden></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-h"><h2>Posizioni aperte</h2><span class="sub" id="posSub"></span></div>
+      <div class="card-b" id="positions"></div>
+    </section>
+    <section class="card">
+      <div class="card-h"><h2>Limiti di rischio</h2><span class="sub">li applica il codice, non gli agenti</span></div>
+      <div class="card-b" id="limits"></div>
+    </section>
+    <section class="card">
+      <div class="card-h"><h2>Ultime operazioni chiuse</h2></div>
+      <div class="card-b" id="closed"></div>
+    </section>
+  </div>
+</div>
+
+<footer id="foot">Pagina di sola lettura: mostra quello che il desk scrive nel suo database e non può inviare ordini.</footer>
+</div>
+
+<script>
+"use strict";
+/* ARGO // DESK dashboard. Every string that comes from the desk (agent text, news
+   headlines, symbols) is inserted with textContent, never as HTML. */
+const $ = id => document.getElementById(id);
+const AGENTS = [
+  {id:"SCOUT",     mono:"SC", role:"Trova i volumi anomali"},
+  {id:"CHARTS",    mono:"CH", role:"Fissa entrata, stop e target"},
+  {id:"NEWS",      mono:"NW", role:"Cerca perché si muove"},
+  {id:"SENTIMENT", mono:"SE", role:"Distingue interesse da hype"},
+  {id:"SKEPTIC",   mono:"SK", role:"Tre motivi per non comprare"},
+  {id:"CHIEF",     mono:"CF", role:"Risponde e decide"},
+  {id:"RISK",      mono:"RK", role:"Dimensiona o blocca"},
+  {id:"EXECUTOR",  mono:"EX", role:"Compra, sposta lo stop, vende"},
+];
+const SLOT = Object.fromEntries(AGENTS.map((a, i) => [a.id, i + 1]));
+const WORDS = {
+  impact:{bullish:"rialzista", bearish:"ribassista", neutral:"neutro", unclear:"non chiaro"},
+  mood:{bullish:"positivo", bearish:"negativo", mixed:"diviso", euphoric:"euforico", quiet:"silenzioso"},
+  level:{low:"basso", medium:"medio", high:"alto"},
+  conviction:{low:"bassa", medium:"media", high:"alta"},
+  severity:{minor:"minore", serious:"seria", dealbreaker:"bloccante"},
+};
+const S = {state:null, session:undefined, lastId:0, skew:0, speaker:null, cycle:0, threads:new Map(),
+           objections:new Map(), cards:new Map(), pinned:true, curveKey:"", points:[], hover:-1, table:false};
+
+/* ---------- helpers ---------- */
+function h(tag, attrs, ...kids){
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})){
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v; else if (k === "text") el.textContent = v; else el.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid);
+  return el;
+}
+const money = n => Number(n).toLocaleString("it-IT", {minimumFractionDigits:2, maximumFractionDigits:2});
+const price = n => { const a = Math.abs(n); return Number(n).toLocaleString("it-IT", {maximumFractionDigits: a >= 100 ? 2 : a >= 1 ? 4 : 6}); };
+const pct = (n, d = 2) => (n > 0 ? "+" : "") + Number(n).toLocaleString("it-IT", {minimumFractionDigits:d, maximumFractionDigits:d}) + "%";
+const serverNow = () => Date.now() / 1000 - S.skew;
+function clock(ts, withSeconds){
+  const o = {hour:"2-digit", minute:"2-digit"}; if (withSeconds) o.second = "2-digit";
+  return new Date(ts * 1000).toLocaleTimeString("it-IT", o);
+}
+function ago(ts){
+  const s = Math.max(0, serverNow() - ts);
+  if (s < 5) return "adesso"; if (s < 60) return Math.floor(s) + " s fa";
+  if (s < 3600) return Math.floor(s / 60) + " min fa"; if (s < 86400) return Math.floor(s / 3600) + " h fa";
+  return Math.floor(s / 86400) + " g fa";
+}
+function delta(el, value, text){
+  el.className = "delta " + (value > 0.0005 ? "up" : value < -0.0005 ? "down" : "flat");
+  el.textContent = (value > 0.0005 ? "▲ " : value < -0.0005 ? "▼ " : "") + text;
+}
+function avatar(agent, small){
+  const meta = AGENTS.find(a => a.id === agent);
+  const el = h("span", {class:"av" + (small ? " sm" : ""), "aria-hidden":"true", text: meta ? meta.mono : "DK"});
+  if (meta){ el.style.background = `var(--a${SLOT[agent]})`; if (agent === "SENTIMENT") el.style.color = "#0b0b0b"; }
+  return el;
+}
+const chip = (text, tone, solid) => h("span", {class:"chip" + (tone ? " " + tone : "") + (solid ? " solid" : ""), text});
+
+/* ---------- the floor ---------- */
+function buildFloor(){
+  const floor = $("floor");
+  AGENTS.forEach((a, i) => {
+    if (i) floor.append(h("div", {class:"link", "data-i":i, "aria-hidden":"true"}));
+    const now = h("div", {class:"now", text:"in ascolto"});
+    const card = h("div", {class:"agent", "data-agent":a.id},
+      h("div", {class:"agent-top"}, avatar(a.id), h("span", {class:"name", text:a.id})),
+      h("div", {class:"role", text:a.role}), now);
+    S.cards.set(a.id, {card, now, ts:0, text:""});
+    floor.append(card);
+  });
+}
+function handOff(from, to){
+  const a = SLOT[from], b = SLOT[to];
+  if (!a || !b || a === b) return;
+  const back = b < a;
+  document.querySelectorAll("#floor .link").forEach(link => {
+    const i = Number(link.dataset.i);            // link i sits between slot i and slot i+1
+    if (i >= Math.min(a, b) && i < Math.max(a, b)){
+      link.classList.remove("flow", "back"); void link.offsetWidth;
+      link.classList.add("flow"); if (back) link.classList.add("back");
+    }
+  });
+}
+function refreshFloor(){
+  const busy = S.state && S.state.busy && S.state.busy.agent ? S.state.busy : null;
+  for (const [id, c] of S.cards){
+    const working = busy && busy.agent === id;
+    c.card.classList.toggle("busy", !!working);
+    c.card.classList.toggle("on", working || (!busy && S.speaker === id && serverNow() - c.ts < 20));
+    c.now.className = "now" + (working ? " dots" : "");
+    c.now.textContent = working ? busy.task : c.ts ? "parlato " + ago(c.ts) : "in ascolto";
+    c.now.title = c.text || "";
+  }
+  const active = busy ? busy.agent : S.speaker;
+  const el = active && S.cards.get(active) && S.cards.get(active).card;
+  if (el && active !== S.scrolledTo){
+    S.scrolledTo = active;
+    const floor = $("floor");
+    floor.scrollTo({left: el.offsetLeft - (floor.clientWidth - el.offsetWidth) / 2, behavior:"smooth"});
+  }
+}
+
+/* ---------- conversation ---------- */
+function threadFor(symbol){
+  let t = S.threads.get(symbol);
+  if (!t){
+    const outcome = chip("in esame");
+    const body = h("div", {class:"thread-b"});
+    const el = h("section", {class:"thread"}, h("div", {class:"thread-h"}, h("span", {class:"sym", text:symbol}), outcome), body);
+    t = {el, body, outcome};
+    S.threads.set(symbol, t);
+    $("feed").insertBefore(el, $("more"));
+  }
+  return t;
+}
+function setOutcome(t, text, tone){ t.outcome.className = "chip" + (tone ? " " + tone : ""); t.outcome.textContent = text; }
+
+function bodyFor(e){
+  const d = e.data || {}, out = [];
+  const text = t => h("div", {class:"msg-t", text:t});
+  const extra = (...kids) => h("div", {class:"msg-x"}, ...kids);
+  switch (d.kind){
+    case "scan": {
+      out.push(text(`${d.scanned} mercati analizzati, ${d.flagged.length} con volume anomalo`));
+      if (d.flagged.length) out.push(extra(...d.flagged.flatMap(f => [chip(`${f.symbol} · volume ${f.rvol.toLocaleString("it-IT", {maximumFractionDigits:1})}x` + (f.side ? (f.side === "short" ? " · in calo" : " · in salita") : "")), " "])));
+      break;
+    }
+    case "plan":
+      out.push(text((d.side ? d.side.toUpperCase() + " · " : "") + `Trend ${d.trend === "up" ? "in salita" : d.trend === "down" ? "in discesa" : d.trend}, RSI ${Math.round(d.rsi)}`));
+      out.push(h("div", {class:"levels"},
+        h("span", {}, "entrata ", h("b", {text:price(d.entry)})),
+        h("span", {}, "stop ", h("b", {text:price(d.stop)}), ` (${d.side === "short" ? "+" : "−"}${d.stop_pct.toLocaleString("it-IT", {maximumFractionDigits:1})}%)`),
+        h("span", {}, "target ", h("b", {text:price(d.target)}))));
+      break;
+    case "news":
+      // green when the news helps the trade: rising prices for a long, falling ones for a short
+      const helps = d.side === "short" ? "bearish" : "bullish", hurts = d.side === "short" ? "bullish" : "bearish";
+      out.push(h("div", {class:"msg-t"}, chip(WORDS.impact[d.impact] || d.impact, d.impact === helps ? "good" : d.impact === hurts ? "crit" : ""), " ", d.summary));
+      if (d.catalyst_found) out.push(extra("Causa: " + d.catalyst));
+      for (const flag of d.red_flags || []) out.push(extra(chip("! rischio", "warn"), " " + flag));
+      for (const line of d.headlines || []) out.push(extra(`“${line.title}” · ${line.source}, ${line.date}`));
+      out.push(extra(`Fiducia ${Math.round(d.confidence * 100)}%`));
+      break;
+    case "sentiment":
+      out.push(h("div", {class:"msg-t"}, chip("umore " + (WORDS.mood[d.mood] || d.mood)), " ",
+        chip((d.side === "short" ? "rimbalzo " : "hype ") + (WORDS.level[d.hype_risk] || d.hype_risk), d.hype_risk === "high" ? "warn" : ""), " ", d.summary));
+      out.push(extra(`Fiducia ${Math.round(d.confidence * 100)}%`));
+      break;
+    case "objection":
+      out.push(h("div", {class:"msg-t"}, chip(`${d.number} · ${WORDS.severity[d.severity] || d.severity}`, d.severity === "dealbreaker" ? "crit" : d.severity === "serious" ? "warn" : ""), " ", d.reason));
+      if (d.evidence) out.push(extra("Prova: " + d.evidence));
+      break;
+    case "verdict": {
+      const tone = d.decision === "BUY" || d.decision === "SHORT" ? "good" : "idle";
+      const head = [chip(d.decision, tone, true)];
+      if (d.confidence != null) head.push(` fiducia ${Math.round(d.confidence * 100)}% · convinzione ${WORDS.conviction[d.conviction] || d.conviction}`);
+      out.push(h("div", {class:"msg-t"}, ...head));
+      out.push(extra(d.summary || e.message));
+      const asked = S.objections.get(e.symbol) || new Map();
+      for (const r of d.rebuttals || []){
+        out.push(h("div", {class:"reply"},
+          h("div", {class:"q", text:`Risponde all'obiezione ${r.objection_number}` + (asked.has(r.objection_number) ? `: “${asked.get(r.objection_number)}”` : "")}),
+          h("div", {class:"msg-x"}, chip(r.rebutted ? "✓ respinta" : "✕ concessa", r.rebutted ? "good" : "warn"), " ", r.argument)));
+      }
+      break;
+    }
+    case "sell":
+    case "close":
+      out.push(h("div", {class:"msg-t"}, chip((d.pnl >= 0 ? "▲ " : "▼ ") + (d.pnl >= 0 ? "+" : "") + money(d.pnl), d.pnl >= 0 ? "good" : "crit"),
+        ` ${d.side === "short" ? "Ricomprato" : "Venduto"} a ${price(d.price)} (${d.reason}), ${d.r >= 0 ? "+" : ""}${d.r.toLocaleString("it-IT", {maximumFractionDigits:1})}R`));
+      break;
+    default:
+      out.push(text(e.message));
+  }
+  return out;
+}
+function messageEl(e, fresh){
+  const who = AGENTS.some(a => a.id === e.agent) ? e.agent : "DESK";
+  const time = h("time", {text:clock(e.ts, true), title:new Date(e.ts * 1000).toLocaleString("it-IT")});
+  return h("div", {class:"msg" + (fresh ? " new" : "")}, avatar(who, true),
+    h("div", {}, h("div", {class:"msg-h"}, h("span", {class:"who", text:who}), time), ...bodyFor(e)));
+}
+function appendEvents(events, fresh){
+  if (!events.length) return;
+  const feed = $("feed");
+  $("feedEmpty").hidden = true;
+  for (const e of events){
+    const d = e.data || {};
+    if (d.kind === "scan"){
+      S.cycle += 1; S.threads = new Map(); S.objections = new Map();
+      feed.insertBefore(h("div", {class:"cycle", text:`Ciclo delle ${clock(e.ts)}`}), $("more"));
+    }
+    if (d.kind === "objection"){
+      if (!S.objections.has(e.symbol)) S.objections.set(e.symbol, new Map());
+      S.objections.get(e.symbol).set(d.number, d.reason);
+    }
+    const el = messageEl(e, fresh);
+    if (e.symbol){
+      const t = threadFor(e.symbol);
+      t.body.append(el);
+      if (d.kind === "plan_rejected") setOutcome(t, "· scartato dal grafico");
+      else if (d.kind === "risk_rejected") setOutcome(t, "· respinto dal Risk");
+      else if (d.kind === "skipped") setOutcome(t, "· saltato");
+      else if (d.kind === "plan") setOutcome(t, "in discussione");
+      else if (d.kind === "verdict") setOutcome(t, d.decision === "BUY" || d.decision === "SHORT" ? d.decision + " richiesto" : "· " + d.decision);
+      else if (d.kind === "buy_cancelled") setOutcome(t, `! ${d.decision || "BUY"} annullato`, "warn");
+      else if (d.kind === "buy") setOutcome(t, "✓ comprato", "good");
+      else if (d.kind === "open") setOutcome(t, `✓ aperto ${d.side}`, "good");
+      else if (d.kind === "sell" || d.kind === "close") setOutcome(t, d.pnl >= 0 ? "▲ chiuso in utile" : "▼ chiuso in perdita", d.pnl >= 0 ? "good" : "crit");
+      else if (d.kind === "liquidation" && d.side) setOutcome(t, "✕ liquidata", "crit");
+    } else feed.insertBefore(el, $("more"));
+    const card = S.cards.get(e.agent);
+    if (card){
+      card.ts = e.ts; card.text = e.message;
+      if (fresh && S.speaker && S.speaker !== e.agent) handOff(S.speaker, e.agent);
+      S.speaker = e.agent;
+    }
+    S.lastId = Math.max(S.lastId, e.id);
+  }
+  if (S.pinned) feed.scrollTop = feed.scrollHeight; else if (fresh) $("more").classList.add("on");
+}
+function refreshTyping(){
+  const busy = S.state && S.state.busy && S.state.busy.agent ? S.state.busy : null;
+  let row = $("typing");
+  if (!busy){ if (row) row.remove(); return; }
+  const label = `${busy.agent} ${busy.task}`;
+  if (!row){
+    row = h("div", {class:"msg", id:"typing"}, avatar(busy.agent, true), h("div", {class:"typing dots"}));
+    S.typingAgent = null;
+  }
+  if (S.typingAgent !== busy.agent){ row.replaceChild(avatar(busy.agent, true), row.firstChild); S.typingAgent = busy.agent; }
+  row.lastChild.textContent = label;
+  const t = busy.symbol && S.threads.get(busy.symbol);
+  const host = t ? t.body : $("feed");
+  if (row.parentNode !== host || (t ? row !== host.lastChild : row.nextSibling !== $("more"))){
+    if (t) host.append(row); else host.insertBefore(row, $("more"));
+    if (S.pinned) $("feed").scrollTop = $("feed").scrollHeight;
+  }
+}
+function resetFeed(){
+  const feed = $("feed");
+  feed.querySelectorAll(".msg,.thread,.cycle").forEach(el => el.remove());
+  $("feedEmpty").hidden = false;
+  Object.assign(S, {lastId:0, speaker:null, cycle:0, threads:new Map(), objections:new Map(), pinned:true, curveKey:""});
+  for (const c of S.cards.values()){ c.ts = 0; c.text = ""; }
+}
+
+/* ---------- figures ---------- */
+function renderState(st){
+  const badges = $("badges"); badges.replaceChildren();
+  if (st.demo) badges.append(h("span", {class:"badge demo", text:"Demo · mercati e analisti fittizi"}));
+  badges.append(st.mode === "live" ? h("span", {class:"badge live", text:"Live · soldi veri"}) : h("span", {class:"badge", text:"Paper · soldi finti"}));
+  if (st.market === "perps"){
+    badges.append(h("span", {class:"badge", text:`Perpetui · long e short · leva massima x${st.max_leverage}`}));
+    document.title = "ARGO // DESK PERPETUI";
+    const executor = S.cards.get("EXECUTOR");
+    if (executor) executor.card.querySelector(".role").textContent = "Apre, sposta lo stop, chiude";
+  }
+  badges.append(h("span", {class:"badge", text:`${st.exchange} · ${st.quote} · ${st.timeframe}`}));
+
+  const notice = $("notice");
+  if (!st.ready){
+    notice.className = "notice on";
+    notice.replaceChildren("Il desk non ha ancora scritto nulla. Avvialo con ", h("code", {text:"desk run"}), " e questa pagina si riempie da sola.");
+    return;
+  }
+  notice.className = "notice";
+  $("quote").textContent = st.quote;
+  $("equity").textContent = money(st.equity);
+  const total = (st.equity / st.capital - 1) * 100;
+  delta($("total"), total, pct(total));
+  $("totalNote").textContent = `dal capitale iniziale di ${money(st.capital)} · liquidità ${money(st.cash)}`;
+  const today = st.day_start_equity ? (st.equity / st.day_start_equity - 1) * 100 : 0;
+  delta($("today"), today, pct(today));
+  const dd = st.peak_equity ? Math.max(0, (1 - st.equity / st.peak_equity) * 100) : 0;
+  $("dd").textContent = dd.toLocaleString("it-IT", {minimumFractionDigits:2, maximumFractionDigits:2}) + "%";
+  $("ddNote").textContent = `il desk si ferma al ${st.limits.max_drawdown_pct}%`;
+  const tr = st.trades;
+  $("trades").textContent = tr.count;
+  $("tradesNote").textContent = tr.count ? `${tr.wins} in utile · R medio ${(tr.avg_r >= 0 ? "+" : "") + tr.avg_r.toLocaleString("it-IT", {minimumFractionDigits:2, maximumFractionDigits:2})}` : "ancora nessuna";
+  if (st.market === "perps"){
+    $("llmLbl").textContent = "Margine impegnato";
+    $("llm").textContent = money(st.margin);
+    $("llmNote").textContent = `funding ${st.funding > 0 ? "pagato" : "incassato"} in tutto ${money(Math.abs(st.funding))} ${st.quote}`;
+  } else if ((st.analysts || "").startsWith("Claude Code")){
+    $("llmLbl").textContent = "Analisti";
+    $("llm").textContent = "abbonamento";
+    $("llmNote").textContent = `Claude Code · nessun costo extra · ${Math.round(st.llm.searches)} ricerche web`;
+  } else {
+    $("llm").textContent = "$" + money(st.llm.cost);
+    $("llmNote").textContent = st.demo ? "nella demo gli analisti non costano" : `stima · ${Math.round(st.llm.searches)} ricerche web`;
+  }
+
+  renderPositions(st); renderLimits(st, dd, today); renderClosed(st);
+  const key = st.equity_curve.length + ":" + (st.equity_curve.length ? st.equity_curve[st.equity_curve.length - 1].join() : "");
+  if (key !== S.curveKey){ S.curveKey = key; S.points = st.equity_curve; drawChart(); if (S.table) renderTable(); }
+}
+function renderHeader(){
+  const st = S.state, el = $("state");
+  let tone = "idle", icon = "·", text = "In attesa del desk";
+  if (S.offline){ tone = "crit"; icon = "✕"; text = "Dashboard non raggiungibile"; }
+  else if (st && st.ready){
+    const silent = serverNow() - st.heartbeat;
+    if (st.halted){ tone = "crit"; icon = "✕"; text = "Desk fermo: " + st.halted; }
+    else if (silent < 180){ tone = "good"; icon = "✓"; text = "Desk attivo"; }
+    else { tone = "warn"; icon = "!"; text = "Nessun segnale dal desk da " + ago(st.heartbeat).replace(" fa", ""); }
+  }
+  el.className = "state " + tone; el.firstChild.textContent = icon; el.lastChild.textContent = text;
+  const left = st && st.ready && st.next_cycle ? st.next_cycle - serverNow() : 0;
+  $("cycleIn").textContent = left > 0 ? `Prossimo ciclo tra ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, "0")}` : "";
+}
+function renderPositions(st){
+  const box = $("positions"); box.replaceChildren();
+  $("posSub").textContent = `${st.positions.length} di ${st.limits.max_open_positions}`;
+  if (!st.positions.length){ box.append(h("div", {class:"empty", text:"Nessuna posizione aperta."})); return; }
+  for (const p of st.positions){
+    const lo = Math.min(p.stop, p.entry, p.last, p.target), hi = Math.max(p.stop, p.entry, p.last, p.target);
+    const pad = (hi - lo) * 0.04, x = v => ((v - (lo - pad)) / (hi - lo + 2 * pad) * 100).toFixed(2) + "%";
+    const d = h("span", {}); delta(d, p.pnl_pct, pct(p.pnl_pct));
+    const gain = h("div", {class:"gain"});
+    gain.style.left = x(Math.min(p.entry, p.last)); gain.style.width = (Math.abs(p.last - p.entry) / (hi - lo + 2 * pad) * 100).toFixed(2) + "%";
+    gain.style.background = (p.side === "short" ? p.last <= p.entry : p.last >= p.entry) ? "var(--good-fill)" : "var(--crit-fill)";
+    const tick = (cls, v, title) => { const t = h("div", {class:"tick " + cls, title}); t.style.left = x(v); return t; };
+    const dot = h("div", {class:"dot", title:"prezzo ora " + price(p.last)}); dot.style.left = x(p.last);
+    // Each label sits under its own tick; near an edge it hugs the edge instead of overflowing.
+    const under = (text, v, isStop) => {
+      const at = parseFloat(x(v)), el = h("span", {text});
+      if (at < 18) el.style.left = "0";
+      else if (at > 82 || (isStop && at > 55)){ el.style.right = (100 - Math.min(at, 100)).toFixed(2) + "%"; if (at > 82 && !isStop) el.style.right = "0"; }
+      else { el.style.left = at + "%"; el.style.transform = "translateX(-50%)"; }
+      return el;
+    };
+    box.append(h("div", {class:"pos"},
+      h("div", {class:"pos-h"}, h("b", {text:p.symbol}), p.side ? chip(p.side.toUpperCase(), p.side === "short" ? "warn" : "") : null, d, h("span", {class:"mut num", text:`${p.pnl >= 0 ? "+" : ""}${money(p.pnl)} ${st.quote}`})),
+      h("div", {class:"pos-x mut num", text:`entrata ${price(p.entry)} · ora ${price(p.last)}` + (p.side ? ` · leva x${p.leverage.toLocaleString("it-IT", {maximumFractionDigits:1})} · margine ${money(p.margin)} · liquidazione ${price(p.liquidation)}` : "")}),
+      h("div", {class:"range", role:"img", "aria-label":`Stop ${price(p.stop)}, entrata ${price(p.entry)}, prezzo ora ${price(p.last)}, target ${price(p.target)}`},
+        h("div", {class:"track"}), gain, tick("stop", p.stop, "stop " + price(p.stop)), tick("", p.entry, "entrata " + price(p.entry)),
+        tick("", p.target, "target " + price(p.target)), dot),
+      h("div", {class:"range-l"}, under("stop " + price(p.stop), p.stop, true), under("target " + price(p.target), p.target, false))));
+  }
+}
+function renderLimits(st, dd, today){
+  const rows = [
+    [st.market === "perps" ? "Valore delle posizioni" : "Capitale investito", st.equity ? st.exposure / st.equity * 100 : 0, st.limits.max_exposure_pct, "%"],
+    ["Posizioni aperte", st.positions.length, st.limits.max_open_positions, ""],
+    ["Perdita di oggi", Math.max(0, -today), st.limits.max_daily_loss_pct, "%"],
+    ["Calo dal picco", dd, st.limits.max_drawdown_pct, "%"],
+  ];
+  const box = $("limits"); box.replaceChildren();
+  for (const [label, used, max, unit] of rows){
+    const share = Math.min(1, max ? used / max : 0);
+    const bar = h("div", {class:"bar"}, h("i"));
+    bar.style.setProperty("--fill", share >= 0.9 ? "var(--crit-fill)" : share >= 0.6 ? "var(--warn-fill)" : "var(--series)");
+    bar.firstChild.style.width = (share * 100).toFixed(1) + "%";
+    const fmt = v => unit ? v.toLocaleString("it-IT", {maximumFractionDigits:1}) + unit : String(v);
+    box.append(h("div", {class:"meter"}, h("div", {class:"meter-h"}, h("span", {text:label}), h("span", {text:`${fmt(used)} di ${fmt(max)}`})), bar));
+  }
+}
+function renderClosed(st){
+  const box = $("closed"); box.replaceChildren();
+  if (!st.trades.recent.length){ box.append(h("div", {class:"empty", text:"Ancora nessuna operazione chiusa."})); return; }
+  for (const t of st.trades.recent){
+    const d = h("span", {}); delta(d, t.pnl, (t.pnl >= 0 ? "+" : "") + money(t.pnl));
+    box.append(h("div", {class:"rowline"}, h("span", {class:"sym", text:t.symbol + (t.side ? " " + t.side : "")}), h("span", {class:"why", text:t.reason}), d,
+      h("span", {class:"mut num", text:(t.r >= 0 ? "+" : "") + t.r.toLocaleString("it-IT", {minimumFractionDigits:1, maximumFractionDigits:1}) + "R"})));
+  }
+}
+
+/* ---------- equity chart: one series, so no legend; the title names it ---------- */
+const NS = "http://www.w3.org/2000/svg";
+function svg(tag, attrs){ const el = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); return el; }
+function niceStep(span, count){
+  const raw = span / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+  return (n >= 5 ? 10 : n >= 2 ? 5 : n >= 1 ? 2 : 1) * mag;
+}
+function timeLabel(ts, span){
+  const d = new Date(ts * 1000);
+  if (span < 3600) return d.toLocaleTimeString("it-IT");
+  if (span < 36 * 3600) return d.toLocaleTimeString("it-IT", {hour:"2-digit", minute:"2-digit"});
+  return d.toLocaleDateString("it-IT", {day:"2-digit", month:"2-digit"}) + " " + d.toLocaleTimeString("it-IT", {hour:"2-digit", minute:"2-digit"});
+}
+function drawChart(){
+  const plot = $("plot"), pts = S.points, capital = S.state ? S.state.capital : 0;
+  plot.replaceChildren(); S.geo = null;
+  const W = plot.clientWidth || 320, H = 210, m = {l:6, r:62, t:14, b:24};
+  plot.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  if (pts.length < 2){
+    const t = svg("text", {x:W / 2, y:H / 2, "text-anchor":"middle"}); t.textContent = "La curva compare dopo i primi minuti di attività."; plot.append(t); return;
+  }
+  const vals = pts.map(p => p[1]);
+  let lo = Math.min(capital, ...vals), hi = Math.max(capital, ...vals);
+  const minSpan = capital * 0.004; if (hi - lo < minSpan){ const mid = (hi + lo) / 2; lo = mid - minSpan / 2; hi = mid + minSpan / 2; }
+  const padV = (hi - lo) * 0.12; lo -= padV; hi += padV;
+  const t0 = pts[0][0], t1 = pts[pts.length - 1][0], span = Math.max(1, t1 - t0);
+  const X = t => m.l + (t - t0) / span * (W - m.l - m.r), Y = v => m.t + (hi - v) / (hi - lo) * (H - m.t - m.b);
+  const step = niceStep(hi - lo, 3);
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step){
+    plot.append(svg("line", {x1:m.l, x2:W - m.r, y1:Y(v), y2:Y(v), stroke:"var(--line)", "stroke-width":1}));
+    const t = svg("text", {x:m.l + 2, y:Y(v) - 4}); t.textContent = v.toLocaleString("it-IT", {maximumFractionDigits: step < 1 ? 2 : 0}); plot.append(t);
+  }
+  plot.append(svg("line", {x1:m.l, x2:W - m.r, y1:Y(capital), y2:Y(capital), stroke:"var(--axis)", "stroke-width":1}));
+  const base = svg("text", {x:W - m.r - 2, y:Y(capital) - 4, "text-anchor":"end"}); base.textContent = "capitale iniziale"; plot.append(base);
+  const line = pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
+  plot.append(svg("path", {d:`${line} L${X(t1).toFixed(1)} ${H - m.b} L${X(t0).toFixed(1)} ${H - m.b} Z`, fill:"var(--series)", opacity:0.1}));
+  plot.append(svg("path", {d:line, fill:"none", stroke:"var(--series)", "stroke-width":2, "stroke-linejoin":"round", "stroke-linecap":"round"}));
+  const last = pts[pts.length - 1];
+  plot.append(svg("circle", {cx:X(last[0]), cy:Y(last[1]), r:5, fill:"var(--series)", stroke:"var(--surface)", "stroke-width":2}));
+  const end = svg("text", {x:X(last[0]) + 9, y:Y(last[1]) + 4, class:"end"}); end.textContent = money(last[1]); plot.append(end);
+  const a = svg("text", {x:m.l, y:H - 6}); a.textContent = timeLabel(t0, span); plot.append(a);
+  const b = svg("text", {x:W - m.r, y:H - 6, "text-anchor":"end"}); b.textContent = timeLabel(t1, span); plot.append(b);
+  const cross = svg("line", {y1:m.t, y2:H - m.b, stroke:"var(--axis)", "stroke-width":1, visibility:"hidden"});
+  const mark = svg("circle", {r:5, fill:"var(--series)", stroke:"var(--surface)", "stroke-width":2, visibility:"hidden"});
+  plot.append(cross, mark);
+  S.geo = {X, Y, W, span, cross, mark};
+  if (S.hover >= 0) showPoint(Math.min(S.hover, pts.length - 1));
+}
+function showPoint(i){
+  const g = S.geo, tip = $("tip"); if (!g) return;
+  if (i < 0){ S.hover = -1; g.cross.setAttribute("visibility", "hidden"); g.mark.setAttribute("visibility", "hidden"); tip.style.display = "none"; return; }
+  S.hover = i; const p = S.points[i], x = g.X(p[0]);
+  g.cross.setAttribute("x1", x); g.cross.setAttribute("x2", x); g.cross.setAttribute("visibility", "visible");
+  g.mark.setAttribute("cx", x); g.mark.setAttribute("cy", g.Y(p[1])); g.mark.setAttribute("visibility", "visible");
+  tip.replaceChildren(h("b", {text:money(p[1]) + " " + (S.state ? S.state.quote : "")}), h("span", {class:"mut", text:timeLabel(p[0], g.span)}));
+  tip.style.display = "block";
+  tip.style.left = Math.max(0, Math.min(g.W - tip.offsetWidth, x - tip.offsetWidth / 2)) + "px";
+}
+function nearest(clientX){
+  const g = S.geo; if (!g) return -1;
+  const x = clientX - $("plot").getBoundingClientRect().left;
+  let best = 0, gap = Infinity;
+  S.points.forEach((p, i) => { const d = Math.abs(g.X(p[0]) - x); if (d < gap){ gap = d; best = i; } });
+  return best;
+}
+function renderTable(){
+  const rows = S.points.slice(-60).reverse(), span = S.geo ? S.geo.span : 0;
+  const body = h("tbody", {}, rows.map(p => h("tr", {}, h("td", {text:timeLabel(p[0], span)}), h("td", {text:money(p[1])}))));
+  $("tablebox").replaceChildren(h("table", {}, h("thead", {}, h("tr", {}, h("th", {text:"Ora"}), h("th", {text:"Equity"}))), body));
+}
+
+/* ---------- live loop ---------- */
+async function getJson(path){ const r = await fetch(path, {cache:"no-store"}); if (!r.ok) throw new Error(r.status); return r.json(); }
+async function tick(){
+  try{
+    const st = await getJson("api/state");
+    S.skew = Date.now() / 1000 - st.now; S.offline = false;
+    if (st.session !== S.session){ if (S.session !== undefined) resetFeed(); S.session = st.session; }
+    const first = S.lastId === 0;
+    const ev = st.ready ? await getJson("api/events?after=" + S.lastId) : {events:[]};
+    S.state = st; renderState(st); appendEvents(ev.events, !first);
+  }catch(err){ S.offline = true; }
+  renderHeader(); refreshFloor(); refreshTyping();
+  setTimeout(tick, 2000);
+}
+buildFloor();
+$("feed").addEventListener("scroll", () => {
+  const f = $("feed"); S.pinned = f.scrollTop + f.clientHeight >= f.scrollHeight - 48;
+  if (S.pinned) $("more").classList.remove("on");
+});
+$("more").addEventListener("click", () => { const f = $("feed"); f.scrollTop = f.scrollHeight; });
+$("plot").addEventListener("pointermove", e => showPoint(nearest(e.clientX)));
+$("plot").addEventListener("pointerleave", () => showPoint(-1));
+$("plot").addEventListener("blur", () => showPoint(-1));
+$("plot").addEventListener("keydown", e => {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  e.preventDefault();
+  const n = S.points.length; if (!n) return;
+  showPoint(Math.max(0, Math.min(n - 1, (S.hover < 0 ? n - 1 : S.hover) + (e.key === "ArrowRight" ? 1 : -1))));
+});
+$("tableBtn").addEventListener("click", () => {
+  S.table = !S.table; $("tableBtn").setAttribute("aria-pressed", S.table); $("tableBtn").textContent = S.table ? "Grafico" : "Tabella";
+  $("chart").hidden = S.table; $("tablebox").hidden = !S.table;
+  if (S.table) renderTable(); else drawChart();
+});
+new ResizeObserver(() => drawChart()).observe($("chart"));
+setInterval(() => { renderHeader(); refreshFloor(); }, 1000);
+tick();
+</script>
+</body>
+</html>

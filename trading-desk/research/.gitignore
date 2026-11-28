@@ -1,0 +1,6 @@
+# downloaded histories and results: rebuilt by the scripts
+*.pkl
+*.json
+*.log
+perps-download.log
+derivs-download.log

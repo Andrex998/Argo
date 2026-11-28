@@ -1,0 +1,1757 @@
+{
+ "inizio": "2026-11-25",
+ "fine": "2027-02-21",
+ "giorni": [
+  {
+   "data": "2026-11-25",
+   "giorno": 0,
+   "settimana": 0,
+   "giorno_settimana": "mercoledì",
+   "tipo": "accoglienza",
+   "tema": "Accoglienza: chi siamo, le nostre regole e come si misura un errore",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere",
+    "guardiano",
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
+   ],
+   "operazioni": false
+  },
+  {
+   "data": "2026-11-26",
+   "giorno": 1,
+   "settimana": 0,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Accoglienza: chi siamo, le nostre regole e come si misura un errore",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere",
+    "guardiano",
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-11-27",
+   "giorno": 2,
+   "settimana": 0,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Accoglienza: chi siamo, le nostre regole e come si misura un errore",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere",
+    "guardiano",
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-11-28",
+   "giorno": 3,
+   "settimana": 0,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Accoglienza: chi siamo, le nostre regole e come si misura un errore",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere",
+    "guardiano",
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-11-29",
+   "giorno": 4,
+   "settimana": 0,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Accoglienza: chi siamo, le nostre regole e come si misura un errore",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere",
+    "guardiano",
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-11-30",
+   "giorno": 5,
+   "settimana": 1,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Il trend: rotture di volume e segno dei rendimenti",
+   "protagonisti": [
+    "falco",
+    "tartaruga"
+   ],
+   "miti": [
+    "Gli indicatori magici dei social",
+    "Il trend following è morto",
+    "Il totale dei 3 anni dice tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-01",
+   "giorno": 6,
+   "settimana": 1,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Il trend: rotture di volume e segno dei rendimenti",
+   "protagonisti": [
+    "falco",
+    "tartaruga"
+   ],
+   "miti": [
+    "Gli indicatori magici dei social",
+    "Il trend following è morto",
+    "Il totale dei 3 anni dice tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-02",
+   "giorno": 7,
+   "settimana": 1,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Il trend: rotture di volume e segno dei rendimenti",
+   "protagonisti": [
+    "falco",
+    "tartaruga"
+   ],
+   "miti": [
+    "Gli indicatori magici dei social",
+    "Il trend following è morto",
+    "Il totale dei 3 anni dice tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-03",
+   "giorno": 8,
+   "settimana": 1,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Il trend: rotture di volume e segno dei rendimenti",
+   "protagonisti": [
+    "falco",
+    "tartaruga"
+   ],
+   "miti": [
+    "Gli indicatori magici dei social",
+    "Il trend following è morto",
+    "Il totale dei 3 anni dice tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-04",
+   "giorno": 9,
+   "settimana": 1,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Il trend: rotture di volume e segno dei rendimenti",
+   "protagonisti": [
+    "falco",
+    "tartaruga"
+   ],
+   "miti": [
+    "Gli indicatori magici dei social",
+    "Il trend following è morto",
+    "Il totale dei 3 anni dice tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-05",
+   "giorno": 10,
+   "settimana": 1,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Il trend: rotture di volume e segno dei rendimenti",
+   "protagonisti": [
+    "falco",
+    "tartaruga"
+   ],
+   "miti": [
+    "Gli indicatori magici dei social",
+    "Il trend following è morto",
+    "Il totale dei 3 anni dice tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-06",
+   "giorno": 11,
+   "settimana": 1,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Il trend: rotture di volume e segno dei rendimenti",
+   "protagonisti": [
+    "falco",
+    "tartaruga"
+   ],
+   "miti": [
+    "Gli indicatori magici dei social",
+    "Il trend following è morto",
+    "Il totale dei 3 anni dice tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-07",
+   "giorno": 12,
+   "settimana": 2,
+   "giorno_settimana": "lunedì",
+   "tipo": "scrutinio",
+   "tema": "Il rischio: stop, dimensione, volatilità obiettivo e Kelly",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Puntare di più fa crescere più in fretta (Kelly pieno)",
+    "Lo stop protegge sempre",
+    "La volatilità obiettivo aumenta sempre il rendimento"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-08",
+   "giorno": 13,
+   "settimana": 2,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Il rischio: stop, dimensione, volatilità obiettivo e Kelly",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Puntare di più fa crescere più in fretta (Kelly pieno)",
+    "Lo stop protegge sempre",
+    "La volatilità obiettivo aumenta sempre il rendimento"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-09",
+   "giorno": 14,
+   "settimana": 2,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Il rischio: stop, dimensione, volatilità obiettivo e Kelly",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Puntare di più fa crescere più in fretta (Kelly pieno)",
+    "Lo stop protegge sempre",
+    "La volatilità obiettivo aumenta sempre il rendimento"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-10",
+   "giorno": 15,
+   "settimana": 2,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Il rischio: stop, dimensione, volatilità obiettivo e Kelly",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Puntare di più fa crescere più in fretta (Kelly pieno)",
+    "Lo stop protegge sempre",
+    "La volatilità obiettivo aumenta sempre il rendimento"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-11",
+   "giorno": 16,
+   "settimana": 2,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Il rischio: stop, dimensione, volatilità obiettivo e Kelly",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Puntare di più fa crescere più in fretta (Kelly pieno)",
+    "Lo stop protegge sempre",
+    "La volatilità obiettivo aumenta sempre il rendimento"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-12",
+   "giorno": 17,
+   "settimana": 2,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Il rischio: stop, dimensione, volatilità obiettivo e Kelly",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Puntare di più fa crescere più in fretta (Kelly pieno)",
+    "Lo stop protegge sempre",
+    "La volatilità obiettivo aumenta sempre il rendimento"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-13",
+   "giorno": 18,
+   "settimana": 2,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Il rischio: stop, dimensione, volatilità obiettivo e Kelly",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Puntare di più fa crescere più in fretta (Kelly pieno)",
+    "Lo stop protegge sempre",
+    "La volatilità obiettivo aumenta sempre il rendimento"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-14",
+   "giorno": 19,
+   "settimana": 3,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Il funding e il carry: chi paga e perché",
+   "protagonisti": [
+    "ragioniere",
+    "guardiano"
+   ],
+   "miti": [
+    "Il cash and carry sul funding è reddito passivo senza rischio",
+    "Funding allo 0,01% vuol dire long affollati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-15",
+   "giorno": 20,
+   "settimana": 3,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Il funding e il carry: chi paga e perché",
+   "protagonisti": [
+    "ragioniere",
+    "guardiano"
+   ],
+   "miti": [
+    "Il cash and carry sul funding è reddito passivo senza rischio",
+    "Funding allo 0,01% vuol dire long affollati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-16",
+   "giorno": 21,
+   "settimana": 3,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Il funding e il carry: chi paga e perché",
+   "protagonisti": [
+    "ragioniere",
+    "guardiano"
+   ],
+   "miti": [
+    "Il cash and carry sul funding è reddito passivo senza rischio",
+    "Funding allo 0,01% vuol dire long affollati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-17",
+   "giorno": 22,
+   "settimana": 3,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Il funding e il carry: chi paga e perché",
+   "protagonisti": [
+    "ragioniere",
+    "guardiano"
+   ],
+   "miti": [
+    "Il cash and carry sul funding è reddito passivo senza rischio",
+    "Funding allo 0,01% vuol dire long affollati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-18",
+   "giorno": 23,
+   "settimana": 3,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Il funding e il carry: chi paga e perché",
+   "protagonisti": [
+    "ragioniere",
+    "guardiano"
+   ],
+   "miti": [
+    "Il cash and carry sul funding è reddito passivo senza rischio",
+    "Funding allo 0,01% vuol dire long affollati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-19",
+   "giorno": 24,
+   "settimana": 3,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Il funding e il carry: chi paga e perché",
+   "protagonisti": [
+    "ragioniere",
+    "guardiano"
+   ],
+   "miti": [
+    "Il cash and carry sul funding è reddito passivo senza rischio",
+    "Funding allo 0,01% vuol dire long affollati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-20",
+   "giorno": 25,
+   "settimana": 3,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Il funding e il carry: chi paga e perché",
+   "protagonisti": [
+    "ragioniere",
+    "guardiano"
+   ],
+   "miti": [
+    "Il cash and carry sul funding è reddito passivo senza rischio",
+    "Funding allo 0,01% vuol dire long affollati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-21",
+   "giorno": 26,
+   "settimana": 4,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Le vendite forzate: liquidazioni, cascate e ritorno alla media",
+   "protagonisti": [
+    "spazzino",
+    "cronista"
+   ],
+   "miti": [
+    "Dopo una grande cascata di liquidazioni il fondo è fatto",
+    "Mediare al ribasso, la martingala e i grid bot sono sicuri"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-22",
+   "giorno": 27,
+   "settimana": 4,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Le vendite forzate: liquidazioni, cascate e ritorno alla media",
+   "protagonisti": [
+    "spazzino",
+    "cronista"
+   ],
+   "miti": [
+    "Dopo una grande cascata di liquidazioni il fondo è fatto",
+    "Mediare al ribasso, la martingala e i grid bot sono sicuri"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-23",
+   "giorno": 28,
+   "settimana": 4,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Le vendite forzate: liquidazioni, cascate e ritorno alla media",
+   "protagonisti": [
+    "spazzino",
+    "cronista"
+   ],
+   "miti": [
+    "Dopo una grande cascata di liquidazioni il fondo è fatto",
+    "Mediare al ribasso, la martingala e i grid bot sono sicuri"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-24",
+   "giorno": 29,
+   "settimana": 4,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Le vendite forzate: liquidazioni, cascate e ritorno alla media",
+   "protagonisti": [
+    "spazzino",
+    "cronista"
+   ],
+   "miti": [
+    "Dopo una grande cascata di liquidazioni il fondo è fatto",
+    "Mediare al ribasso, la martingala e i grid bot sono sicuri"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-25",
+   "giorno": 30,
+   "settimana": 4,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Le vendite forzate: liquidazioni, cascate e ritorno alla media",
+   "protagonisti": [
+    "spazzino",
+    "cronista"
+   ],
+   "miti": [
+    "Dopo una grande cascata di liquidazioni il fondo è fatto",
+    "Mediare al ribasso, la martingala e i grid bot sono sicuri"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-26",
+   "giorno": 31,
+   "settimana": 4,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Le vendite forzate: liquidazioni, cascate e ritorno alla media",
+   "protagonisti": [
+    "spazzino",
+    "cronista"
+   ],
+   "miti": [
+    "Dopo una grande cascata di liquidazioni il fondo è fatto",
+    "Mediare al ribasso, la martingala e i grid bot sono sicuri"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-27",
+   "giorno": 32,
+   "settimana": 4,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Le vendite forzate: liquidazioni, cascate e ritorno alla media",
+   "protagonisti": [
+    "spazzino",
+    "cronista"
+   ],
+   "miti": [
+    "Dopo una grande cascata di liquidazioni il fondo è fatto",
+    "Mediare al ribasso, la martingala e i grid bot sono sicuri"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-28",
+   "giorno": 33,
+   "settimana": 5,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Notizie, macro e politica: cosa si misura davvero",
+   "protagonisti": [
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Entra appena esce il CPI o l'NFP",
+    "Bitcoin protegge dall'inflazione ed è oro digitale",
+    "I flussi ETF di oggi dicono dove andrà BTC domani"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-29",
+   "giorno": 34,
+   "settimana": 5,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Notizie, macro e politica: cosa si misura davvero",
+   "protagonisti": [
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Entra appena esce il CPI o l'NFP",
+    "Bitcoin protegge dall'inflazione ed è oro digitale",
+    "I flussi ETF di oggi dicono dove andrà BTC domani"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-30",
+   "giorno": 35,
+   "settimana": 5,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Notizie, macro e politica: cosa si misura davvero",
+   "protagonisti": [
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Entra appena esce il CPI o l'NFP",
+    "Bitcoin protegge dall'inflazione ed è oro digitale",
+    "I flussi ETF di oggi dicono dove andrà BTC domani"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2026-12-31",
+   "giorno": 36,
+   "settimana": 5,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Notizie, macro e politica: cosa si misura davvero",
+   "protagonisti": [
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Entra appena esce il CPI o l'NFP",
+    "Bitcoin protegge dall'inflazione ed è oro digitale",
+    "I flussi ETF di oggi dicono dove andrà BTC domani"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-01",
+   "giorno": 37,
+   "settimana": 5,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Notizie, macro e politica: cosa si misura davvero",
+   "protagonisti": [
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Entra appena esce il CPI o l'NFP",
+    "Bitcoin protegge dall'inflazione ed è oro digitale",
+    "I flussi ETF di oggi dicono dove andrà BTC domani"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-02",
+   "giorno": 38,
+   "settimana": 5,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Notizie, macro e politica: cosa si misura davvero",
+   "protagonisti": [
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Entra appena esce il CPI o l'NFP",
+    "Bitcoin protegge dall'inflazione ed è oro digitale",
+    "I flussi ETF di oggi dicono dove andrà BTC domani"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-03",
+   "giorno": 39,
+   "settimana": 5,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Notizie, macro e politica: cosa si misura davvero",
+   "protagonisti": [
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Entra appena esce il CPI o l'NFP",
+    "Bitcoin protegge dall'inflazione ed è oro digitale",
+    "I flussi ETF di oggi dicono dove andrà BTC domani"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-04",
+   "giorno": 40,
+   "settimana": 6,
+   "giorno_settimana": "lunedì",
+   "tipo": "scrutinio",
+   "tema": "Il metodo: prove contate, placebo e backtest",
+   "protagonisti": [
+    "scettico",
+    "preside"
+   ],
+   "miti": [
+    "Uno Sharpe sopra 2 vuol dire soldi sicuri",
+    "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
+   ],
+   "operazioni": true,
+   "nota": "Diploma della Mini Scuola Forex: il Macro e il Tecnico finiscono il corso."
+  },
+  {
+   "data": "2027-01-05",
+   "giorno": 41,
+   "settimana": 6,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Il metodo: prove contate, placebo e backtest",
+   "protagonisti": [
+    "scettico",
+    "preside"
+   ],
+   "miti": [
+    "Uno Sharpe sopra 2 vuol dire soldi sicuri",
+    "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
+   ],
+   "operazioni": true,
+   "nota": "Fusione: il Macro e il Tecnico entrano nella Scuola Cripto (vedi FUSIONE.md)."
+  },
+  {
+   "data": "2027-01-06",
+   "giorno": 42,
+   "settimana": 6,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Il metodo: prove contate, placebo e backtest",
+   "protagonisti": [
+    "scettico",
+    "preside"
+   ],
+   "miti": [
+    "Uno Sharpe sopra 2 vuol dire soldi sicuri",
+    "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-07",
+   "giorno": 43,
+   "settimana": 6,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Il metodo: prove contate, placebo e backtest",
+   "protagonisti": [
+    "scettico",
+    "preside"
+   ],
+   "miti": [
+    "Uno Sharpe sopra 2 vuol dire soldi sicuri",
+    "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-08",
+   "giorno": 44,
+   "settimana": 6,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Il metodo: prove contate, placebo e backtest",
+   "protagonisti": [
+    "scettico",
+    "preside"
+   ],
+   "miti": [
+    "Uno Sharpe sopra 2 vuol dire soldi sicuri",
+    "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-09",
+   "giorno": 45,
+   "settimana": 6,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Il metodo: prove contate, placebo e backtest",
+   "protagonisti": [
+    "scettico",
+    "preside"
+   ],
+   "miti": [
+    "Uno Sharpe sopra 2 vuol dire soldi sicuri",
+    "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-10",
+   "giorno": 46,
+   "settimana": 6,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Il metodo: prove contate, placebo e backtest",
+   "protagonisti": [
+    "scettico",
+    "preside"
+   ],
+   "miti": [
+    "Uno Sharpe sopra 2 vuol dire soldi sicuri",
+    "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-11",
+   "giorno": 47,
+   "settimana": 7,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Quante scommesse abbiamo davvero: correlazione e beta",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-12",
+   "giorno": 48,
+   "settimana": 7,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Quante scommesse abbiamo davvero: correlazione e beta",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-13",
+   "giorno": 49,
+   "settimana": 7,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Quante scommesse abbiamo davvero: correlazione e beta",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-14",
+   "giorno": 50,
+   "settimana": 7,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Quante scommesse abbiamo davvero: correlazione e beta",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-15",
+   "giorno": 51,
+   "settimana": 7,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Quante scommesse abbiamo davvero: correlazione e beta",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-16",
+   "giorno": 52,
+   "settimana": 7,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Quante scommesse abbiamo davvero: correlazione e beta",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-17",
+   "giorno": 53,
+   "settimana": 7,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Quante scommesse abbiamo davvero: correlazione e beta",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-18",
+   "giorno": 54,
+   "settimana": 8,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Forza relativa e dispersione tra le monete",
+   "protagonisti": [
+    "falco",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il momentum tra le cripto rende il 3% a settimana",
+    "Nelle cripto tutto torna indietro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-19",
+   "giorno": 55,
+   "settimana": 8,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Forza relativa e dispersione tra le monete",
+   "protagonisti": [
+    "falco",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il momentum tra le cripto rende il 3% a settimana",
+    "Nelle cripto tutto torna indietro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-20",
+   "giorno": 56,
+   "settimana": 8,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Forza relativa e dispersione tra le monete",
+   "protagonisti": [
+    "falco",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il momentum tra le cripto rende il 3% a settimana",
+    "Nelle cripto tutto torna indietro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-21",
+   "giorno": 57,
+   "settimana": 8,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Forza relativa e dispersione tra le monete",
+   "protagonisti": [
+    "falco",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il momentum tra le cripto rende il 3% a settimana",
+    "Nelle cripto tutto torna indietro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-22",
+   "giorno": 58,
+   "settimana": 8,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Forza relativa e dispersione tra le monete",
+   "protagonisti": [
+    "falco",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il momentum tra le cripto rende il 3% a settimana",
+    "Nelle cripto tutto torna indietro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-23",
+   "giorno": 59,
+   "settimana": 8,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Forza relativa e dispersione tra le monete",
+   "protagonisti": [
+    "falco",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il momentum tra le cripto rende il 3% a settimana",
+    "Nelle cripto tutto torna indietro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-24",
+   "giorno": 60,
+   "settimana": 8,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Forza relativa e dispersione tra le monete",
+   "protagonisti": [
+    "falco",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il momentum tra le cripto rende il 3% a settimana",
+    "Nelle cripto tutto torna indietro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-25",
+   "giorno": 61,
+   "settimana": 9,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Il regime di mercato: quando non fare niente",
+   "protagonisti": [
+    "tartaruga",
+    "guardiano"
+   ],
+   "miti": [
+    "Battere BTC in rendimento è l'unico obiettivo",
+    "Più veloce è meglio"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-26",
+   "giorno": 62,
+   "settimana": 9,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Il regime di mercato: quando non fare niente",
+   "protagonisti": [
+    "tartaruga",
+    "guardiano"
+   ],
+   "miti": [
+    "Battere BTC in rendimento è l'unico obiettivo",
+    "Più veloce è meglio"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-27",
+   "giorno": 63,
+   "settimana": 9,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Il regime di mercato: quando non fare niente",
+   "protagonisti": [
+    "tartaruga",
+    "guardiano"
+   ],
+   "miti": [
+    "Battere BTC in rendimento è l'unico obiettivo",
+    "Più veloce è meglio"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-28",
+   "giorno": 64,
+   "settimana": 9,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Il regime di mercato: quando non fare niente",
+   "protagonisti": [
+    "tartaruga",
+    "guardiano"
+   ],
+   "miti": [
+    "Battere BTC in rendimento è l'unico obiettivo",
+    "Più veloce è meglio"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-29",
+   "giorno": 65,
+   "settimana": 9,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Il regime di mercato: quando non fare niente",
+   "protagonisti": [
+    "tartaruga",
+    "guardiano"
+   ],
+   "miti": [
+    "Battere BTC in rendimento è l'unico obiettivo",
+    "Più veloce è meglio"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-30",
+   "giorno": 66,
+   "settimana": 9,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Il regime di mercato: quando non fare niente",
+   "protagonisti": [
+    "tartaruga",
+    "guardiano"
+   ],
+   "miti": [
+    "Battere BTC in rendimento è l'unico obiettivo",
+    "Più veloce è meglio"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-01-31",
+   "giorno": 67,
+   "settimana": 9,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Il regime di mercato: quando non fare niente",
+   "protagonisti": [
+    "tartaruga",
+    "guardiano"
+   ],
+   "miti": [
+    "Battere BTC in rendimento è l'unico obiettivo",
+    "Più veloce è meglio"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-01",
+   "giorno": 68,
+   "settimana": 10,
+   "giorno_settimana": "lunedì",
+   "tipo": "scrutinio",
+   "tema": "L'affollamento: funding in eccesso e open interest registrato dalla scuola",
+   "protagonisti": [
+    "guardiano",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il rapporto long/short dice dove va il prezzo",
+    "Con avidità estrema si va short, con paura estrema si compra tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-02",
+   "giorno": 69,
+   "settimana": 10,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "L'affollamento: funding in eccesso e open interest registrato dalla scuola",
+   "protagonisti": [
+    "guardiano",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il rapporto long/short dice dove va il prezzo",
+    "Con avidità estrema si va short, con paura estrema si compra tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-03",
+   "giorno": 70,
+   "settimana": 10,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "L'affollamento: funding in eccesso e open interest registrato dalla scuola",
+   "protagonisti": [
+    "guardiano",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il rapporto long/short dice dove va il prezzo",
+    "Con avidità estrema si va short, con paura estrema si compra tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-04",
+   "giorno": 71,
+   "settimana": 10,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "L'affollamento: funding in eccesso e open interest registrato dalla scuola",
+   "protagonisti": [
+    "guardiano",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il rapporto long/short dice dove va il prezzo",
+    "Con avidità estrema si va short, con paura estrema si compra tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-05",
+   "giorno": 72,
+   "settimana": 10,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "L'affollamento: funding in eccesso e open interest registrato dalla scuola",
+   "protagonisti": [
+    "guardiano",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il rapporto long/short dice dove va il prezzo",
+    "Con avidità estrema si va short, con paura estrema si compra tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-06",
+   "giorno": 73,
+   "settimana": 10,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "L'affollamento: funding in eccesso e open interest registrato dalla scuola",
+   "protagonisti": [
+    "guardiano",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il rapporto long/short dice dove va il prezzo",
+    "Con avidità estrema si va short, con paura estrema si compra tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-07",
+   "giorno": 74,
+   "settimana": 10,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "L'affollamento: funding in eccesso e open interest registrato dalla scuola",
+   "protagonisti": [
+    "guardiano",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il rapporto long/short dice dove va il prezzo",
+    "Con avidità estrema si va short, con paura estrema si compra tutto"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-08",
+   "giorno": 75,
+   "settimana": 11,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza",
+   "protagonisti": [
+    "scettico",
+    "cronista",
+    "preside"
+   ],
+   "miti": [
+    "I social e gli influencer anticipano il prezzo",
+    "Una strategia famosa rende come nel libro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-09",
+   "giorno": 76,
+   "settimana": 11,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza",
+   "protagonisti": [
+    "scettico",
+    "cronista",
+    "preside"
+   ],
+   "miti": [
+    "I social e gli influencer anticipano il prezzo",
+    "Una strategia famosa rende come nel libro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-10",
+   "giorno": 77,
+   "settimana": 11,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza",
+   "protagonisti": [
+    "scettico",
+    "cronista",
+    "preside"
+   ],
+   "miti": [
+    "I social e gli influencer anticipano il prezzo",
+    "Una strategia famosa rende come nel libro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-11",
+   "giorno": 78,
+   "settimana": 11,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza",
+   "protagonisti": [
+    "scettico",
+    "cronista",
+    "preside"
+   ],
+   "miti": [
+    "I social e gli influencer anticipano il prezzo",
+    "Una strategia famosa rende come nel libro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-12",
+   "giorno": 79,
+   "settimana": 11,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza",
+   "protagonisti": [
+    "scettico",
+    "cronista",
+    "preside"
+   ],
+   "miti": [
+    "I social e gli influencer anticipano il prezzo",
+    "Una strategia famosa rende come nel libro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-13",
+   "giorno": 80,
+   "settimana": 11,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza",
+   "protagonisti": [
+    "scettico",
+    "cronista",
+    "preside"
+   ],
+   "miti": [
+    "I social e gli influencer anticipano il prezzo",
+    "Una strategia famosa rende come nel libro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-14",
+   "giorno": 81,
+   "settimana": 11,
+   "giorno_settimana": "domenica",
+   "tipo": "riunione",
+   "tema": "Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza",
+   "protagonisti": [
+    "scettico",
+    "cronista",
+    "preside"
+   ],
+   "miti": [
+    "I social e gli influencer anticipano il prezzo",
+    "Una strategia famosa rende come nel libro"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-15",
+   "giorno": 82,
+   "settimana": 12,
+   "giorno_settimana": "lunedì",
+   "tipo": "consiglio",
+   "tema": "Bilancio del trimestre: regole contro giudizio",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Una strategia che vince il 90% delle volte è una miniera"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-16",
+   "giorno": 83,
+   "settimana": 12,
+   "giorno_settimana": "martedì",
+   "tipo": "riunione",
+   "tema": "Bilancio del trimestre: regole contro giudizio",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Una strategia che vince il 90% delle volte è una miniera"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-17",
+   "giorno": 84,
+   "settimana": 12,
+   "giorno_settimana": "mercoledì",
+   "tipo": "riunione",
+   "tema": "Bilancio del trimestre: regole contro giudizio",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Una strategia che vince il 90% delle volte è una miniera"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-18",
+   "giorno": 85,
+   "settimana": 12,
+   "giorno_settimana": "giovedì",
+   "tipo": "riunione",
+   "tema": "Bilancio del trimestre: regole contro giudizio",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Una strategia che vince il 90% delle volte è una miniera"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-19",
+   "giorno": 86,
+   "settimana": 12,
+   "giorno_settimana": "venerdì",
+   "tipo": "riunione",
+   "tema": "Bilancio del trimestre: regole contro giudizio",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Una strategia che vince il 90% delle volte è una miniera"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-20",
+   "giorno": 87,
+   "settimana": 12,
+   "giorno_settimana": "sabato",
+   "tipo": "riunione",
+   "tema": "Bilancio del trimestre: regole contro giudizio",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Una strategia che vince il 90% delle volte è una miniera"
+   ],
+   "operazioni": true
+  },
+  {
+   "data": "2027-02-21",
+   "giorno": 88,
+   "settimana": 12,
+   "giorno_settimana": "domenica",
+   "tipo": "fine",
+   "tema": "Bilancio del trimestre: regole contro giudizio",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Una strategia che vince il 90% delle volte è una miniera"
+   ],
+   "operazioni": true
+  }
+ ],
+ "settimane": [
+  {
+   "settimana": 0,
+   "tema": "Accoglienza: chi siamo, le nostre regole e come si misura un errore",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere",
+    "guardiano",
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Gli agenti IA capiscono il mercato, sono coscienti o imparano da soli"
+   ]
+  },
+  {
+   "settimana": 1,
+   "tema": "Il trend: rotture di volume e segno dei rendimenti",
+   "protagonisti": [
+    "falco",
+    "tartaruga"
+   ],
+   "miti": [
+    "Gli indicatori magici dei social",
+    "Il trend following è morto",
+    "Il totale dei 3 anni dice tutto"
+   ]
+  },
+  {
+   "settimana": 2,
+   "tema": "Il rischio: stop, dimensione, volatilità obiettivo e Kelly",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Puntare di più fa crescere più in fretta (Kelly pieno)",
+    "Lo stop protegge sempre",
+    "La volatilità obiettivo aumenta sempre il rendimento"
+   ]
+  },
+  {
+   "settimana": 3,
+   "tema": "Il funding e il carry: chi paga e perché",
+   "protagonisti": [
+    "ragioniere",
+    "guardiano"
+   ],
+   "miti": [
+    "Il cash and carry sul funding è reddito passivo senza rischio",
+    "Funding allo 0,01% vuol dire long affollati"
+   ]
+  },
+  {
+   "settimana": 4,
+   "tema": "Le vendite forzate: liquidazioni, cascate e ritorno alla media",
+   "protagonisti": [
+    "spazzino",
+    "cronista"
+   ],
+   "miti": [
+    "Dopo una grande cascata di liquidazioni il fondo è fatto",
+    "Mediare al ribasso, la martingala e i grid bot sono sicuri"
+   ]
+  },
+  {
+   "settimana": 5,
+   "tema": "Notizie, macro e politica: cosa si misura davvero",
+   "protagonisti": [
+    "cronista",
+    "scettico"
+   ],
+   "miti": [
+    "Entra appena esce il CPI o l'NFP",
+    "Bitcoin protegge dall'inflazione ed è oro digitale",
+    "I flussi ETF di oggi dicono dove andrà BTC domani"
+   ]
+  },
+  {
+   "settimana": 6,
+   "tema": "Il metodo: prove contate, placebo e backtest",
+   "protagonisti": [
+    "scettico",
+    "preside"
+   ],
+   "miti": [
+    "Uno Sharpe sopra 2 vuol dire soldi sicuri",
+    "Un backtest bello è una prova anche con i parametri scelti sugli stessi dati"
+   ]
+  },
+  {
+   "settimana": 7,
+   "tema": "Quante scommesse abbiamo davvero: correlazione e beta",
+   "protagonisti": [
+    "guardiano",
+    "falco"
+   ],
+   "miti": [
+    "Rischiare l'1% su 10 altcoin vuol dire rischiare l'1%"
+   ]
+  },
+  {
+   "settimana": 8,
+   "tema": "Forza relativa e dispersione tra le monete",
+   "protagonisti": [
+    "falco",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il momentum tra le cripto rende il 3% a settimana",
+    "Nelle cripto tutto torna indietro"
+   ]
+  },
+  {
+   "settimana": 9,
+   "tema": "Il regime di mercato: quando non fare niente",
+   "protagonisti": [
+    "tartaruga",
+    "guardiano"
+   ],
+   "miti": [
+    "Battere BTC in rendimento è l'unico obiettivo",
+    "Più veloce è meglio"
+   ]
+  },
+  {
+   "settimana": 10,
+   "tema": "L'affollamento: funding in eccesso e open interest registrato dalla scuola",
+   "protagonisti": [
+    "guardiano",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Il rapporto long/short dice dove va il prezzo",
+    "Con avidità estrema si va short, con paura estrema si compra tutto"
+   ]
+  },
+  {
+   "settimana": 11,
+   "tema": "Gli errori dell'IA: numeri inventati, spiegazioni dopo i fatti, troppa sicurezza",
+   "protagonisti": [
+    "scettico",
+    "cronista",
+    "preside"
+   ],
+   "miti": [
+    "I social e gli influencer anticipano il prezzo",
+    "Una strategia famosa rende come nel libro"
+   ]
+  },
+  {
+   "settimana": 12,
+   "tema": "Bilancio del trimestre: regole contro giudizio",
+   "protagonisti": [
+    "preside",
+    "falco",
+    "tartaruga",
+    "spazzino",
+    "ragioniere"
+   ],
+   "miti": [
+    "Una strategia che vince il 90% delle volte è una miniera"
+   ]
+  }
+ ]
+}
