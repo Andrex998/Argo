@@ -1,7 +1,7 @@
 # Sessione: 2026-11-28 — ricerca della domenica, studio degli eventi, dati del funding
 
 **Branch:** claude/beautiful-feynman-6mv3m5
-**Ultimo commit:** 17068a0 fix(crypto-school): the funding history is repaired or refused, never used with holes
+**Ultimo commit:** 45e2e55 feat(crypto-school): the office PC saves the open interest every hour, without Claude
 
 Questa sessione continua quella salvata in
 `.claude/sessioni/2026-11-28-stato-scuole-e-limiti-uso.md`: per il quadro generale (desk,
@@ -45,7 +45,11 @@ difetto nei dati del funding.
 - **Il lettore del funding ripara o rifiuta i buchi:** `crypto-school/data.py`, 7 prove.
   Con i parametri della corsa di ogni giorno (ultimi 200 giorni) le 36 monete sono arrivate
   complete, senza errori, in 27 secondi.
-- **Tutte le prove della scuola:** 56 su 56 con
+- **Il salvataggio dell'open interest dal PC dell'ufficio** (`crypto-school/pc-ufficio/`,
+  commit 45e2e55): ogni ora, al minuto 7, senza Claude. Lo script è stato provato dal
+  container sul BingX vero (36 monete); l'utente ha confermato in chat il 28/11 che sul PC
+  funziona tutto, compresa l'attività pianificata. I dati restano sul PC, in `dati/`.
+- **Tutte le prove della scuola:** 61 su 61 (56 più le 5 del salvataggio) con
   `cd trading-desk && uv run --frozen pytest ../crypto-school/ -q`.
   Le 317 del trading desk non sono state rilanciate: il desk non è stato toccato.
 
@@ -105,8 +109,6 @@ Le parti del risultato: Spazzino prezzo +766, funding −12, costi −231; Ragio
 - **L'effetto a schermo** del bancone del caffè e della faccia del Guardiano: cambiati nel
   codice, non guardati.
 - **L'esame E08 completo** del Ragioniere (3 anni, ribilanciamento nei 7 giorni, costi doppi).
-- **Un salvataggio giornaliero dell'open interest fuori da Claude** (per esempio sul PC
-  dell'ufficio), per non perdere il dato nei giorni saltati.
 - **I conti sul passato con più monete riparate:** rilanciare `storia.py` in un altro
   momento può recuperare XRP, ATOM, AAVE e FTM.
 
@@ -168,7 +170,7 @@ all'utente in poche righe.
   segreti stanno solo in `.env` (`ANTHROPIC_API_KEY`, `exchange_api_key`,
   `exchange_api_secret`: solo i nomi).
 - **Le prove:**
-  - `cd trading-desk && uv run --frozen pytest ../crypto-school/ -q` (56);
+  - `cd trading-desk && uv run --frozen pytest ../crypto-school/ -q` (61);
   - `cd trading-desk && uv run --frozen pytest` (317, non rilanciate oggi).
 - **Gli strumenti nuovi,** da lanciare da `trading-desk/`:
   - `uv run --frozen python ../crypto-school/storia.py 2024-11-28 out.json`
