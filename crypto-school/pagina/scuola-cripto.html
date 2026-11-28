@@ -540,6 +540,13 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     </div>
   </section>
 
+  <section aria-labelledby="t-ricerca">
+    <div class="wrap">
+      <div class="section-head"><h2 id="t-ricerca">La ricerca</h2><p class="muted" id="ricerca-at"></p></div>
+      <div id="ricerca"><p class="muted">Carico la ricerca…</p></div>
+    </div>
+  </section>
+
   <section aria-labelledby="t-verbale">
     <div class="wrap" id="verbale"></div>
   </section>
@@ -643,7 +650,7 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   const RIGHE = ["Cosa abbiamo imparato", "Le previsioni nel registro", "Le ipotesi per la lista d'esame", "La richiesta al Guardiano", "La domanda per domani"];
   const SERA_RIGHE = ["Cosa è successo", "Cosa si è deciso", "Cosa guardare domattina"];
 
-  const S = { programma: null, classe: null, giudizio: null, regole: null, live: null, sera: null, memoria: {}, verbali: {}, palestre: {}, gymSel: null, got: {}, errors: {},
+  const S = { programma: null, classe: null, giudizio: null, regole: null, live: null, sera: null, memoria: {}, verbali: {}, palestre: {}, gymSel: null, ricerche: {}, resSel: null, got: {}, errors: {},
               revisioni: {}, chain: { state: "loading" },
               selected: null, picked: false, slow: false, unavailable: false, coinSort: { key: "rank", dir: 1 } };
   let db = null;
@@ -1736,6 +1743,74 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
     renderGym();
   });
 
+  // ---- the Sunday research: one question each, chosen by the agent, checked by the Scettico --------
+  const RESEARCHERS = ["falco", "tartaruga", "spazzino", "ragioniere", "guardiano", "cronista"];
+  const RESEARCH_TIME = "16:23";
+  const SOURCE_KIND = { studio: "studio", dati: "dati", articolo: "articolo", opinione: "opinione" };
+  const CHECK = { regge: ["regge", "ok"], "non regge": ["non regge", "no"], "non verificabile": ["non verificabile", ""] };
+  const resWatched = new Set();
+  function watchResearch() {
+    if (!db) return;
+    for (const d of sundays()) {
+      if (resWatched.has(d)) continue;
+      resWatched.add(d);
+      const got = (v) => { S.ricerche[d] = v; soon(); };
+      db.doc("ricerca/" + d).onSnapshot((snap) => got(snap.exists ? snap.data() : null), () => got(null));
+    }
+  }
+  // a source is a link only if it is a plain https address; anything else is shown as text
+  const safeUrl = (u) => typeof u === "string" && /^https:\/\/[^\s"'<>`]+$/.test(u) ? u : null;
+  function sourceLine(f) {
+    if (!obj(f)) return "";
+    const u = safeUrl(f.url), title = esc(f.titolo || f.url || "fonte"), kind = SOURCE_KIND[f.tipo];
+    return `<li>${kind ? `<span class="lab${kind === "opinione" ? " lab-interpretazione" : ""}">${kind}</span> ` : ""}${u ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}${f.data ? ` <span class="muted">· ${esc(f.data)}</span>` : ""}</li>`;
+  }
+  function researchCard(n, A) {
+    const head = `<div class="who k-${n}"><i class="key" aria-hidden="true"></i><div><h3>${esc(NAMES[n])}</h3></div></div>`;
+    if (!obj(A)) return `<article class="mind k-${n}">${head}<p class="muted">Questa settimana non ha una ricerca valida.</p></article>`;
+    const H = obj(A.ipotesi), fonti = arr(A.fonti).map(sourceLine).join("");
+    return `<article class="mind k-${n}" aria-label="La ricerca di ${esc(NAMES[n])}">${head}
+      <div class="block"><h4>La domanda che si è fatto</h4><p class="read">${esc(A.domanda || "—")}</p>${A.perche ? `<p class="muted" style="font-size:.88rem">${esc(A.perche)}</p>` : ""}</div>
+      <div class="block"><h4>La sua conclusione</h4><p class="read">${esc(A.conclusione || "—")}</p>
+        <div class="facts"><span>Quanto ci crede <b>${prob(A.fiducia)}</b></span>${toNum(A.scartate) ? `<span>Fonti scartate <b>${esc(small(A.scartate))}</b></span>` : ""}</div>
+        ${A.smentita ? `<p class="muted" style="font-size:.88rem">Cambierebbe idea se: ${esc(lowerFirst(String(A.smentita)))}</p>` : ""}</div>
+      ${A.stato_d_animo ? `<p class="thought">«${esc(A.stato_d_animo)}»</p>` : ""}
+      ${H ? `<div class="block"><h4>L'ipotesi per la lista d'esame</h4><div class="hyp"><b>${esc(H.nome || "Senza nome")}</b><span>${esc(H.regola || "")}</span>${H.smentita ? `<span class="muted">La boccia: ${esc(lowerFirst(String(H.smentita)))}</span>` : ""}</div></div>` : ""}
+      ${A.trovato ? `<details data-k="res-${n}"><summary>Cosa ha trovato</summary><div class="prose">${md(A.trovato)}</div></details>` : ""}
+      ${fonti ? `<div class="block"><h4>Le fonti</h4><ul class="lines">${fonti}</ul></div>` : ""}
+    </article>`;
+  }
+  function renderResearch() {
+    const el = $("ricerca"), atEl = $("ricerca-at");
+    atEl.textContent = "";
+    if (S.unavailable) { el.innerHTML = `<p class="muted">La ricerca compare quando apri la pagina da claude.ai.</p>`; return; }
+    const all = sundays();
+    if (!all.length) { el.innerHTML = `<p class="muted">${S.got.programma ? "La ricerca compare con il programma della scuola." : "Carico la ricerca…"}</p>`; return; }
+    const have = all.filter((d) => obj(S.ricerche[d]));
+    if (!have.length) {
+      const today = romeToday().date;
+      const waiting = all.some((d) => d <= today && S.ricerche[d] === undefined);
+      el.innerHTML = waiting ? `<p class="muted">Carico la ricerca…</p>` : `<div class="sheet empty"><p>Nessuna ricerca è stata salvata.</p><p class="muted">La domenica alle ${RESEARCH_TIME}, quando l'attività è accesa, sei agenti studiano sul web una domanda scelta da loro, scrivono la loro conclusione e lo Scettico ne controlla una alla fonte. Una ricerca può cambiare la testa di un agente e proporre un'ipotesi da esaminare: non cambia mai le regole né i limiti di rischio.</p></div>`;
+      return;
+    }
+    const date = S.resSel && have.includes(S.resSel) ? S.resSel : have[have.length - 1];
+    const P = S.ricerche[date], Sc = obj(P.scettico) || {}, V = obj(Sc.verifica), lines = arr(P.preside).filter((x) => typeof x === "string" && x);
+    atEl.textContent = P.scritto ? `Salvata il ${romeTime(P.scritto)}` : "";
+    const pick = have.length > 1 ? `<div class="gym-days" role="group" aria-label="Le ricerche">${have.map((d) => `<button type="button" data-res="${esc(d)}" aria-pressed="${d === date}">${esc(dm(d))}</button>`).join("")}</div>` : "";
+    const notice = P.avviso || (P.stato && P.stato !== "completo") ? `<p class="notice" style="margin-bottom:12px">${esc(P.avviso || "Questa ricerca non è stata completata.")}</p>` : "";
+    const check = V ? CHECK[V.esito] || [String(V.esito || "?"), ""] : null;
+    keepOpen(el, `${pick}<p class="theme" style="margin-bottom:12px"><b>${esc(cap(longDay(date)))}.</b> Ognuno ha scelto la sua domanda e ha lavorato da solo. Le conclusioni sono degli agenti: valgono quanto le loro fonti, e un'ipotesi diventa una regola solo dopo un esame sui dati passati.</p>${notice}
+      ${lines.length ? `<article class="sheet k-preside" style="margin-bottom:16px"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Le righe del Preside</h3></div><ul class="lines">${lines.map((x) => `<li class="read">${esc(x)}</li>`).join("")}</ul></article>` : ""}
+      <div class="minds">${RESEARCHERS.map((n) => researchCard(n, P.agenti && P.agenti[n])).join("")}</div>
+      ${Sc.testo || V ? `<article class="sheet k-scettico" style="margin-top:16px"><div class="speaker"><i class="key" aria-hidden="true"></i><h3>Lo Scettico controlla</h3></div>${Sc.testo ? `<div class="prose">${md(Sc.testo)}</div>` : ""}${V ? `<div class="block"><h4>La verifica alla fonte</h4><p class="event"><span class="tag ${check[1]}">${esc(check[0])}</span><span>${whom(V.chi)}: ${esc(V.affermazione || "")}</span></p>${V.nota ? `<p class="muted" style="font-size:.88rem">${esc(V.nota)}</p>` : ""}</div>` : ""}${Sc.domanda_per_il_consiglio ? `<div class="block"><h4>La domanda per il consiglio</h4><p class="read">${esc(Sc.domanda_per_il_consiglio)}</p></div>` : ""}</article>` : ""}`);
+  }
+  $("ricerca").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-res]");
+    if (!b) return;
+    S.resSel = b.dataset.res;
+    renderResearch();
+  });
+
   // ---- the minutes of the selected day -------------------------------------------------------------
   function eventLine(ev) {
     if (!obj(ev)) return "";
@@ -2103,9 +2178,10 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
       if (want && want !== S.selected) { S.selected = want; watchVerbale(want); }
     }
     watchGyms();
+    watchResearch();
     watchAudits();
     ensureChain();
-    for (const f of [renderStatus, renderTrust, renderRegister, renderWallets, renderSemaforo, renderRisk, renderMinds, renderGym, renderVerbale, renderCoins]) {
+    for (const f of [renderStatus, renderTrust, renderRegister, renderWallets, renderSemaforo, renderRisk, renderMinds, renderGym, renderResearch, renderVerbale, renderCoins]) {
       try { f(); } catch (e) { console.warn("Scuola Cripto:", f.name, e); }
     }
     cp((C) => { C.setData("selected", S.selected); C.setData("picked", S.picked); });

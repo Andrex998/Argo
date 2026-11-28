@@ -100,6 +100,10 @@ Le regole del quaderno:
 - **Errori:** un errore che torna non si scrive due volte, si aumentano le `volte`.
 - **Il quaderno del Preside** usa gli stessi campi per come insegna e per le sue lezioni
   sbagliate.
+- **Le ricerche:** il campo `ricerche`, se c'è, lo scrive la ricerca della domenica
+  (`crypto-school/RICERCA.md`): le ultime 12, nella forma
+  `{"data", "domanda", "conclusione", "fiducia", "ipotesi"}`. La riunione del mattino lo
+  lascia com'è: l'agente lo legge insieme al resto del suo quaderno.
 - **Quaderno mancante:** se un quaderno non esiste ancora, lo crei tu dalle risposte di
   oggi, senza inventare niente.
 
@@ -183,7 +187,8 @@ Le regole del quaderno:
 8. Leggi il verbale di ieri, `riunione/<ieri>`, se esiste. Ti servono la chiusura, i voti, le
    domande rimaste aperte e, se c'è stata, la riunione straordinaria della sera (il campo
    `sera`, vedi `crypto-school/SERA.md`). Il lunedì leggi anche `palestra/<ieri>`, la palestra della
-   domenica, se esiste, e salvala in `LAVORO/palestra-ieri.json`.
+   domenica, se esiste, e salvala in `LAVORO/palestra-ieri.json`; e `ricerca/<ieri>`, la
+   ricerca della domenica (`crypto-school/RICERCA.md`), se esiste, in `LAVORO/ricerca-ieri.json`.
 9. **I quaderni.** Leggi gli otto quaderni (`memoria/<chi>`), annota le loro versioni e
    salvali in `LAVORO/quaderno-<chi>.json`. Per ogni quaderno con previsioni lancia
    `MOTORE verify LAVORO/quaderno-<chi>.json`. Il motore confronta le previsioni arrivate a
@@ -496,9 +501,12 @@ motivo scritto in `semaforo.json`.
 - **Il lunedì (consiglio)**, l'oggetto `consiglio`:
   - `testo`: 150-300 parole sulla settimana di ciascuno, regole contro giudizio, e sulla
     palestra di ieri: la calibrazione in palestra contro quella vera, e chi ha scritto una
-    regola nuova;
-  - `ipotesi_accettate`: le ipotesi del Cronista che metti in lista d'esame, al massimo 4
-    al mese, nella stessa forma del Cronista (`nome`, `regola`, `dati`, `smentita`);
+    regola nuova. Se c'è `LAVORO/ricerca-ieri.json`, anche sulla ricerca di ieri: quale
+    conclusione regge, secondo la verifica dello Scettico, e quale no;
+  - `ipotesi_accettate`: le ipotesi del Cronista e quelle della ricerca di ieri
+    (`agenti.<chi>.ipotesi`) che metti in lista d'esame, al massimo 4 al mese in tutto,
+    nella stessa forma del Cronista (`nome`, `regola`, `dati`, `smentita`). Un'ipotesi la cui
+    ricerca ha avuto `esito: "non regge"` non si accetta;
   - `autopsie`: una scheda per ogni perdita della settimana oltre 2R, o oltre il 3% di un
     portafoglio in un giorno, nella forma
     `{"chi": "falco", "operazione": "falco-3", "nelle_regole": "...", "atteso": "...", "errore": "..."}`.

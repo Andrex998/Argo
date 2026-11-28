@@ -177,6 +177,8 @@ Il primo trimestre va dal 26/11/2026 al 21/2/2027: [programma.md](programma.md).
 | `preside.md`, `agenti/*.md` | Chi sono i personaggi e come ragionano. |
 | `PROCEDURA.md` | La riunione del mattino, passo per passo. |
 | `PALESTRA.md` | La palestra della domenica, passo per passo. |
+| `RICERCA.md` | La ricerca della domenica: ogni agente studia una sua domanda sul web. Pronta, da accendere con un'attività programmata. |
+| `storia.py` | Rifà i conti dei quattro portafogli a regole sugli anni passati. |
 | `SERA.md` | Il controllo della sera e la riunione straordinaria. |
 
 ## Il motore
