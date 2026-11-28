@@ -24,6 +24,11 @@ COINS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "AVAX", "TRX", "LINK", "DOT",
 ALIAS = {"FTM": "S", "MATIC": "POL", "RNDR": "RENDER"}
 STEP_MS = {"1h": 3_600_000, "4h": 14_400_000, "1d": 86_400_000}
 PAGE = 1000
+HOUR_MS = 3_600_000
+FUNDING_GAP_MS = 8 * HOUR_MS  # two settlements are never further apart than this
+FUNDING_LATE_MS = 2 * HOUR_MS  # how late the exchange may publish the last settlement
+FUNDING_REPAIRS = 6  # how many times a hole is asked again before giving up
+FUNDING_HEAD_IDLE = 2  # answers in a row with nothing new before the first row is taken as the listing
 
 
 class DataError(Exception):
@@ -78,19 +83,55 @@ def klines(coin: str, interval: str, start_ms: int, end_ms: int) -> list[Candle]
     return [out[t] for t in sorted(out)]
 
 
-def funding(coin: str, start_ms: int, end_ms: int) -> dict[int, float]:
-    """Each funding settlement's rate, by its time in milliseconds."""
-    out: dict[int, float] = {}
+def _funding_pass(coin: str, start_ms: int, end_ms: int, out: dict[int, float]) -> None:
+    """One paged request for the settlements from start_ms to end_ms, added to `out`."""
     cursor = start_ms
     while cursor < end_ms:
-        stop = min(end_ms, cursor + PAGE * 8 * 3_600_000)
+        stop = min(end_ms, cursor + PAGE * FUNDING_GAP_MS)
         rows = _get("/openApi/swap/v2/quote/fundingRate", {"symbol": market(coin),
                     "startTime": cursor, "endTime": stop - 1, "limit": PAGE}) or []  # fmt: skip
         for r in rows:
             t = int(r["fundingTime"])
             if start_ms <= t < end_ms:
-                out[t - t % 3_600_000] = float(r["fundingRate"])
+                out[t - t % HOUR_MS] = float(r["fundingRate"])
         cursor = stop
+
+
+def _funding_holes(times: list[int], end_ms: int) -> list[tuple[int, int]]:
+    """The stretches without a settlement: between two rows, or from the last row to the end."""
+    holes = [(a, b) for a, b in zip(times, times[1:], strict=False) if b - a > FUNDING_GAP_MS]
+    if times and end_ms - times[-1] > FUNDING_GAP_MS + FUNDING_LATE_MS:
+        holes.append((times[-1], end_ms))
+    return holes
+
+
+def funding(coin: str, start_ms: int, end_ms: int) -> dict[int, float]:
+    """Each funding settlement's rate, by its time in milliseconds.
+
+    BingX sometimes answers with rows missing, above all on old history, and says nothing. A hole
+    is asked again; if it stays, this raises, because numbers on incomplete data would look right.
+    Nothing before the first row is not a hole (the coin was not listed yet), but it is asked again
+    until two answers in a row bring nothing new.
+    """
+    out: dict[int, float] = {}
+    _funding_pass(coin, start_ms, end_ms, out)
+    idle = 0
+    for _ in range(FUNDING_REPAIRS):
+        times = sorted(out)
+        holes = _funding_holes(times, end_ms)
+        listed = times[0] if times else end_ms
+        head = [] if listed - start_ms <= FUNDING_GAP_MS else [(start_ms - 1, listed)]
+        if not holes and (not head or idle >= FUNDING_HEAD_IDLE):
+            break
+        before = len(out)
+        for a, b in holes + head:
+            _funding_pass(coin, a + 1, b, out)
+        idle = idle + 1 if len(out) == before else 0
+    holes = _funding_holes(sorted(out), end_ms)
+    if holes:
+        first, last = (time.strftime("%Y-%m-%d", time.gmtime(ms / 1000)) for ms in holes[0])
+        raise DataError(f"BingX: la storia del funding di {coin} ha {len(holes)} buchi (il primo dal {first} "
+                        f"al {last}): i conti non si fanno su dati incompleti")  # fmt: skip
     return dict(sorted(out.items()))
 
 
