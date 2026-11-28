@@ -245,7 +245,7 @@
   // mensa: the bar with the coffee machine, four tables with four chairs, big windows on the west
   it("counter", "mensa", -22.1, -8.1, 0, 3.6, 0.6, {});
   it("backbar", "mensa", -22.1, -9.62, 0, 3.6, 0.55, {});
-  [-23.1, -22.1, -21.1].forEach((x, i) => A(`mensa.counter.${i + 1}`, x, -7.2, PI, { look: { x, y: 1.1, z: -8.1 } }));
+  [-23.4, -22.1, -20.8].forEach((x, i) => A(`mensa.counter.${i + 1}`, x, -7.2, PI, { look: { x, y: 1.1, z: -8.1 } }));
   [[-21.6, -3.4], [-16.6, -3.4], [-21.6, 3.6], [-16.6, 3.6]].forEach(([tx, tz], t) => {
     it("rtable", "mensa", tx, tz, 0, 0.9, 0.9, {});
     lamp("candle", "mensa", tx + 0.12, tz - 0.1, {});

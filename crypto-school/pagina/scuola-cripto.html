@@ -621,7 +621,8 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
   "use strict";
   const CAPITAL = 10000;
   const MEETING = "06:47";
-  const RECOVERY = "13:17";
+  const RECOVERY = "13:17", RECOVERY2 = "18:17";
+  const RECOVERY_MIN = 13 * 60 + 17, RECOVERY2_MIN = 18 * 60 + 17;
   const TRADERS = ["falco", "tartaruga", "spazzino", "ragioniere"];
   const GRADED = ["falco", "tartaruga", "spazzino", "ragioniere", "guardiano", "cronista", "scettico"];
   const CAST = ["preside", ...GRADED];
@@ -897,10 +898,13 @@ details.cases > summary { font-weight: 600; color: var(--ink); }
           out.push(chip("L'accoglienza è stasera: ognuno si presenta, senza ordini"));
         } else if (now.minutes < 7 * 60) {
           out.push(chip(`La riunione di oggi è alle <strong>${MEETING}</strong>`));
-        } else if (now.minutes < 13 * 60 + 17) {
-          out.push(chip("La riunione di oggi è in corso: il verbale compare appena è finita"));
+        } else if (now.minutes < RECOVERY_MIN) {
+          // no live signal and no minutes: the page cannot tell a slow meeting from a failed one, so it does not guess
+          out.push(chip(`La riunione di oggi non è ancora nel registro: se è saltata, il recupero parte alle ${RECOVERY}`));
+        } else if (now.minutes < RECOVERY2_MIN) {
+          out.push(chip(`La riunione di oggi non è ancora nel registro: il secondo recupero parte alle ${RECOVERY2}`));
         } else {
-          out.push(chip(`La riunione di oggi non è ancora nel registro: il recupero parte alle ${RECOVERY}`));
+          out.push(chip(`La riunione di oggi non è nel registro, nemmeno dopo i recuperi delle ${RECOVERY} e delle ${RECOVERY2}`, "warn"));
         }
       }
     }

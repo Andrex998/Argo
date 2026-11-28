@@ -367,13 +367,15 @@
   }
 
   // the body as capsules [ax, ay, az, bx, by, bz, r] for the baked occlusion; a brim shades the brow
+  const BRIM_SHADE = 0.075, BRIM_SHADE_DARK = 0.045;
   function occluders(key, J) {
     const g = LOOK[key].g, o = [[0, J.hip + 0.05, 0, 0, J.shY - 0.07, 0, 0.1 * g], [0, J.hc, J.hz, 0, J.hc, J.hz, 0.07], [0, J.neck - 0.02, -0.01, 0, J.head, 0, 0.038]];
     for (const sd of [1, -1]) {
       const x = sd * J.shX, lx = sd * J.hipX;
       o.push([x, J.shY - 0.03, -0.008, x, J.elY, -0.008, 0.034], [x, J.elY, -0.008, x, J.wrY + 0.02, -0.006, 0.027], [x, J.wrY - 0.05, 0.006, x, J.wrY - 0.05, 0.006, 0.026], [lx, J.hip - 0.06, 0, lx, J.knee, 0, 0.058], [lx, J.knee, 0, lx, J.ank + 0.05, 0, 0.04]);
     }
-    if ("spazzino ragioniere guardiano cronista".includes(key)) o.push([0, J.hc + J.hb * 1.1, J.hz + 0.03, 0, J.hc + J.hb * 1.1, J.hz + 0.03, 0.075]);
+    // the guardian's skin is the darkest: with the full brim shadow his face went black in the evening light
+    if ("spazzino ragioniere guardiano cronista".includes(key)) o.push([0, J.hc + J.hb * 1.1, J.hz + 0.03, 0, J.hc + J.hb * 1.1, J.hz + 0.03, key === "guardiano" ? BRIM_SHADE_DARK : BRIM_SHADE]);
     return o;
   }
   // a hand hanging along -y, palm towards the body (-x for the left hand), thumb forward (+z)

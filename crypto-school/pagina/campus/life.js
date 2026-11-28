@@ -1643,7 +1643,11 @@
     if (mode !== prev) onModeChange(prev, mode);
     return true;
   }
+  // a page opened in the middle of a meeting learns it a few seconds late, when the data arrives: within this
+  // time from the start the cast is put on its seats, it does not walk there in front of the viewer
+  const BOOT_SNAP_S = 20;
   function onModeChange(prev, mode) {
+    if (T < BOOT_SNAP_S && has(["diretta", "riunione", "emergenza", "palestra"], mode)) { instantOnce = true; for (const k of KEYS) A[k].replan = true; }
     // a live meeting wins over a replay: the replay ends, so the clock and the seats are the live ones
     if (mode === "diretta" && (rep || replayWait)) { replayWait = null; if (rep) endReplay(true); }
     if (prev === "palestra") { gymBoard = false; surf("palestra", null); }
