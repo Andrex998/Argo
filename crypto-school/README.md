@@ -180,6 +180,7 @@ Il primo trimestre va dal 26/11/2026 al 21/2/2027: [programma.md](programma.md).
 | `PALESTRA.md` | La palestra della domenica, passo per passo. |
 | `RICERCA.md` | La ricerca della domenica: ogni agente studia una sua domanda sul web. |
 | `eventi.py`, `eventi.json` | Lo studio degli eventi: cosa hanno fatto i prezzi nei giorni dopo un tipo di evento (le decisioni della Fed, i crolli, le impennate), contro tutti gli altri giorni. |
+| `pc-ufficio/` | Il salvataggio ogni ora dell'open interest dal PC dell'ufficio, senza Claude ([LEGGIMI.md](pc-ufficio/LEGGIMI.md)). |
 | `storia.py` | Rifà i conti dei quattro portafogli a regole sugli anni passati. Le monete con la storia del funding incompleta restano fuori, e il risultato le elenca. |
 | `SERA.md` | Il controllo della sera e la riunione straordinaria. |
 
