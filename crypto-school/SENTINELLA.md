@@ -49,5 +49,5 @@ Fino al 25/11/2026 compreso il controllo della sera non c'è ancora: non è un p
 - **Se tutto è regolare,** scrivi solo: «Tutto regolare.»
 - **Altrimenti,** 1-4 righe brevi: cosa manca o cosa è successo, e cosa succederà
   adesso. Per esempio: «La riunione del mattino della Scuola Cripto non c'è: il recupero
-  delle 13:17 ci riproverà», oppure «Allarme della sera: BTC −8,2% dalla mattina; riunione
+  delle 13:17 ci riproverà, e se non basta quello delle 18:17», oppure «Allarme della sera: BTC −8,2% dalla mattina; riunione
   straordinaria fatta: chiuse 2 posizioni».

@@ -26,12 +26,13 @@ La pagina **Scuola Cripto** mostra tutto:
 È qui: https://claude.ai/artifact/WEB5jaWNy37UBRKYuscQne. Il sorgente è in
 [pagina/scuola-cripto.html](pagina/scuola-cripto.html).
 
-Quattro attività programmate fanno girare la scuola, tutte con l'ora italiana:
+Sette attività programmate fanno girare la scuola, tutte con l'ora italiana:
 
 | Attività | Quando | Cosa fa |
 | --- | --- | --- |
 | Scuola Cripto | ogni giorno alle 06:47 | la riunione del mattino ([PROCEDURA.md](PROCEDURA.md)) |
 | Scuola Cripto · recupero | ogni giorno alle 13:17 | la riunione, solo se quella del mattino non c'è stata |
+| Scuola Cripto · recupero della sera | ogni giorno alle 18:17 | la riunione, solo se non c'è stata né la mattina né alle 13:17 (aggiunta il 28/11/2026, dopo la riunione saltata del 27/11) |
 | Scuola Cripto · palestra | la domenica alle 11:13 | la palestra ([PALESTRA.md](PALESTRA.md)) |
 | Scuola Cripto · sera | ogni giorno alle 20:41 | il controllo della sera ([SERA.md](SERA.md)) |
 | Scuola Cripto · revisione | il 2 di ogni mese alle 10:23 | il revisore esterno ([REVISIONE.md](REVISIONE.md)), con un messaggio sul telefono |
@@ -99,7 +100,9 @@ Il **primo lunedì del mese** c'è lo scrutinio, con le pagelle. Il Preside deci
 rischio può prendere ogni portafoglio a giudizio: 0,5%, 1% o 2%.
 
 Alle **13:17** una seconda attività programmata, «Scuola Cripto · recupero», rifà la
-riunione solo se quella del mattino non c'è riuscita.
+riunione solo se quella del mattino non c'è riuscita. Alle **18:17** c'è un'ultima occasione, «Scuola Cripto ·
+recupero della sera». Le attività usano lo stesso abbonamento delle chat: se un lavoro
+pesante consuma il limite d'uso, vengono rifiutate (è successo il 27 e il 28/11/2026).
 
 ## Perché fidarsi dei risultati
 
